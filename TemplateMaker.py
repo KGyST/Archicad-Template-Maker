@@ -1,5 +1,6 @@
 #!C:\Program Files\Python27amd64\python.exe
 # -*- coding: utf-8 -*-
+#TODO \macros, renamed stuff, utf-8
 
 import os
 import os.path
@@ -510,8 +511,9 @@ class GeneralFile(object) :
         self.dirName            = os.path.dirname(relPath)
 
     def refreshFileNames(self):
-        # self.fullPath = self.relPath + "\\" + self.fileNameWithExt
-        pass
+        self.fileNameWithExt    = self.name + self.ext
+        self.fileNameWithOutExt = self.name
+        self.relPath            = self.dirName + self.fileNameWithExt
 
     def __lt__(self, other):
         return self.fileNameWithOutExt < other.name
@@ -524,9 +526,9 @@ class SourceFile(GeneralFile):
 
 
 class DestFile(GeneralFile):
-    def __init__(self, sourceFile):
-        super(DestFile, self).__init__(sourceFile)
-        # self.sourceFile = replacement_dict[string.upper(self.sourceFile.name)]
+    def __init__(self, fileName, **kwargs):
+        super(DestFile, self).__init__(fileName)
+        self.sourceFile = kwargs['sourceFile']
         self.ext        = self.sourceFile.ext
 
 
@@ -571,8 +573,8 @@ class DestImage(DestFile):
 
 class XMLFile(GeneralFile):
 
-    def __init__(self, relPath):
-        super(XMLFile, self).__init__(relPath)
+    def __init__(self, relPath, **kwargs):
+        super(XMLFile, self).__init__(relPath, **kwargs)
         # self.ext        = ".xml"
         # self.guid       = ""
         # self.iVersion   = 0
@@ -628,15 +630,15 @@ class SourceXML (XMLFile, SourceFile):
             self.calledMacros[calledMacroID] = string.strip(m.find("MName").text, "'" + '"')
 
         #Parameter manipulation: checking usage and later add custom pars
-        self.parameters = ParamSection(mroot.find("./ParamSection"))
+        # self.parameters = ParamSection(mroot.find("./ParamSection"))
 
         for scriptName in SCRIPT_NAMES_LIST:
             script = mroot.find("./%s" % scriptName)
             if script is not None:
                 self.scripts[scriptName] = script.text
 
-        for par in self.parameters:
-            par.isUsed = self.checkParameterUsage(par, set())
+        # for par in self.parameters:
+        #     par.isUsed = self.checkParameterUsage(par, set())
 
     def checkParameterUsage(self, inPar, inMacroSet):
         '''
@@ -677,11 +679,11 @@ class DestXML (XMLFile, DestFile):
             # if "XML Target file exists!" in self.warnings:
             #     self.warnings.remove("XML Target file exists!")
             #     self.refreshFileNames()
-        self.sourceFile     = sourceFile
 
-        super(DestXML, self).__init__(self.name)
+        super(DestXML, self).__init__(self.name, sourceFile=sourceFile)
         self.warnings = []
 
+        self.sourceFile     = sourceFile
         # self.sourceFileName = sourceFile.name
         # self.path           = os.path.normpath(TargetXMLDirName.get() + "\\" + sourceFile.relPath)
         #FIXME refresh paths if XML folder is changed OR do it on the fly
@@ -695,7 +697,7 @@ class DestXML (XMLFile, DestFile):
         self.proDatURL              = ''
         self.bOverWrite             = False
         self.bRetainCalledMacros    = False
-        self.parameters             = copy.deepcopy(sourceFile.parameters)
+        # self.parameters             = copy.deepcopy(sourceFile.parameters)
 
         if os.path.isfile(self.fullPath):
             #for overwriting existing xmls while retaining GUIDs etx
@@ -1463,7 +1465,7 @@ def main2():
 
         for sect in ["./Script_2D", "./Script_3D", "./Script_1D", "./Script_PR", "./Script_UI", "./Script_VL", "./Script_FWM", "./Script_BWM", ]:
             section = mdp.find(sect)
-            if section:
+            if section != None:
                 t = section.text
 
                 for dI in dest_dict.keys():
@@ -1504,12 +1506,12 @@ def main2():
 
         # ---------------------BO_update preparations---------------------
         # parRoot = mdp.find("./ParamSection/Parameters")
-        parRoot = mdp.find("./ParamSection")
-        parPar = parRoot.getparent()
-        parPar.remove(parRoot)
-
-        destPar = dest.parameters.toEtree()
-        parPar.append(destPar)
+        # parRoot = mdp.find("./ParamSection")
+        # parPar = parRoot.getparent()
+        # parPar.remove(parRoot)
+        #
+        # destPar = dest.parameters.toEtree()
+        # parPar.append(destPar)
 
         #FIXME rewriting this as Parameter instead of xml
         # for stPar in stRoot.findall("String"):
