@@ -632,7 +632,7 @@ class SourceXML (XMLFile, SourceFile):
 
         for scriptName in SCRIPT_NAMES_LIST:
             script = mroot.find("./%s" % scriptName)
-            if script:
+            if script is not None:
                 self.scripts[scriptName] = script.text
 
         for par in self.parameters:
