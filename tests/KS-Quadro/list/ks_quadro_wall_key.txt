@@ -1,2 +1,0 @@
-﻿001	KS-Quadro wall component
-002	KS-Quadro wall

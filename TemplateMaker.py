@@ -1,6 +1,5 @@
 #!C:\Program Files\Python27amd64\python.exe
 # -*- coding: utf-8 -*-
-#TODO \macros, renamed stuff, utf-8
 
 import os
 import os.path
@@ -71,8 +70,8 @@ class ParamSection:
     iterable class of all params
     '''
     def __init__(self, inETree):
-        self.eTree = inETree
-        self.__header = inETree.find("ParamSectHeader")
+        self.eTree          = inETree
+        self.__header       = inETree.find("ParamSectHeader")
         self.__paramList    = []
         self.__paramDict    = {}
         self.__index        = 0
@@ -123,8 +122,9 @@ class ParamSection:
                 self.__paramList.append(inEtree)
 
     def remove_param(self, inParName):
-        #TODO
-        pass
+        obj = self.__paramDict[inParName]
+        self.__paramList.remove(obj)
+        del obj
 
     def upsert_param(self, inParName):
         #TODO
@@ -198,9 +198,9 @@ class ParamSection:
         r = response.read()
 
         tree = etree.fromstring(r)
-        # print tree
-#'BO_Title', 'BO_Separator',
-        BO_PARAM_TUPLE = ('BO_prodinfo',)
+        print r
+
+        BO_PARAM_TUPLE = ('BO_Title', 'BO_Separator', 'BO_prodinfo', 'BO_prodsku', 'BO_Manufac', 'BO_edinum', 'BO_width')
         for p in BO_PARAM_TUPLE:
             self.remove_param(p)
 
@@ -208,17 +208,24 @@ class ParamSection:
             print p
             e = next((par for par in tree.findall("Object/Parameters/Parameter") if par.get('VariableName') == p), '')
             print e
-            param = Param(  inName=e.get('VariableName'),
-                            inDesc=e.get('VariableDescription'),
-                           inValue=e.get('BIMParameterName'),
-                            inType=e.get('VariableType'),
-                           inAVals=None,
-                           inChild=(e.get('VariableModifier')=='Child'),
-                            inBold=(e.get('VariableStyle')=='Bold'),)
+            # if e.text:
+            #     print e.text
             if p in ('BO_Title',):
+                comment = Param(  inName='BO_Title',
+                           inValue='teszt*********************',
+                            inType=PAR_TITLE,)
+                self.append(comment)
+            elif p in ('BO_Separator'):
                 pass
-                # comment = Param()
-            self.append(param)
+            else:
+                param = Param(  inName=e.get('VariableName'),
+                                inDesc=e.get('VariableDescription'),
+                               inValue=e.text,
+                                inType=e.get('VariableType'),
+                               inAVals=None,
+                               inChild=(e.get('VariableModifier')=='Child'),
+                                inBold=(e.get('VariableStyle')=='Bold'),)
+                self.append(param)
 
 
 class Param:
@@ -279,14 +286,14 @@ class Param:
                         if f.tag == "ParFlg_Child":     self.flags |= {PARFLG_CHILD}
                         if f.tag == "ParFlg_BoldName":  self.flags |= {PARFLG_BOLDNAME}
                         #FIXME unique etc
-            else:
+            else:       # _Comment
                 self.iType = PAR_COMMENT
                 self.name = inETree.text
                 self.desc = ''
                 self.value = None
                 self.aVals = None
-        else:
-            self.iType  = self.getTypeFromString(inType)
+        else:            # Start from a scratch
+            self.iType  = inType
             self.name   = inName
             self.desc   = inDesc
             self.value  = inValue
@@ -296,7 +303,11 @@ class Param:
                 self.flags |= {PARFLG_CHILD}
             if inBold:
                 self.flags |= {PARFLG_BOLDNAME}
-
+            #FIXME
+            # self.descTail
+            # self.tail
+            # self.aValsTail
+            # self.valTail = val.tail
         self.isInherited    = False
         self.isUsed         = True
 
@@ -401,6 +412,7 @@ class Param:
             return PAR_SEPARATOR
         elif inString in ("Title"):
             return PAR_TITLE
+
 
 class CreateToolTip:
     def __init__(self, widget, text='widget info'):
@@ -528,57 +540,39 @@ class SourceFile(GeneralFile):
 class DestFile(GeneralFile):
     def __init__(self, fileName, **kwargs):
         super(DestFile, self).__init__(fileName)
-        self.sourceFile = kwargs['sourceFile']
-        self.ext        = self.sourceFile.ext
+        self.sourceFile         = kwargs['sourceFile']
+        self.ext                = self.sourceFile.ext
 
 
 class SourceImage(SourceFile):
     def __init__(self, sourceFile):
         super(SourceImage, self).__init__(sourceFile)
-        # GeneralFile.__init__(self, sourceFile, SourceDirName.get())
-        # self.ext = os.path.splitext(os.path.basename(sourceFile))[1]
-        # self.fileNameWithExt = self.name + self.ext
-        # self.fileNameWithOutExt = self.name
-        # self.fileNameWithOutExt = os.path.splitext(os.path.basename(sourceFile))[0]
         self.name = self.fileNameWithExt
 
 
 class DestImage(DestFile):
-    # fileNameWithOutExt  = ""
-    # sourceFile          = None  #reference
-
     #TODO TargetImageDirName is ok for images?
 
     def __init__(self, sourceFile, stringFrom, stringTo):
-        GeneralFile.__init__(self, sourceFile.relPath)
+        self.name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
         self.sourceFile         = sourceFile
         self.relPath            = sourceFile.relPath
+        super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
         self.path               = TargetImageDirName.get() + "\\" + self.relPath
-        self.GDLFullpath        = TargetGDLDirName.get()   + "\\" + self.relPath
-        self.XMLFullpath        = TargetXMLDirName.get()   + "\\" + self.relPath
-        self.sourceFileName     = sourceFile.name
-        self.name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
-        # self.fileNameWithOutExt = os.path.splitext(os.path.basename(self.name))[0]
         self.ext                = self.sourceFile.ext
 
         if stringTo not in self.name and bAddStr.get():
             self.fileNameWithOutExt += stringTo
             self.name           = self.fileNameWithOutExt + self.ext
         self.fileNameWithExt = self.name
-        self.fullPath = self.path + "\\" + self.fileNameWithExt
 
     def refreshFileNames(self):
-        self.fullPath = self.path + "\\" + self.fileNameWithExt
+        pass
 
 
 class XMLFile(GeneralFile):
-
     def __init__(self, relPath, **kwargs):
         super(XMLFile, self).__init__(relPath, **kwargs)
-        # self.ext        = ".xml"
-        # self.guid       = ""
-        # self.iVersion   = 0
-        # self.ID         = ""
         self.name       = self.fileNameWithOutExt
         self.bPlaceable = False
 
@@ -600,7 +594,6 @@ class SourceXML (XMLFile, SourceFile):
         self.scripts        = {}
 
         mroot = etree.parse(self.fullPath, etree.XMLParser(strip_cdata=False))
-        # mroot = etree.parse(self.fullPath)
         self.iVersion = mroot.getroot().attrib['Version']
 
         global ID
@@ -630,7 +623,7 @@ class SourceXML (XMLFile, SourceFile):
             self.calledMacros[calledMacroID] = string.strip(m.find("MName").text, "'" + '"')
 
         #Parameter manipulation: checking usage and later add custom pars
-        # self.parameters = ParamSection(mroot.find("./ParamSection"))
+        self.parameters = ParamSection(mroot.find("./ParamSection"))
 
         for scriptName in SCRIPT_NAMES_LIST:
             script = mroot.find("./%s" % scriptName)
@@ -674,38 +667,35 @@ class DestXML (XMLFile, DestFile):
             while self.name.upper() + "_" + str(i) in dest_dict.keys():
                 i += 1
             self.name += "_" + str(i)
-            self.guid = str(uuid.uuid4()).upper()
 
             # if "XML Target file exists!" in self.warnings:
             #     self.warnings.remove("XML Target file exists!")
             #     self.refreshFileNames()
+        self.relPath                = sourceFile.dirName + "\\" + self.name + sourceFile.ext
 
-        super(DestXML, self).__init__(self.name, sourceFile=sourceFile)
-        self.warnings = []
+        super(DestXML, self).__init__(self.relPath, sourceFile=sourceFile)
+        self.warnings               = []
 
-        self.sourceFile     = sourceFile
-        # self.sourceFileName = sourceFile.name
-        # self.path           = os.path.normpath(TargetXMLDirName.get() + "\\" + sourceFile.relPath)
         #FIXME refresh paths if XML folder is changed OR do it on the fly
-        self.fullPath       = TargetXMLDirName.get() + "\\" + self.relPath
-        self.fullGDLPath    = TargetGDLDirName.get() + "\\" + self.fileNameWithOutExt + ".gsm"
-        # self.dirName        = os.path.dirname(self.fullPath)
-        self.guid           = str(uuid.uuid4()).upper()
-        self.bPlaceable     = sourceFile.bPlaceable
-        self.iVersion       = sourceFile.iVersion
-        # self.sourceFile.destName    = os.path.splitext(self.name)[0]
+        self.sourceFile             = sourceFile
+        self.fullGDLPath            = TargetGDLDirName.get() + "\\" + self.fileNameWithOutExt + ".gsm"
+        self.guid                   = str(uuid.uuid4()).upper()
+        self.bPlaceable             = sourceFile.bPlaceable
+        self.iVersion               = sourceFile.iVersion
         self.proDatURL              = ''
         self.bOverWrite             = False
         self.bRetainCalledMacros    = False
-        # self.parameters             = copy.deepcopy(sourceFile.parameters)
 
-        if os.path.isfile(self.fullPath):
+        self.parameters             = copy.deepcopy(sourceFile.parameters)
+
+        fullPath                    = TargetXMLDirName.get() + "\\" + self.relPath
+        if os.path.isfile(fullPath):
             #for overwriting existing xmls while retaining GUIDs etx
             if bOverWrite.get():
                 #FIXME to finish it
                 self.bOverWrite             = True
                 self.bRetainCalledMacros    = True
-                mdp = etree.parse(self.fullPath, etree.XMLParser(strip_cdata=False))
+                mdp = etree.parse(fullPath, etree.XMLParser(strip_cdata=False))
                 # self.iVersion = mdp.getroot().attrib['Version']
                 # if self.iVersion >= AC_18:
                 #     self.ID = "MainGUID"
@@ -1219,7 +1209,7 @@ class GUIApp(tk.Frame):
         if fileName == LISTBOX_SEPARATOR:
             self.listBox3.select_clear(tk.ACTIVE)
             return
-        del dest_dict[fileName.upper()]
+        del dest_dict[self.__unmarkFileName(fileName).upper()]
         self.listBox3.refresh()
         if not dest_dict and not pict_dict:
             self.addAllButton.config({"state": tk.NORMAL})
@@ -1372,6 +1362,16 @@ class GUIApp(tk.Frame):
         '''Meaningful when overwriting XMLs:
         '''
         pass
+
+    @staticmethod
+    def __unmarkFileName(inFileName):
+        '''removes remarks form on the GUI displayed filenames, like * at the beginning'''
+        if inFileName.upper() in dest_dict:
+            return inFileName
+        elif inFileName[:2] == '* ':
+            if inFileName[2:].upper() in dest_dict:
+                return inFileName [2:]
+
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
@@ -1426,8 +1426,7 @@ def main2():
         dest        = dest_dict[k]
         src         = dest.sourceFile
         srcPath     = src.fullPath
-        # destPath = dest.fullPath
-        destPath    = tempdir + "\\" + dest.relPath + dest.ext
+        destPath    = tempdir + "\\" + dest.relPath     # + dest.ext
         destDir     = os.path.dirname(destPath)
 
         print "%s -> %s" % (srcPath, destPath,)
@@ -1469,13 +1468,10 @@ def main2():
                 t = section.text
 
                 for dI in dest_dict.keys():
-                    # if re.search(dest_dict[dI].sourceFile.fileName, t):
-                    #     print "*****************", dest_dict[dI].sourceFile.fileName, dest_dict[dI].fileName
                     t = re.sub(dest_dict[dI].sourceFile.name, dest_dict[dI].name, t, flags=re.IGNORECASE)
 
                 for pr in pict_dict.keys():
                     #Replacing images
-                    # print pict_dict[pr].originalName
                     t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt, pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
 
                 section.text = etree.CDATA(t)
@@ -1506,12 +1502,12 @@ def main2():
 
         # ---------------------BO_update preparations---------------------
         # parRoot = mdp.find("./ParamSection/Parameters")
-        # parRoot = mdp.find("./ParamSection")
-        # parPar = parRoot.getparent()
-        # parPar.remove(parRoot)
-        #
-        # destPar = dest.parameters.toEtree()
-        # parPar.append(destPar)
+        parRoot = mdp.find("./ParamSection")
+        parPar = parRoot.getparent()
+        parPar.remove(parRoot)
+
+        destPar = dest.parameters.toEtree()
+        parPar.append(destPar)
 
         #FIXME rewriting this as Parameter instead of xml
         # for stPar in stRoot.findall("String"):
@@ -1603,7 +1599,7 @@ def main2():
 
         with open(tempdir + "\pict_dict.txt", "w") as d:
             for k in pict_dict.keys():
-                d.write(pict_dict[k].sourceFile.fullPath + "->" + pict_dict[k].fullPath+ "\n")
+                d.write(pict_dict[k].sourceFile.fullPath + "->" + pict_dict[k].relPath+ "\n")
 
         with open(tempdir + "\id_dict.txt", "w") as d:
             for k in id_dict.keys():
