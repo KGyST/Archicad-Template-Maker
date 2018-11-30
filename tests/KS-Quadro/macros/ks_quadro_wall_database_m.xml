@@ -1,0 +1,4129 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Symbol IsArchivable="no" IsPlaceable="no" MainGUID="7DC27517-6E2E-45F1-9947-C6AE2694DA20" MigrationValue="Normal" Owner="1196638531" Signature="1196644685" Version="34">
+<Ancestry SectVersion="1" SectionFlags="0" SubIdent="0" Template="no">
+	<MainGUID>F938E33A-329D-4A36-BE3E-85E126820996</MainGUID>
+	<MainGUID>103E8D2C-8230-42E1-9597-46F84CCE28C0</MainGUID>
+</Ancestry>
+
+<CalledMacros SectVersion="2" SectionFlags="0" SubIdent="0">
+</CalledMacros>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_3D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_3D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_2D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_2D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_1D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+EPS = 0.0001
+
+! ==============================================================================
+! Definitions
+! ==============================================================================
+!iLang
+	dim langCodeEnum[], langCodeStr[]
+	i = 0
+	LANG_NONE	= 0		:i=i+1	:langCodeEnum[i]=LANG_NONE	:langCodeStr[i]=""
+	LANG_DE		= 1		:i=i+1	:langCodeEnum[i]=LANG_DE	:langCodeStr[i]="de"
+!!	LANG_AT		= 2		:i=i+1	:langCodeEnum[i]=LANG_AT	:langCodeStr[i]="at"
+!!	LANG_CH		= 3		:i=i+1	:langCodeEnum[i]=LANG_CH	:langCodeStr[i]="ch"
+!!	LANG_FI		= 4		:i=i+1	:langCodeEnum[i]=LANG_FI	:langCodeStr[i]="fi"
+!!	LANG_SE		= 5		:i=i+1	:langCodeEnum[i]=LANG_SE	:langCodeStr[i]="se"
+!!	LANG_NO		= 6		:i=i+1	:langCodeEnum[i]=LANG_NO	:langCodeStr[i]="no"
+!!	LANG_DK		= 7		:i=i+1	:langCodeEnum[i]=LANG_DK	:langCodeStr[i]="dk"
+!!	LANG_NL		= 8		:i=i+1	:langCodeEnum[i]=LANG_NL	:langCodeStr[i]="nl"
+!!	LANG_BE		= 9		:i=i+1	:langCodeEnum[i]=LANG_BE	:langCodeStr[i]="be"
+!!	LANG_FR		= 10	:i=i+1	:langCodeEnum[i]=LANG_FR	:langCodeStr[i]="fr"
+!!	LANG_ES		= 11	:i=i+1	:langCodeEnum[i]=LANG_ES	:langCodeStr[i]="es"
+!!	LANG_UK		= 12	:i=i+1	:langCodeEnum[i]=LANG_UK	:langCodeStr[i]="uk"
+!!	LANG_IT		= 13	:i=i+1	:langCodeEnum[i]=LANG_IT	:langCodeStr[i]="it"
+!!	LANG_XK		= 14	:i=i+1	:langCodeEnum[i]=LANG_XK	:langCodeStr[i]="xk"
+!!	LANG_SI		= 15	:i=i+1	:langCodeEnum[i]=LANG_SI	:langCodeStr[i]="si"
+!!	LANG_BA		= 16	:i=i+1	:langCodeEnum[i]=LANG_BA	:langCodeStr[i]="ba"
+!!	LANG_HR		= 17	:i=i+1	:langCodeEnum[i]=LANG_HR	:langCodeStr[i]="hr"
+!!	LANG_RS		= 18	:i=i+1	:langCodeEnum[i]=LANG_RS	:langCodeStr[i]="rs"
+!!	LANG_HU		= 19	:i=i+1	:langCodeEnum[i]=LANG_HU	:langCodeStr[i]="hu"
+!!	LANG_BG		= 20	:i=i+1	:langCodeEnum[i]=LANG_BG	:langCodeStr[i]="bg"
+!!	LANG_RO		= 21	:i=i+1	:langCodeEnum[i]=LANG_RO	:langCodeStr[i]="ro"
+!!	LANG_PL		= 22	:i=i+1	:langCodeEnum[i]=LANG_PL	:langCodeStr[i]="pl"
+!!	LANG_SK		= 23	:i=i+1	:langCodeEnum[i]=LANG_SK	:langCodeStr[i]="sk"
+!!	LANG_CZ		= 24	:i=i+1	:langCodeEnum[i]=LANG_CZ	:langCodeStr[i]="cz"
+!!	LANG_RU		= 25	:i=i+1	:langCodeEnum[i]=LANG_RU	:langCodeStr[i]="ru"
+!!	LANG_US		= 26	:i=i+1	:langCodeEnum[i]=LANG_US	:langCodeStr[i]="us"
+!!	LANG_CN		= 27	:i=i+1	:langCodeEnum[i]=LANG_CN	:langCodeStr[i]="cn"
+!!	LANG_MX		= 28	:i=i+1	:langCodeEnum[i]=LANG_MX	:langCodeStr[i]="mx"
+!!	LANG_TR		= 29	:i=i+1	:langCodeEnum[i]=LANG_TR	:langCodeStr[i]="tr"
+
+! iBrickType
+	BRICK_FAMILY_TYPE_BLOCK		= 10
+	BRICK_FAMILY_TYPE_ELEMENT	= 20
+
+
+! iProduct
+	dim iProductEnum[], iProductStr[]
+	i = 0
+	BRICK_FAMILY_NONE               = 0			:i=i+1	:iProductEnum[i]= BRICK_FAMILY_NONE					:iProductStr[i]="NONE"
+	BRICK_FAMILY_GENERIC            = 1000		:i=i+1	:iProductEnum[i]= BRICK_FAMILY_GENERIC				:iProductStr[i]="GENERIC"
+	BRICK_FAMILY_EXTERNAL_WALL      = 2000		:i=i+1	:iProductEnum[i]= BRICK_FAMILY_EXTERNAL_WALL		:iProductStr[i]="EXTERNAL_WALL"
+	BRICK_FAMILY_INTERNAL_WALL      = 3000		:i=i+1	:iProductEnum[i]= BRICK_FAMILY_INTERNAL_WALL		:iProductStr[i]="INTERNAL_WALL"
+	BRICK_DE_KSQ_12_18_DM			= 10000		:i=i+1	:iProductEnum[i]= BRICK_DE_KSQ_12_18_DM				:iProductStr[i]="DE_KSQ_12_18_DM"
+	BRICK_DE_KSQ_16_18_DM			= 10100		:i=i+1	:iProductEnum[i]= BRICK_DE_KSQ_16_18_DM				:iProductStr[i]="DE_KSQ_16_18_DM"
+	BRICK_DE_KSQ_20_18_DM			= 10200		:i=i+1	:iProductEnum[i]= BRICK_DE_KSQ_20_18_DM				:iProductStr[i]="DE_KSQ_20_18_DM"
+	BRICK_DE_KSQ_20_20_DM			= 10300		:i=i+1	:iProductEnum[i]= BRICK_DE_KSQ_20_20_DM				:iProductStr[i]="DE_KSQ_20_20_DM"
+	BRICK_DE_KSQ_20_22_DM			= 10400		:i=i+1	:iProductEnum[i]= BRICK_DE_KSQ_20_22_DM				:iProductStr[i]="DE_KSQ_20_22_DM"
+	BRICK_DE_KSQE_12_18_DM			= 10500		:i=i+1	:iProductEnum[i]= BRICK_DE_KSQE_12_18_DM			:iProductStr[i]="DE_KSQE_12_18_DM"
+	BRICK_DE_KSQE_20_18_DM			= 10600		:i=i+1	:iProductEnum[i]= BRICK_DE_KSQE_20_18_DM			:iProductStr[i]="DE_KSQE_20_18_DM"
+	BRICK_DE_KSQE_12_20_DM			= 10700		:i=i+1	:iProductEnum[i]= BRICK_DE_KSQE_12_20_DM			:iProductStr[i]="DE_KSQE_12_20_DM"
+	BRICK_DE_KSQE_20_20_DM			= 10800		:i=i+1	:iProductEnum[i]= BRICK_DE_KSQE_20_20_DM			:iProductStr[i]="DE_KSQE_20_20_DM"
+
+! iProductType
+	dim iProductTypeEnum[], iProductTypeStr[]
+	i = 0
+	BRICK_NONE = 0					:i=i+1	:iProductTypeEnum[i]=BRICK_NONE						:iProductTypeStr[i]="NONE"
+	
+	! DE
+	BRICK_DE_KSQ_12_18_DM_115_498_498	= 10001	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_115_498_498	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_115_498_498"
+	BRICK_DE_KSQ_12_18_DM_150_498_498	= 10002	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_150_498_498	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_150_498_498"
+	BRICK_DE_KSQ_12_18_DM_175_498_498	= 10003	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_175_498_498	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_175_498_498"
+	BRICK_DE_KSQ_12_18_DM_200_498_498	= 10004	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_200_498_498	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_200_498_498"
+	BRICK_DE_KSQ_12_18_DM_240_498_498	= 10005	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_240_498_498	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_240_498_498"
+	BRICK_DE_KSQ_12_18_DM_300_498_498	= 10006	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_300_498_498	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_300_498_498"
+	BRICK_DE_KSQ_12_18_DM_365_498_498	= 10007	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_365_498_498	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_365_498_498"
+	BRICK_DE_KSQ_16_18_DM_115_498_498	= 10008	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_115_498_498	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_115_498_498"
+	BRICK_DE_KSQ_16_18_DM_150_498_498	= 10009	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_150_498_498	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_150_498_498"
+	BRICK_DE_KSQ_16_18_DM_175_498_498	= 10010	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_175_498_498	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_175_498_498"
+	BRICK_DE_KSQ_16_18_DM_200_498_498	= 10011	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_200_498_498	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_200_498_498"
+	BRICK_DE_KSQ_16_18_DM_240_498_498	= 10012	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_240_498_498	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_240_498_498"
+	BRICK_DE_KSQ_16_18_DM_300_498_498	= 10013	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_300_498_498	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_300_498_498"
+	BRICK_DE_KSQ_16_18_DM_365_498_498	= 10014	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_365_498_498	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_365_498_498"
+	BRICK_DE_KSQ_20_18_DM_115_498_498	= 10015	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_115_498_498	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_115_498_498"
+	BRICK_DE_KSQ_20_18_DM_150_498_498	= 10016	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_150_498_498	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_150_498_498"
+	BRICK_DE_KSQ_20_18_DM_175_498_498	= 10017	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_175_498_498	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_175_498_498"
+	BRICK_DE_KSQ_20_18_DM_200_498_498	= 10018	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_200_498_498	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_200_498_498"
+	BRICK_DE_KSQ_20_18_DM_240_498_498	= 10019	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_240_498_498	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_240_498_498"
+	BRICK_DE_KSQ_20_18_DM_300_498_498	= 10020	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_300_498_498	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_300_498_498"
+	BRICK_DE_KSQ_20_18_DM_365_498_498	= 10021	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_365_498_498	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_365_498_498"
+	BRICK_DE_KSQ_20_20_DM_115_498_498	= 10022	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_115_498_498	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_115_498_498"
+	BRICK_DE_KSQ_20_20_DM_150_498_498	= 10023	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_150_498_498	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_150_498_498"
+	BRICK_DE_KSQ_20_20_DM_175_498_498	= 10024	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_175_498_498	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_175_498_498"
+	BRICK_DE_KSQ_20_20_DM_200_498_498	= 10025	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_200_498_498	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_200_498_498"
+	BRICK_DE_KSQ_20_20_DM_240_498_498	= 10026	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_240_498_498	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_240_498_498"
+	BRICK_DE_KSQ_20_20_DM_300_498_498	= 10027	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_300_498_498	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_300_498_498"
+	BRICK_DE_KSQ_20_20_DM_365_498_498	= 10028	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_365_498_498	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_365_498_498"
+	BRICK_DE_KSQ_20_22_DM_150_498_498	= 10029	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_150_498_498	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_150_498_498"
+	BRICK_DE_KSQ_20_22_DM_175_498_498	= 10030	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_175_498_498	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_175_498_498"
+	BRICK_DE_KSQ_20_22_DM_200_498_498	= 10031	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_200_498_498	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_200_498_498"
+	BRICK_DE_KSQ_20_22_DM_240_498_498	= 10032	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_240_498_498	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_240_498_498"
+!!						
+!!	BRICK_DE_KSQ_12_18_DM_115_498_373	= 10033	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_115_498_373	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_115_498_373"
+!!	BRICK_DE_KSQ_12_18_DM_150_498_373	= 10034	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_150_498_373	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_150_498_373"
+!!	BRICK_DE_KSQ_12_18_DM_175_498_373	= 10035	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_175_498_373	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_175_498_373"
+!!	BRICK_DE_KSQ_12_18_DM_200_498_373	= 10036	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_200_498_373	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_200_498_373"
+!!	BRICK_DE_KSQ_12_18_DM_240_498_373	= 10037	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_240_498_373	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_240_498_373"
+!!	BRICK_DE_KSQ_12_18_DM_300_498_373	= 10038	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_300_498_373	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_300_498_373"
+!!	BRICK_DE_KSQ_12_18_DM_365_498_373	= 10039	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_365_498_373	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_365_498_373"
+!!	BRICK_DE_KSQ_16_18_DM_115_498_373	= 10040	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_115_498_373	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_115_498_373"
+!!	BRICK_DE_KSQ_16_18_DM_150_498_373	= 10041	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_150_498_373	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_150_498_373"
+!!	BRICK_DE_KSQ_16_18_DM_175_498_373	= 10042	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_175_498_373	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_175_498_373"
+!!	BRICK_DE_KSQ_16_18_DM_200_498_373	= 10043	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_200_498_373	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_200_498_373"
+!!	BRICK_DE_KSQ_16_18_DM_240_498_373	= 10044	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_240_498_373	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_240_498_373"
+!!	BRICK_DE_KSQ_16_18_DM_300_498_373	= 10045	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_300_498_373	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_300_498_373"
+!!	BRICK_DE_KSQ_16_18_DM_365_498_373	= 10046	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_365_498_373	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_365_498_373"
+!!	BRICK_DE_KSQ_20_18_DM_115_498_373	= 10047	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_115_498_373	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_115_498_373"
+!!	BRICK_DE_KSQ_20_18_DM_150_498_373	= 10048	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_150_498_373	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_150_498_373"
+!!	BRICK_DE_KSQ_20_18_DM_175_498_373	= 10049	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_175_498_373	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_175_498_373"
+!!	BRICK_DE_KSQ_20_18_DM_200_498_373	= 10050	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_200_498_373	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_200_498_373"
+!!	BRICK_DE_KSQ_20_18_DM_240_498_373	= 10051	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_240_498_373	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_240_498_373"
+!!	BRICK_DE_KSQ_20_18_DM_300_498_373	= 10052	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_300_498_373	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_300_498_373"
+!!	BRICK_DE_KSQ_20_18_DM_365_498_373	= 10053	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_365_498_373	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_365_498_373"
+!!	BRICK_DE_KSQ_20_20_DM_115_498_373	= 10054	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_115_498_373	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_115_498_373"
+!!	BRICK_DE_KSQ_20_20_DM_150_498_373	= 10055	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_150_498_373	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_150_498_373"
+!!	BRICK_DE_KSQ_20_20_DM_175_498_373	= 10056	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_175_498_373	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_175_498_373"
+!!	BRICK_DE_KSQ_20_20_DM_200_498_373	= 10057	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_200_498_373	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_200_498_373"
+!!	BRICK_DE_KSQ_20_20_DM_240_498_373	= 10058	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_240_498_373	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_240_498_373"
+!!	BRICK_DE_KSQ_20_20_DM_300_498_373	= 10059	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_300_498_373	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_300_498_373"
+!!	BRICK_DE_KSQ_20_20_DM_365_498_373	= 10060	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_365_498_373	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_365_498_373"
+!!	BRICK_DE_KSQ_20_22_DM_150_498_373	= 10061	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_150_498_373	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_150_498_373"
+!!	BRICK_DE_KSQ_20_22_DM_175_498_373	= 10062	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_175_498_373	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_175_498_373"
+!!	BRICK_DE_KSQ_20_22_DM_200_498_373	= 10063	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_200_498_373	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_200_498_373"
+!!	BRICK_DE_KSQ_20_22_DM_240_498_373	= 10064	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_240_498_373	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_240_498_373"
+!!						
+!!	BRICK_DE_KSQ_12_18_DM_115_498_248	= 10065	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_115_498_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_115_498_248"
+!!	BRICK_DE_KSQ_12_18_DM_150_498_248	= 10066	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_150_498_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_150_498_248"
+!!	BRICK_DE_KSQ_12_18_DM_175_498_248	= 10067	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_175_498_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_175_498_248"
+!!	BRICK_DE_KSQ_12_18_DM_200_498_248	= 10068	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_200_498_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_200_498_248"
+!!	BRICK_DE_KSQ_12_18_DM_240_498_248	= 10069	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_240_498_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_240_498_248"
+!!	BRICK_DE_KSQ_12_18_DM_300_498_248	= 10070	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_300_498_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_300_498_248"
+!!	BRICK_DE_KSQ_12_18_DM_365_498_248	= 10071	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_365_498_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_365_498_248"
+!!	BRICK_DE_KSQ_16_18_DM_115_498_248	= 10072	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_115_498_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_115_498_248"
+!!	BRICK_DE_KSQ_16_18_DM_150_498_248	= 10073	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_150_498_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_150_498_248"
+!!	BRICK_DE_KSQ_16_18_DM_175_498_248	= 10074	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_175_498_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_175_498_248"
+!!	BRICK_DE_KSQ_16_18_DM_200_498_248	= 10075	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_200_498_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_200_498_248"
+!!	BRICK_DE_KSQ_16_18_DM_240_498_248	= 10076	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_240_498_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_240_498_248"
+!!	BRICK_DE_KSQ_16_18_DM_300_498_248	= 10077	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_300_498_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_300_498_248"
+!!	BRICK_DE_KSQ_16_18_DM_365_498_248	= 10078	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_365_498_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_365_498_248"
+!!	BRICK_DE_KSQ_20_18_DM_115_498_248	= 10079	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_115_498_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_115_498_248"
+!!	BRICK_DE_KSQ_20_18_DM_150_498_248	= 10080	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_150_498_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_150_498_248"
+!!	BRICK_DE_KSQ_20_18_DM_175_498_248	= 10081	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_175_498_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_175_498_248"
+!!	BRICK_DE_KSQ_20_18_DM_200_498_248	= 10082	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_200_498_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_200_498_248"
+!!	BRICK_DE_KSQ_20_18_DM_240_498_248	= 10083	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_240_498_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_240_498_248"
+!!	BRICK_DE_KSQ_20_18_DM_300_498_248	= 10084	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_300_498_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_300_498_248"
+!!	BRICK_DE_KSQ_20_18_DM_365_498_248	= 10085	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_365_498_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_365_498_248"
+!!	BRICK_DE_KSQ_20_20_DM_115_498_248	= 10086	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_115_498_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_115_498_248"
+!!	BRICK_DE_KSQ_20_20_DM_150_498_248	= 10087	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_150_498_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_150_498_248"
+!!	BRICK_DE_KSQ_20_20_DM_175_498_248	= 10088	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_175_498_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_175_498_248"
+!!	BRICK_DE_KSQ_20_20_DM_200_498_248	= 10089	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_200_498_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_200_498_248"
+!!	BRICK_DE_KSQ_20_20_DM_240_498_248	= 10090	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_240_498_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_240_498_248"
+!!	BRICK_DE_KSQ_20_20_DM_300_498_248	= 10091	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_300_498_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_300_498_248"
+!!	BRICK_DE_KSQ_20_20_DM_365_498_248	= 10092	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_365_498_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_365_498_248"
+!!	BRICK_DE_KSQ_20_22_DM_150_498_248	= 10093	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_150_498_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_150_498_248"
+!!	BRICK_DE_KSQ_20_22_DM_175_498_248	= 10094	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_175_498_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_175_498_248"
+!!	BRICK_DE_KSQ_20_22_DM_200_498_248	= 10095	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_200_498_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_200_498_248"
+!!	BRICK_DE_KSQ_20_22_DM_240_498_248	= 10096	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_240_498_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_240_498_248"
+!!						
+!!	BRICK_DE_KSQ_12_18_DM_115_248_248	= 10097	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_115_248_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_115_248_248"
+!!	BRICK_DE_KSQ_12_18_DM_150_248_248	= 10098	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_150_248_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_150_248_248"
+!!	BRICK_DE_KSQ_12_18_DM_175_248_248	= 10099	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_175_248_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_175_248_248"
+!!	BRICK_DE_KSQ_12_18_DM_200_248_248	= 10100	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_200_248_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_200_248_248"
+!!	BRICK_DE_KSQ_12_18_DM_240_248_248	= 10101	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_240_248_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_240_248_248"
+!!	BRICK_DE_KSQ_12_18_DM_300_248_248	= 10102	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_300_248_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_300_248_248"
+!!	BRICK_DE_KSQ_12_18_DM_365_248_248	= 10103	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_365_248_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_365_248_248"
+!!	BRICK_DE_KSQ_16_18_DM_115_248_248	= 10104	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_115_248_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_115_248_248"
+!!	BRICK_DE_KSQ_16_18_DM_150_248_248	= 10105	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_150_248_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_150_248_248"
+!!	BRICK_DE_KSQ_16_18_DM_175_248_248	= 10106	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_175_248_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_175_248_248"
+!!	BRICK_DE_KSQ_16_18_DM_200_248_248	= 10107	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_200_248_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_200_248_248"
+!!	BRICK_DE_KSQ_16_18_DM_240_248_248	= 10108	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_240_248_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_240_248_248"
+!!	BRICK_DE_KSQ_16_18_DM_300_248_248	= 10109	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_300_248_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_300_248_248"
+!!	BRICK_DE_KSQ_16_18_DM_365_248_248	= 10110	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_365_248_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_365_248_248"
+!!	BRICK_DE_KSQ_20_18_DM_115_248_248	= 10111	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_115_248_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_115_248_248"
+!!	BRICK_DE_KSQ_20_18_DM_150_248_248	= 10112	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_150_248_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_150_248_248"
+!!	BRICK_DE_KSQ_20_18_DM_175_248_248	= 10113	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_175_248_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_175_248_248"
+!!	BRICK_DE_KSQ_20_18_DM_200_248_248	= 10114	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_200_248_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_200_248_248"
+!!	BRICK_DE_KSQ_20_18_DM_240_248_248	= 10115	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_240_248_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_240_248_248"
+!!	BRICK_DE_KSQ_20_18_DM_300_248_248	= 10116	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_300_248_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_300_248_248"
+!!	BRICK_DE_KSQ_20_18_DM_365_248_248	= 10117	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_365_248_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_365_248_248"
+!!	BRICK_DE_KSQ_20_20_DM_115_248_248	= 10118	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_115_248_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_115_248_248"
+!!	BRICK_DE_KSQ_20_20_DM_150_248_248	= 10119	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_150_248_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_150_248_248"
+!!	BRICK_DE_KSQ_20_20_DM_175_248_248	= 10120	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_175_248_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_175_248_248"
+!!	BRICK_DE_KSQ_20_20_DM_200_248_248	= 10121	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_200_248_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_200_248_248"
+!!	BRICK_DE_KSQ_20_20_DM_240_248_248	= 10122	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_240_248_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_240_248_248"
+!!	BRICK_DE_KSQ_20_20_DM_300_248_248	= 10123	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_300_248_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_300_248_248"
+!!	BRICK_DE_KSQ_20_20_DM_365_248_248	= 10124	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_365_248_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_365_248_248"
+!!	BRICK_DE_KSQ_20_22_DM_150_248_248	= 10125	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_150_248_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_150_248_248"
+!!	BRICK_DE_KSQ_20_22_DM_175_248_248	= 10126	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_175_248_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_175_248_248"
+!!	BRICK_DE_KSQ_20_22_DM_200_248_248	= 10127	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_200_248_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_200_248_248"
+!!	BRICK_DE_KSQ_20_22_DM_240_248_248	= 10128	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_240_248_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_240_248_248"
+!!						
+!!	BRICK_DE_KSQ_12_18_DM_115_123_248	= 10129	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_115_123_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_115_123_248"
+!!	BRICK_DE_KSQ_12_18_DM_150_123_248	= 10130	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_150_123_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_150_123_248"
+!!	BRICK_DE_KSQ_12_18_DM_175_123_248	= 10131	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_175_123_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_175_123_248"
+!!	BRICK_DE_KSQ_12_18_DM_200_123_248	= 10132	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_200_123_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_200_123_248"
+!!	BRICK_DE_KSQ_12_18_DM_240_123_248	= 10133	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_240_123_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_240_123_248"
+!!	BRICK_DE_KSQ_12_18_DM_300_123_248	= 10134	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_300_123_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_300_123_248"
+!!	BRICK_DE_KSQ_12_18_DM_365_123_248	= 10135	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_12_18_DM_365_123_248	:iProductTypeStr[i]= "DE_KSQ_12_18_DM_365_123_248"
+!!	BRICK_DE_KSQ_16_18_DM_115_123_248	= 10136	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_115_123_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_115_123_248"
+!!	BRICK_DE_KSQ_16_18_DM_150_123_248	= 10137	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_150_123_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_150_123_248"
+!!	BRICK_DE_KSQ_16_18_DM_175_123_248	= 10138	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_175_123_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_175_123_248"
+!!	BRICK_DE_KSQ_16_18_DM_200_123_248	= 10139	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_200_123_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_200_123_248"
+!!	BRICK_DE_KSQ_16_18_DM_240_123_248	= 10140	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_240_123_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_240_123_248"
+!!	BRICK_DE_KSQ_16_18_DM_300_123_248	= 10141	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_300_123_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_300_123_248"
+!!	BRICK_DE_KSQ_16_18_DM_365_123_248	= 10142	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_16_18_DM_365_123_248	:iProductTypeStr[i]= "DE_KSQ_16_18_DM_365_123_248"
+!!	BRICK_DE_KSQ_20_18_DM_115_123_248	= 10143	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_115_123_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_115_123_248"
+!!	BRICK_DE_KSQ_20_18_DM_150_123_248	= 10144	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_150_123_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_150_123_248"
+!!	BRICK_DE_KSQ_20_18_DM_175_123_248	= 10145	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_175_123_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_175_123_248"
+!!	BRICK_DE_KSQ_20_18_DM_200_123_248	= 10146	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_200_123_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_200_123_248"
+!!	BRICK_DE_KSQ_20_18_DM_240_123_248	= 10147	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_240_123_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_240_123_248"
+!!	BRICK_DE_KSQ_20_18_DM_300_123_248	= 10148	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_300_123_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_300_123_248"
+!!	BRICK_DE_KSQ_20_18_DM_365_123_248	= 10149	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_18_DM_365_123_248	:iProductTypeStr[i]= "DE_KSQ_20_18_DM_365_123_248"
+!!	BRICK_DE_KSQ_20_20_DM_115_123_248	= 10150	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_115_123_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_115_123_248"
+!!	BRICK_DE_KSQ_20_20_DM_150_123_248	= 10151	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_150_123_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_150_123_248"
+!!	BRICK_DE_KSQ_20_20_DM_175_123_248	= 10152	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_175_123_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_175_123_248"
+!!	BRICK_DE_KSQ_20_20_DM_200_123_248	= 10153	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_200_123_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_200_123_248"
+!!	BRICK_DE_KSQ_20_20_DM_240_123_248	= 10154	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_240_123_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_240_123_248"
+!!	BRICK_DE_KSQ_20_20_DM_300_123_248	= 10155	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_300_123_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_300_123_248"
+!!	BRICK_DE_KSQ_20_20_DM_365_123_248	= 10156	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_20_DM_365_123_248	:iProductTypeStr[i]= "DE_KSQ_20_20_DM_365_123_248"
+!!	BRICK_DE_KSQ_20_22_DM_150_123_248	= 10157	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_150_123_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_150_123_248"
+!!	BRICK_DE_KSQ_20_22_DM_175_123_248	= 10158	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_175_123_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_175_123_248"
+!!	BRICK_DE_KSQ_20_22_DM_200_123_248	= 10159	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_200_123_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_200_123_248"
+!!	BRICK_DE_KSQ_20_22_DM_240_123_248	= 10160	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQ_20_22_DM_240_123_248	:iProductTypeStr[i]= "DE_KSQ_20_22_DM_240_123_248"
+						
+						
+	BRICK_DE_KSQE_12_18_DM_115_498_498	= 10501	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_115_498_498	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_115_498_498"
+	BRICK_DE_KSQE_12_18_DM_150_498_498	= 10502	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_150_498_498	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_150_498_498"
+	BRICK_DE_KSQE_12_18_DM_175_498_498	= 10503	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_175_498_498	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_175_498_498"
+	BRICK_DE_KSQE_12_18_DM_240_498_498	= 10504	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_240_498_498	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_240_498_498"
+	BRICK_DE_KSQE_20_18_DM_115_498_498	= 10505	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_115_498_498	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_115_498_498"
+	BRICK_DE_KSQE_20_18_DM_150_498_498	= 10506	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_150_498_498	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_150_498_498"
+	BRICK_DE_KSQE_20_18_DM_175_498_498	= 10507	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_175_498_498	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_175_498_498"
+	BRICK_DE_KSQE_20_18_DM_240_498_498	= 10508	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_240_498_498	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_240_498_498"
+	BRICK_DE_KSQE_12_20_DM_150_498_498	= 10509	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_150_498_498	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_150_498_498"
+	BRICK_DE_KSQE_12_20_DM_175_498_498	= 10510	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_175_498_498	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_175_498_498"
+	BRICK_DE_KSQE_12_20_DM_200_498_498	= 10511	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_200_498_498	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_200_498_498"
+	BRICK_DE_KSQE_12_20_DM_240_498_498	= 10512	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_240_498_498	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_240_498_498"
+	BRICK_DE_KSQE_20_20_DM_150_498_498	= 10513	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_150_498_498	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_150_498_498"
+	BRICK_DE_KSQE_20_20_DM_175_498_498	= 10514	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_175_498_498	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_175_498_498"
+	BRICK_DE_KSQE_20_20_DM_200_498_498	= 10515	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_200_498_498	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_200_498_498"
+	BRICK_DE_KSQE_20_20_DM_240_498_498	= 10516	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_240_498_498	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_240_498_498"
+!!						
+!!	BRICK_DE_KSQE_12_18_DM_115_498_373	= 10517	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_115_498_373	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_115_498_373"
+!!	BRICK_DE_KSQE_12_18_DM_150_498_373	= 10518	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_150_498_373	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_150_498_373"
+!!	BRICK_DE_KSQE_12_18_DM_175_498_373	= 10519	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_175_498_373	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_175_498_373"
+!!	BRICK_DE_KSQE_12_18_DM_240_498_373	= 10520	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_240_498_373	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_240_498_373"
+!!	BRICK_DE_KSQE_20_18_DM_115_498_373	= 10521	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_115_498_373	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_115_498_373"
+!!	BRICK_DE_KSQE_20_18_DM_150_498_373	= 10522	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_150_498_373	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_150_498_373"
+!!	BRICK_DE_KSQE_20_18_DM_175_498_373	= 10523	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_175_498_373	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_175_498_373"
+!!	BRICK_DE_KSQE_20_18_DM_240_498_373	= 10524	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_240_498_373	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_240_498_373"
+!!	BRICK_DE_KSQE_12_20_DM_150_498_373	= 10525	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_150_498_373	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_150_498_373"
+!!	BRICK_DE_KSQE_12_20_DM_175_498_373	= 10526	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_175_498_373	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_175_498_373"
+!!	BRICK_DE_KSQE_12_20_DM_200_498_373	= 10527	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_200_498_373	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_200_498_373"
+!!	BRICK_DE_KSQE_12_20_DM_240_498_373	= 10528	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_240_498_373	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_240_498_373"
+!!	BRICK_DE_KSQE_20_20_DM_150_498_373	= 10529	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_150_498_373	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_150_498_373"
+!!	BRICK_DE_KSQE_20_20_DM_175_498_373	= 10530	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_175_498_373	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_175_498_373"
+!!	BRICK_DE_KSQE_20_20_DM_200_498_373	= 10531	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_200_498_373	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_200_498_373"
+!!	BRICK_DE_KSQE_20_20_DM_240_498_373	= 10532	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_240_498_373	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_240_498_373"
+!!						
+!!	BRICK_DE_KSQE_12_18_DM_115_498_248	= 10533	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_115_498_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_115_498_248"
+!!	BRICK_DE_KSQE_12_18_DM_150_498_248	= 10534	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_150_498_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_150_498_248"
+!!	BRICK_DE_KSQE_12_18_DM_175_498_248	= 10535	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_175_498_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_175_498_248"
+!!	BRICK_DE_KSQE_12_18_DM_240_498_248	= 10536	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_240_498_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_240_498_248"
+!!	BRICK_DE_KSQE_20_18_DM_115_498_248	= 10537	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_115_498_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_115_498_248"
+!!	BRICK_DE_KSQE_20_18_DM_150_498_248	= 10538	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_150_498_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_150_498_248"
+!!	BRICK_DE_KSQE_20_18_DM_175_498_248	= 10539	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_175_498_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_175_498_248"
+!!	BRICK_DE_KSQE_20_18_DM_240_498_248	= 10540	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_240_498_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_240_498_248"
+!!	BRICK_DE_KSQE_12_20_DM_150_498_248	= 10541	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_150_498_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_150_498_248"
+!!	BRICK_DE_KSQE_12_20_DM_175_498_248	= 10542	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_175_498_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_175_498_248"
+!!	BRICK_DE_KSQE_12_20_DM_200_498_248	= 10543	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_200_498_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_200_498_248"
+!!	BRICK_DE_KSQE_12_20_DM_240_498_248	= 10544	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_240_498_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_240_498_248"
+!!	BRICK_DE_KSQE_20_20_DM_150_498_248	= 10545	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_150_498_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_150_498_248"
+!!	BRICK_DE_KSQE_20_20_DM_175_498_248	= 10546	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_175_498_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_175_498_248"
+!!	BRICK_DE_KSQE_20_20_DM_200_498_248	= 10547	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_200_498_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_200_498_248"
+!!	BRICK_DE_KSQE_20_20_DM_240_498_248	= 10548	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_240_498_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_240_498_248"
+!!						
+!!	BRICK_DE_KSQE_12_18_DM_115_248_248	= 10549	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_115_248_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_115_248_248"
+!!	BRICK_DE_KSQE_12_18_DM_150_248_248	= 10550	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_150_248_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_150_248_248"
+!!	BRICK_DE_KSQE_12_18_DM_175_248_248	= 10551	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_175_248_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_175_248_248"
+!!	BRICK_DE_KSQE_12_18_DM_240_248_248	= 10552	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_240_248_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_240_248_248"
+!!	BRICK_DE_KSQE_20_18_DM_115_248_248	= 10553	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_115_248_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_115_248_248"
+!!	BRICK_DE_KSQE_20_18_DM_150_248_248	= 10554	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_150_248_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_150_248_248"
+!!	BRICK_DE_KSQE_20_18_DM_175_248_248	= 10555	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_175_248_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_175_248_248"
+!!	BRICK_DE_KSQE_20_18_DM_240_248_248	= 10556	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_240_248_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_240_248_248"
+!!	BRICK_DE_KSQE_12_20_DM_150_248_248	= 10557	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_150_248_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_150_248_248"
+!!	BRICK_DE_KSQE_12_20_DM_175_248_248	= 10558	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_175_248_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_175_248_248"
+!!	BRICK_DE_KSQE_12_20_DM_200_248_248	= 10559	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_200_248_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_200_248_248"
+!!	BRICK_DE_KSQE_12_20_DM_240_248_248	= 10560	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_240_248_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_240_248_248"
+!!	BRICK_DE_KSQE_20_20_DM_150_248_248	= 10561	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_150_248_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_150_248_248"
+!!	BRICK_DE_KSQE_20_20_DM_175_248_248	= 10562	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_175_248_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_175_248_248"
+!!	BRICK_DE_KSQE_20_20_DM_200_248_248	= 10563	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_200_248_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_200_248_248"
+!!	BRICK_DE_KSQE_20_20_DM_240_248_248	= 10564	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_240_248_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_240_248_248"
+!!						
+!!	BRICK_DE_KSQE_12_18_DM_115_123_248	= 10565	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_115_123_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_115_123_248"
+!!	BRICK_DE_KSQE_12_18_DM_150_123_248	= 10566	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_150_123_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_150_123_248"
+!!	BRICK_DE_KSQE_12_18_DM_175_123_248	= 10567	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_175_123_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_175_123_248"
+!!	BRICK_DE_KSQE_12_18_DM_240_123_248	= 10568	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_18_DM_240_123_248	:iProductTypeStr[i]= "DE_KSQE_12_18_DM_240_123_248"
+!!	BRICK_DE_KSQE_20_18_DM_115_123_248	= 10569	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_115_123_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_115_123_248"
+!!	BRICK_DE_KSQE_20_18_DM_150_123_248	= 10570	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_150_123_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_150_123_248"
+!!	BRICK_DE_KSQE_20_18_DM_175_123_248	= 10571	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_175_123_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_175_123_248"
+!!	BRICK_DE_KSQE_20_18_DM_240_123_248	= 10572	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_18_DM_240_123_248	:iProductTypeStr[i]= "DE_KSQE_20_18_DM_240_123_248"
+!!	BRICK_DE_KSQE_12_20_DM_150_123_248	= 10573	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_150_123_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_150_123_248"
+!!	BRICK_DE_KSQE_12_20_DM_175_123_248	= 10574	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_175_123_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_175_123_248"
+!!	BRICK_DE_KSQE_12_20_DM_200_123_248	= 10575	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_200_123_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_200_123_248"
+!!	BRICK_DE_KSQE_12_20_DM_240_123_248	= 10576	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_12_20_DM_240_123_248	:iProductTypeStr[i]= "DE_KSQE_12_20_DM_240_123_248"
+!!	BRICK_DE_KSQE_20_20_DM_150_123_248	= 10577	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_150_123_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_150_123_248"
+!!	BRICK_DE_KSQE_20_20_DM_175_123_248	= 10578	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_175_123_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_175_123_248"
+!!	BRICK_DE_KSQE_20_20_DM_200_123_248	= 10579	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_200_123_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_200_123_248"
+!!	BRICK_DE_KSQE_20_20_DM_240_123_248	= 10580	:i=i+1	:iProductTypeEnum[i]=	BRICK_DE_KSQE_20_20_DM_240_123_248	:iProductTypeStr[i]= "DE_KSQE_20_20_DM_240_123_248"
+
+! iBeamType
+	dim beamTypeEnum[], beamTypeStr[]
+	i = 0
+	BEAM_TYP_NONE		= 0		:i=i+1	:beamTypeEnum[i]=BEAM_TYP_NONE		:beamTypeStr[i]="NONE"
+	BEAM_TYP_CUSTOM		= 1		:i=i+1	:beamTypeEnum[i]=BEAM_TYP_CUSTOM	:beamTypeStr[i]="CUSTOM"
+	BEAM_TYP_NORMAL		= 2		:i=i+1	:beamTypeEnum[i]=BEAM_TYP_NORMAL	:beamTypeStr[i]="NORMAL"
+	BEAM_TYP_RANGE		= 3		:i=i+1	:beamTypeEnum[i]=BEAM_TYP_RANGE		:beamTypeStr[i]="RANGE"
+	BEAM_TYP_BLOCK		= 4		:i=i+1	:beamTypeEnum[i]=BEAM_TYP_BLOCK		:beamTypeStr[i]="BLOCK"
+
+! iBeamProduct
+	dim beamFamilyEnum[], beamFamilyStr[]
+	i = 0
+    BEAM_FAMILY_NONE            	= 0		:i=i+1	:beamFamilyEnum[i]=BEAM_FAMILY_NONE					:beamFamilyStr[i]="NONE"
+    BEAM_FAMILY_CUSTOM          	= 1		:i=i+1	:beamFamilyEnum[i]=BEAM_FAMILY_CUSTOM				:beamFamilyStr[i]="CUSTOM "
+    BEAM_FAMILY_INTERNAL        	= 10	:i=i+1	:beamFamilyEnum[i]=BEAM_FAMILY_INTERNAL				:beamFamilyStr[i]="INTERNAL"
+    BEAM_FAMILY_LOW             	= 20	:i=i+1	:beamFamilyEnum[i]=BEAM_FAMILY_LOW					:beamFamilyStr[i]="LOW"
+    BEAM_FAMILY_HIGH            	= 30	:i=i+1	:beamFamilyEnum[i]=BEAM_FAMILY_HIGH					:beamFamilyStr[i]="HIGH"
+
+	! DE
+    BEAM_FAMILY_DE_BEAM				= 100	:i=i+1	:beamFamilyEnum[i]=BEAM_FAMILY_DE_BEAM				:beamFamilyStr[i]="DE_BEAM"
+
+
+! iBeamProductType
+	dim beamEnum[], beamStr[]
+	i = 0
+	! BEAM_PRODUCT_NONE
+	BEAM_NONE		= 0	:i=i+1	:beamEnum[i]=BEAM_NONE		:beamStr[i]="NONE"
+	BEAM_CUSTOM		= 1	:i=i+1	:beamEnum[i]=BEAM_CUSTOM	:beamStr[i]="CUSTOM"
+
+	! DE
+!!	US_BEAM_U_05_AAC4	= 1000	:i=i+1	:beamEnum[i]=	US_BEAM_U_05_AAC4	:beamStr[i]= "US_BEAM_U_05_AAC4"
+
+! iWallType
+	dim wallTypeEnum[], wallTypeStr[]
+	i = 0
+	WALLTYPE_NONE			= 0	:i=i+1	:wallTypeEnum[i]=WALLTYPE_NONE				:wallTypeStr[i]="NONE"
+	WALLTYPE_INTERNAL_WALL	= 1	:i=i+1	:wallTypeEnum[i]=WALLTYPE_INTERNAL_WALL		:wallTypeStr[i]="INTERNAL_WALL"
+	WALLTYPE_EXTERNAL_WALL	= 2	:i=i+1	:wallTypeEnum[i]=WALLTYPE_EXTERNAL_WALL		:wallTypeStr[i]="EXTERNAL_WALL"
+	WALLTYPE_INSULATED_WALL	= 3	:i=i+1	:wallTypeEnum[i]=WALLTYPE_INSULATED_WALL	:wallTypeStr[i]="INSULATED_WALL"
+
+! iHasEndElem
+	dim hasEndElemEnum[], hasEndElemStr[]
+	i = 0
+	HAS_END_ELEM_NONE		= 0	:i=i+1	:hasEndElemEnum[i]=HAS_END_ELEM_NONE	:hasEndElemStr[i]="NONE"
+	HAS_END_ELEM_NORMAL		= 1	:i=i+1	:hasEndElemEnum[i]=HAS_END_ELEM_NORMAL	:hasEndElemStr[i]="NORMAL"
+	HAS_END_ELEM_SPECIAL	= 2	:i=i+1	:hasEndElemEnum[i]=HAS_END_ELEM_SPECIAL	:hasEndElemStr[i]="SPECIAL"
+
+! iVerticalGlue
+	dim verticalGlueEnum[], verticalGlueStr[]
+	i = 0
+    BEAM_GLUE_VERTICAL_NONE        = 0	:i=i+1	:verticalGlueEnum[i]=BEAM_GLUE_VERTICAL_NONE		:verticalGlueStr[i]="NONE"
+    BEAM_GLUE_VERTICAL_CUTTED_ROW  = 1	:i=i+1	:verticalGlueEnum[i]=BEAM_GLUE_VERTICAL_CUTTED_ROW	:verticalGlueStr[i]="CUTTED_ROW"
+    BEAM_GLUE_VERTICAL_ONE_METER   = 2	:i=i+1	:verticalGlueEnum[i]=BEAM_GLUE_VERTICAL_ONE_METER	:verticalGlueStr[i]="ONE_METER"
+
+
+! ==============================================================================
+!
+! Database
+!
+! ==============================================================================
+dim iEnums[], strEnums[]
+strEnum			= ""
+strEnums[1] 	= ""
+strValue		= ""
+
+
+!---------------------------------------------------------------------------
+! Bricks Family
+!---------------------------------------------------------------------------
+dim datProdLang[], datProdIdx[], datProdType[], datProdName[], datProdMinbrickSize[], datProdMinBrickOverlap[],
+	datProdDisableJoint[], datProdDisableFlipRow[], datProdDisableBrickDir[]
+
+datProdLang[1]				= 0
+datProdIdx[1]				= 0
+datProdType[1]				= 0
+datProdName[1]				= ""
+datProdMinbrickSize[1]		= 0.0
+datProdMinBrickOverlap[1]	= 0.0
+datProdDisableJoint[1]		= 0
+datProdDisableFlipRow[1]	= 0
+datProdDisableBrickDir[1]	= 0
+
+
+n		= 0
+iRow	= 1
+ch = open ("TEXT", "ks_quadro_brick_types", "separator='\t', mode=RO, library")
+	dim row[]
+	qq = input (ch, iRow, 1, row)
+	nData = vardim1(row)
+	while qq > 0 do
+		if vartype(row[1]) = 2 then
+			strEnum						= row[1]
+			iEnums						= langCodeEnum
+			strEnums					= langCodeStr
+			gosub "enumParser"
+			if enum > LANG_NONE then
+				n							= n + 1
+				datProdLang[n]				= enum
+				datProdDisableJoint[n]		= 0
+				datProdDisableFlipRow[n]	= 0
+				datProdDisableBrickDir[n]	= 1
+
+				strEnum						= row[2]
+				iEnums						= iProductEnum
+				strEnums					= iProductStr
+				gosub "enumParser"
+				datProdIdx[n]				= enum
+		
+				datProdType[n]				= BRICK_FAMILY_TYPE_BLOCK
+				if row[3] = "ELEMENT" then
+					datProdType[n] 				= BRICK_FAMILY_TYPE_ELEMENT
+					datProdDisableJoint[n]		= 1
+					datProdDisableFlipRow[n]	= 1
+				endif
+		
+				datProdName[n]				= row[4]
+				
+				strValue					= row[7]
+				gosub "stringToFloat"
+				datProdMinbrickSize[n] 		= floatValue
+				
+				strValue					= row[8]
+				gosub "stringToFloat"
+				datProdMinBrickOverlap[n]	= floatValue
+			endif
+		endif
+
+		iRow	= iRow + 1
+		qq		= input (ch, iRow, 1, row)
+	endwhile
+close ch
+
+parameters	datProdLang				= datProdLang,
+			datProdName				= datProdName,
+			datProdIdx				= datProdIdx,
+			datProdType				= datProdType,
+			datProdMinbrickSize		= datProdMinbrickSize,
+			datProdMinBrickOverlap	= datProdMinBrickOverlap,
+			datProdDisableJoint		= datProdDisableJoint,
+			datProdDisableFlipRow	= datProdDisableFlipRow,
+			datProdDisableBrickDir	= datProdDisableBrickDir
+
+
+
+!---------------------------------------------------------------------------
+! Brick data
+!---------------------------------------------------------------------------
+dim datBrickLang[], datBrickIdx[], datBrickFamily[], datBrickName[], datBrickObjectName[], datBrickArtNo[], datBrickDbNo[], datBrickEan[], datBrickCustomName[],
+	datBrickSize[][3],	!(1)thickness, (2)height, (3)width
+	datBrickNutProf[], datBrickWallType[], datBrickHasEndElem[], datBrickEndElemIdx[], datBrickWindowIdx[], datBrickHalfIdx[], datBrickHasProfile[], datBrickColumn[],
+	datBrickEndElemWith[], datBrickHalfElemHeight[], datBrickLambdaDry[], datBrickLambdaNormal[], datBrickCert[], datBrickNperMm2[], datBrickKgPerM3[], datBrickKgPerPc[], datBrickPcPerM2[], datBrickM2PerPc[],
+	datBrickGrossDensity[], datBrickShearStrength[], datBrickFk[], datBrickKNperm3[], datBrickMortarPerM2[], datBrickMortarPerM2Str[], datBrickWorkHperStructure[], datBrickWorkHperFull[],
+	datBrickFireResistance[], datBrickAcustic[], datBrickUvalue[]
+
+datBrickLang[1]				= 0
+datBrickIdx[1]				= 0
+datBrickFamily[1]			= 0
+datBrickName[1]				= ""
+datBrickObjectName[1]		= ""
+datBrickArtNo[1]			= ""
+datBrickDbNo[1]				= ""
+datBrickEan[1]				= ""
+datBrickCustomName[1]		= 0
+datBrickNutProf[1]			= ""
+datBrickSize[1][1]			= 0.0
+datBrickSize[1][2]			= 0.0
+datBrickSize[1][3]			= 0.0
+datBrickWallType[1]			= 0
+datBrickHasEndElem[1]		= 0
+datBrickEndElemIdx[1]		= 0
+datBrickWindowIdx[1]		= 0
+datBrickHalfIdx[1]			= 0
+datBrickHasProfile[1]		= 0
+datBrickColumn[1]			= 0
+datBrickEndElemWith[1]		= 0.0
+datBrickHalfElemHeight[1]	= 0.0
+datBrickLambdaDry[1]		= 0.0
+datBrickLambdaNormal[1]		= 0.0
+datBrickCert[1]				= ""
+datBrickNperMm2[1]			= 0.0
+datBrickKgPerM3[1]			= 0.0
+datBrickKgPerPc[1]			= 0.0
+datBrickPcPerM2[1]			= 0.0
+datBrickM2PerPc[1]			= 0.0
+datBrickGrossDensity[1]		= 0.0
+datBrickShearStrength[1]	= 0.0
+datBrickFk[1]				= 0.0
+datBrickKNperm3[1]			= 0.0
+datBrickMortarPerM2[1]		= 0.0
+datBrickMortarPerM2Str[1]	= ""
+datBrickWorkHperStructure[1]= 0.0
+datBrickWorkHperFull[1]		= 0.0
+datBrickFireResistance[1]	= ""
+datBrickAcustic[1]			= ""
+datBrickUvalue[1]			= 0.0
+
+n		= 0
+iRow	= 1
+ch = open ("TEXT", "ks_quadro_bricks", "separator='\t', mode=RO, library")
+	dim row[]
+	qq = input (ch, iRow, 1, row)
+	nData = vardim1(row)
+	while qq > 0 do
+		if vartype(row[1]) = 2 then
+			strEnum						= row[1]
+			iEnums						= langCodeEnum
+			strEnums					= langCodeStr
+			gosub "enumParser"
+			if enum > LANG_NONE then
+				n							= n + 1
+				datBrickLang[n]				= enum
+
+				strEnum						= row[2]
+				iEnums						= iProductTypeEnum
+				strEnums					= iProductTypeStr
+				gosub "enumParser"
+
+				datBrickIdx[n]				= enum
+
+				strEnum						= row[3]
+				iEnums						= iProductEnum
+				strEnums					= iProductStr
+				gosub "enumParser"
+				datBrickFamily[n]			= enum
+		
+				datBrickName[n]				= row[4]
+
+				if vartype(row[5]) = 2 then
+					datBrickArtNo[n] = row[5]
+				else
+					datBrickArtNo[n] = ""
+				endif
+
+				if vartype(row[6]) = 2 then
+					datBrickDbNo[n] = row[6]
+				else
+					datBrickDbNo[n] = ""
+				endif
+
+				if vartype(row[7]) = 2 then
+					datBrickEan[n] = row[7]
+				else
+					datBrickEan[n] = ""
+				endif
+
+				if vartype(row[9]) = 2 then
+					datBrickObjectName[n] = row[9]
+				else
+					datBrickObjectName[n] = ""
+				endif
+
+				i							= 11
+				strValue					= row[i]
+				gosub "stringToBool"
+				datBrickCustomName[n] 		= boolValue
+
+				i							= 12				
+				strValue					= row[i]		!Thk
+				gosub "stringToFloat"
+				datBrickSize[n][1]	 		= floatValue
+
+				i							= 13				
+				strValue					= row[i]		!Height
+				gosub "stringToFloat"
+				datBrickSize[n][2]			= floatValue
+
+				i							= 14
+				strValue					= row[i]		!Width
+				gosub "stringToFloat"
+				datBrickSize[n][3]			= floatValue
+		
+				i							= 15
+				if vartype(row[i]) = 2 then
+					datBrickNutProf[n] = row[i]
+				else
+					datBrickNutProf[n] = ""
+				endif
+
+				i							= 16
+				strEnum						= row[i]
+				iEnums						= wallTypeEnum
+				strEnums					= wallTypeStr
+				gosub "enumParser"
+				datBrickWallType[n]			= enum
+
+				i							= 17
+				strEnum						= row[i]
+				iEnums						= hasEndElemEnum
+				strEnums					= hasEndElemStr
+				gosub "enumParser"
+				datBrickHasEndElem[n]		= enum
+
+				i							= 18
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickEndElemWith[n] 		= floatValue
+				if datBrickEndElemWith[n] < EPS then
+					datBrickEndElemWith[n] = datBrickSize[n][3]
+				endif
+
+				i							= 19
+				datBrickEndElemIdx[n]		= BRICK_NONE
+				if vartype(row[i]) = 2 then
+					strEnum					= row[i]
+					iEnums					= iProductTypeEnum
+					strEnums				= iProductTypeStr
+					gosub "enumParser"
+					datBrickEndElemIdx[n]	= enum
+				endif
+
+				i							= 20
+				datBrickWindowIdx[n]		= BRICK_NONE
+				if vartype(row[i]) = 2 then
+					strEnum					= row[i]
+					iEnums					= iProductTypeEnum
+					strEnums				= iProductTypeStr
+					gosub "enumParser"
+					datBrickWindowIdx[n]	= enum
+				endif
+
+				i							= 21
+				datBrickHalfIdx[n]			= BRICK_NONE
+				if vartype(row[i]) = 2 then
+					strEnum					= row[i]
+					iEnums					= iProductTypeEnum
+					strEnums				= iProductTypeStr
+					gosub "enumParser"
+					datBrickHalfIdx[n]		= enum
+				endif
+
+				i							= 22
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickHalfElemHeight[n] 	= floatValue
+
+				i							= 23
+				strValue					= row[i]
+				gosub "stringToBool"
+				datBrickHasProfile[n] 		= boolValue
+
+				i							= 24
+				datBrickColumn[n]			= BRICK_NONE
+				if vartype(row[i]) = 2 then
+					strEnum					= row[i]
+					iEnums					= iProductTypeEnum
+					strEnums				= iProductTypeStr
+					gosub "enumParser"
+					datBrickColumn[n]		= enum
+				endif
+
+				i							= 25
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickLambdaDry[n] 		= floatValue
+
+				i							= 26
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickLambdaNormal[n] 	= floatValue
+
+				i							= 27
+				datBrickCert[n]				= ""
+				if vartype(row[i]) = 2 then
+					datBrickCert[n]			= row[i]
+				endif
+
+				i							= 28
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickNperMm2[n] 			= floatValue
+
+				i							= 29
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickKgPerM3[n] 			= floatValue
+
+				i							= 30
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickKgPerPc[n] 			= floatValue
+
+				i							= 31
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickPcPerM2[n] 			= floatValue
+
+				i							= 32
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickM2PerPc[n] 			= floatValue
+
+				i							= 33
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickGrossDensity[n] 	= floatValue
+
+				i							= 34
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickShearStrength[n] 	= floatValue
+
+				i							= 35
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickFk[n] 				= floatValue
+
+				i							= 36
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickKNperm3[n] 			= floatValue
+
+				i							= 37
+				datBrickMortarPerM2Str[n]	= ""
+				datBrickMortarPerM2[n]		= 0.0
+				if vartype(row[i]) = 2 then
+					datBrickMortarPerM2Str[n]  = row[i]
+				else
+					if row[i] > EPS then
+						datBrickMortarPerM2[n] = row[i]
+					endif
+				endif
+
+				i							= 38
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickWorkHperStructure[n]= floatValue
+
+				i							= 39
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickWorkHperFull[n]		= floatValue
+
+				i							= 40
+				datBrickFireResistance[n]	= ""
+				if vartype(row[i]) = 2 then
+					datBrickFireResistance[n] = row[i]
+				endif
+
+				i							= 41
+				datBrickAcustic[n]	= ""
+				if vartype(row[i]) = 2 then
+					datBrickAcustic[n] = row[i]
+				endif
+
+				i							= 42
+				strValue					= row[i]
+				gosub "stringToFloat"
+				datBrickUvalue[n] 			= floatValue
+			endif
+		endif
+		iRow	= iRow + 1
+		qq		= input (ch, iRow, 1, row)
+	endwhile
+close ch
+
+
+!---------------------------------------------------------------------------
+! Special Brick
+!---------------------------------------------------------------------------
+iRow	= 1
+ch = open ("TEXT", "ks_quadro_specials", "separator='\t', mode=RO, library")
+	dim row[]
+	qq = input (ch, iRow, 1, row)
+	nData = vardim1(row)
+	while qq > 0 do
+		if vartype(row[1]) = 2 then
+			strEnum						= row[1]
+			iEnums						= langCodeEnum
+			strEnums					= langCodeStr
+			gosub "enumParser"
+			if enum > LANG_NONE then
+				n							= n + 1
+				datBrickLang[n]				= enum	!LANG_NONE
+
+				strEnum						= row[2]
+				iEnums						= iProductTypeEnum
+				strEnums					= iProductTypeStr
+				gosub "enumParser"
+				datBrickIdx[n]				= enum
+		
+				datBrickName[n]				= row[3]
+
+				if vartype(row[4]) = 2 then
+					datBrickArtNo[n] = row[4]
+				else
+					datBrickArtNo[n] = ""
+				endif
+
+				if vartype(row[5]) = 2 then
+					datBrickDbNo[n] = row[5]
+				else
+					datBrickDbNo[n] = ""
+				endif
+
+				if vartype(row[6]) = 2 then
+					datBrickEan[n] = row[6]
+				else
+					datBrickEan[n] = ""
+				endif
+				
+				strValue					= row[9]		!Thk
+				gosub "stringToFloat"
+				datBrickSize[n][1]	 		= floatValue
+				
+				strValue					= row[10]		!Height
+				gosub "stringToFloat"
+				datBrickSize[n][2]			= floatValue
+
+				strValue					= row[11]		!Width
+				gosub "stringToFloat"
+				datBrickSize[n][3]			= floatValue
+
+				datBrickFamily[n]			= BRICK_FAMILY_NONE		!Urgent
+				datBrickNutProf[n]			= ""
+				datBrickObjectName[n]		= ""
+				datBrickWallType[n]			= WALLTYPE_NONE
+				datBrickHasEndElem[n]		= HAS_END_ELEM_NONE
+				datBrickEndElemIdx[n]		= BRICK_NONE
+				datBrickWindowIdx[n]		= BRICK_NONE
+				datBrickHalfIdx[n]			= BRICK_NONE
+				datBrickHasProfile[n]		= 0
+				datBrickColumn[n]			= BRICK_NONE
+				datBrickCustomName[n]		= 0
+				datBrickEndElemWith[n]		= 0.0
+				datBrickHalfElemHeight[n]	= 0.0
+				datBrickLambdaDry[n]		= 0.0
+				datBrickLambdaNormal[n]		= 0.0
+				datBrickCert[n]				= ""
+				datBrickNperMm2[n]			= 0.0
+				datBrickKgPerM3[n]			= 0.0
+				datBrickKgPerPc[n]			= 0.0
+				datBrickPcPerM2[n]			= 0.0
+				datBrickM2PerPc[n]			= 0.0
+				datBrickGrossDensity[n]		= 0.0
+				datBrickShearStrength[n]	= 0.0
+				datBrickFk[n]				= 0.0
+				datBrickKNperm3[n]			= 0.0
+				datBrickMortarPerM2[n]		= 0.0
+				datBrickMortarPerM2Str[n]	= ""
+				datBrickWorkHperStructure[n]= 0.0
+				datBrickWorkHperFull[n]		= 0.0
+				datBrickFireResistance[n]	= ""
+				datBrickAcustic[n]			= ""
+				datBrickUvalue[n]			= 0.0
+			endif
+		endif
+
+		iRow	= iRow + 1
+		qq		= input (ch, iRow, 1, row)
+	endwhile
+close ch
+
+parameters	datBrickLang				= datBrickLang,
+			datBrickIdx					= datBrickIdx,
+			datBrickFamily				= datBrickFamily,
+			datBrickName				= datBrickName,
+			datBrickObjectName			= datBrickObjectName,
+			datBrickArtNo				= datBrickArtNo,
+			datBrickDbNo				= datBrickDbNo,
+			datBrickEan					= datBrickEan,
+			datBrickCustomName			= datBrickCustomName,
+			datBrickNutProf				= datBrickNutProf,
+			datBrickWallType			= datBrickWallType,
+			datBrickHasEndElem			= datBrickHasEndElem,
+			datBrickEndElemIdx			= datBrickEndElemIdx,
+			datBrickWindowIdx			= datBrickWindowIdx,
+			datBrickHalfIdx				= datBrickHalfIdx,
+			datBrickHasProfile			= datBrickHasProfile,
+			datBrickColumn				= datBrickColumn,
+			datBrickSize				= datBrickSize,
+			datBrickEndElemWith			= datBrickEndElemWith,
+			datBrickHalfElemHeight		= datBrickHalfElemHeight,
+			datBrickLambdaDry			= datBrickLambdaDry,
+			datBrickLambdaNormal		= datBrickLambdaNormal,
+			datBrickCert				= datBrickCert,
+			datBrickNperMm2				= datBrickNperMm2,
+			datBrickKgPerM3				= datBrickKgPerM3,
+			datBrickKgPerPc				= datBrickKgPerPc,
+			datBrickPcPerM2				= datBrickPcPerM2,
+			datBrickM2PerPc				= datBrickM2PerPc,
+			datBrickGrossDensity		= datBrickGrossDensity,
+			datBrickShearStrength		= datBrickShearStrength,
+			datBrickFk					= datBrickFk,
+			datBrickKNperm3				= datBrickKNperm3,
+			datBrickMortarPerM2			= datBrickMortarPerM2,
+			datBrickMortarPerM2Str		= datBrickMortarPerM2Str,
+			datBrickWorkHperStructure	= datBrickWorkHperStructure,
+			datBrickWorkHperFull		= datBrickWorkHperFull,
+			datBrickFireResistance		= datBrickFireResistance,
+			datBrickAcustic				= datBrickAcustic,
+			datBrickUvalue				= datBrickUvalue
+
+
+!---------------------------------------------------------------------------
+! Beam Family
+!---------------------------------------------------------------------------
+dim datProdBeamLang[], datProdBeamIdx[], datProdBeamType[], datProdBeamName[], datProdBeamCuttable[], datProdBeamMulti[],
+	datProdBeamCert[], datProdBeamKgPerM3[], datProdBeamKnPerM3[], datProdBeamLambdaDry[], datProdBeamLambdaNormal[], datProdBeamGroutBottom[], datProdBeamGroutTop[], datProdBeamVerticalGlue[]
+
+
+datProdBeamLang[1]			= 0
+datProdBeamIdx[1]			= 0
+datProdBeamType[1]			= 0
+datProdBeamName[1]			= ""
+datProdBeamCuttable[1]		= 0
+datProdBeamMulti[1]			= 0
+datProdBeamCert[1]			= ""
+datProdBeamKgPerM3[1]		= 0.0
+datProdBeamKnPerM3[1]		= 0.0
+datProdBeamLambdaDry[1]		= 0.0
+datProdBeamLambdaNormal[1]	= 0.0
+datProdBeamGroutBottom[1]	= 0.0
+datProdBeamGroutTop[1]		= 0.0
+datProdBeamVerticalGlue[1]	= 0
+
+n		= 0
+iRow	= 1
+ch = open ("TEXT", "ks_quadro_beam_type", "separator='\t', mode=RO, library")
+	dim row[]
+	qq = input (ch, iRow, 1, row)
+	nData = vardim1(row)
+	while qq > 0 do
+		if vartype(row[1]) = 2 then
+			strEnum						= row[1]
+			iEnums						= langCodeEnum
+			strEnums					= langCodeStr
+			gosub "enumParser"
+			if enum > LANG_NONE then
+				n							= n + 1
+				datProdBeamLang[n]			= enum
+
+				strEnum						= row[2]
+				iEnums						= beamFamilyEnum
+				strEnums					= beamFamilyStr
+				gosub "enumParser"
+				datProdBeamIdx[n]			= enum
+
+				strEnum						= row[3]
+				iEnums						= beamTypeEnum
+				strEnums					= beamTypeStr
+				gosub "enumParser"
+				datProdBeamType[n]			= enum
+		
+				datProdBeamName[n]			= row[4]
+
+				strValue					= row[7]
+				gosub "stringToBool"
+				datProdBeamCuttable[n] 		= boolValue
+
+				strValue					= row[8]
+				gosub "stringToBool"
+				datProdBeamMulti[n] 		= boolValue
+
+				if vartype(row[9]) = 2 then
+					datProdBeamCert[n] = row[9]
+				else
+					datProdBeamCert[n] = ""
+				endif
+				
+				strValue					= row[10]
+				gosub "stringToFloat"
+				datProdBeamKgPerM3[n] 		= floatValue
+				
+				strValue					= row[11]
+				gosub "stringToFloat"
+				datProdBeamKnPerM3[n] 		= floatValue
+
+				strValue					= row[12]
+				gosub "stringToFloat"
+				datProdBeamLambdaDry[n] 	= floatValue
+
+				strValue					= row[13]
+				gosub "stringToFloat"
+				datProdBeamLambdaNormal[n] 	= floatValue
+
+				strValue					= row[14]
+				gosub "stringToFloat"
+				datProdBeamGroutBottom[n] 	= floatValue
+
+				strValue					= row[15]
+				gosub "stringToFloat"
+				datProdBeamGroutTop[n] 		= floatValue
+
+				strEnum						= row[16]
+				iEnums						= verticalGlueEnum
+				strEnums					= verticalGlueStr
+				gosub "enumParser"
+				datProdBeamVerticalGlue[n]	= enum
+			endif
+		endif
+
+		iRow	= iRow + 1
+		qq		= input (ch, iRow, 1, row)
+	endwhile
+close ch
+
+parameters	datProdBeamLang			= datProdBeamLang,
+			datProdBeamIdx			= datProdBeamIdx,
+			datProdBeamType			= datProdBeamType,
+			datProdBeamName			= datProdBeamName,
+			datProdBeamCuttable		= datProdBeamCuttable,
+			datProdBeamMulti		= datProdBeamMulti,
+			datProdBeamCert			= datProdBeamCert,
+			datProdBeamKgPerM3		= datProdBeamKgPerM3,
+			datProdBeamKnPerM3		= datProdBeamKnPerM3,
+			datProdBeamLambdaDry	= datProdBeamLambdaDry,
+			datProdBeamLambdaNormal	= datProdBeamLambdaNormal,
+			datProdBeamGroutBottom	= datProdBeamGroutBottom,
+			datProdBeamGroutTop		= datProdBeamGroutTop,
+			datProdBeamVerticalGlue	= datProdBeamVerticalGlue
+
+
+!---------------------------------------------------------------------------
+! Beam Type
+!---------------------------------------------------------------------------
+dim datBeamLang[], datBeamIdx[], datBeamFamily[], datBeamName[], datBeamArtNo[], datBeamDbNo[], datBeamEan[], datBeamCustom[]
+dim datBeamSize[][5]	!(1)thickness, (2)height, (3)width, (4)widthMin, (5)widthMax
+dim datBeamOverhang[], datBeamLoadCapacity[], datBeamKgPerPc[], datBeamMortarPerM[]
+
+
+datBeamLang[1]			= 0
+datBeamIdx[1]			= 0
+datBeamFamily[1]		= 0
+datBeamName[1]			= ""
+datBeamArtNo[1]			= ""
+datBeamDbNo[1]			= ""
+datBeamEan[1]			= ""
+datBeamCustom[1]		= 0
+datBeamSize[1][1]		= 0.0
+datBeamSize[1][2]		= 0.0
+datBeamSize[1][3]		= 0.0
+datBeamSize[1][4]		= 0.0
+datBeamSize[1][5]		= 0.0
+datBeamOverhang[1]		= 0.0
+datBeamLoadCapacity[1]	= 0.0
+datBeamKgPerPc[1]		= 0.0
+datBeamMortarPerM[1]	= 0.0
+
+
+n		= 0
+iRow	= 1
+ch = open ("TEXT", "ks_quadro_beams", "separator='\t', mode=RO, library")
+	dim row[]
+	qq = input (ch, iRow, 1, row)
+	nData = vardim1(row)
+	while qq > 0 do
+		if vartype(row[1]) = 2 then
+			strEnum						= row[1]
+			iEnums						= langCodeEnum
+			strEnums					= langCodeStr
+			gosub "enumParser"
+			if enum > LANG_NONE then
+				n							= n + 1
+				datBeamLang[n]				= enum
+
+				strEnum						= row[2]
+				iEnums						= beamEnum
+				strEnums					= beamStr
+				gosub "enumParser"
+				datBeamIdx[n]				= enum
+
+				strEnum						= row[3]
+				iEnums						= beamFamilyEnum
+				strEnums					= beamFamilyStr
+				gosub "enumParser"
+				datBeamFamily[n]			= enum
+		
+				datBeamName[n]				= row[4]
+
+				if vartype(row[5]) = 2 then
+					datBeamArtNo[n] = row[5]
+				else
+					datBeamArtNo[n] = ""
+				endif
+
+				if vartype(row[6]) = 2 then
+					datBeamDbNo[n] = row[6]
+				else
+					datBeamDbNo[n] = ""
+				endif
+
+				if vartype(row[7]) = 2 then
+					datBeamEan[n] = row[7]
+				else
+					datBeamEan[n] = ""
+				endif
+
+				strValue					= row[11]
+				gosub "stringToBool"
+				datBeamCustom[n] 			= boolValue
+
+				strValue					= row[12]		!Thk
+				gosub "stringToFloat"
+				datBeamSize[n][1]			= floatValue
+
+				strValue					= row[13]		!Height
+				gosub "stringToFloat"
+				datBeamSize[n][2]			= floatValue
+
+				strValue					= row[14]		!Length
+				gosub "stringToFloat"
+				datBeamSize[n][3]			= floatValue
+
+				strValue					= row[15]		!MinLength
+				gosub "stringToFloat"
+				datBeamSize[n][4]			= floatValue
+
+				strValue					= row[16]		!MaxLength
+				gosub "stringToFloat"
+				datBeamSize[n][5]			= floatValue
+
+				strValue					= row[17]
+				gosub "stringToFloat"
+				datBeamOverhang[n]			= floatValue
+
+				strValue					= row[18]
+				gosub "stringToFloat"
+				datBeamLoadCapacity[n]		= floatValue
+
+				strValue					= row[19]
+				gosub "stringToFloat"
+				datBeamKgPerPc[n]			= floatValue
+
+				strValue					= row[20]
+				gosub "stringToFloat"
+				datBeamMortarPerM[n]		= floatValue
+			endif
+		endif
+
+		iRow	= iRow + 1
+		qq		= input (ch, iRow, 1, row)
+	endwhile
+close ch
+
+parameters	datBeamLang			= datBeamLang,
+			datBeamIdx			= datBeamIdx,
+			datBeamFamily		= datBeamFamily,
+			datBeamName			= datBeamName,
+			datBeamArtNo		= datBeamArtNo,
+			datBeamDbNo			= datBeamDbNo,
+			datBeamEan			= datBeamEan,
+			datBeamCustom		= datBeamCustom,
+			datBeamSize			= datBeamSize,
+			datBeamOverhang		= datBeamOverhang,
+			datBeamLoadCapacity	= datBeamLoadCapacity,
+			datBeamKgPerPc		= datBeamKgPerPc,
+			datBeamMortarPerM	= datBeamMortarPerM
+
+
+! ==============================================================================
+!
+! End of Master Script
+!
+! ==============================================================================
+
+GOTO "endMasterSript"
+
+
+! ==============================================================================
+!
+! Subrutines
+!
+! ==============================================================================
+
+! ------------------------------------------------------------------------------
+"enumParser":
+! input:
+! 	strEnum
+! 	iEnums[], strEnums[]
+! outPut:
+!	enum
+! ------------------------------------------------------------------------------
+	bFound	= 0
+	enum	= 0
+
+	if vartype(strEnum) = 2 then
+		nEnum = vardim1(strEnums)
+		for w = 1 to nEnum
+			if strEnums[w] = strEnum then
+				enum	= iEnums[w]
+				bFound	= 1
+				w		= nEnum 
+			endif
+		next w
+	
+		if not(bFound) then
+			if strstr(strEnum, "#") <> 1 then
+				print "Error: Not found enum: ", strEnum
+			endif
+		endif
+	else
+		print "Error: Bad enum: ", strEnum
+	endif
+return
+
+! ------------------------------------------------------------------------------
+"stringToBool":
+! input:
+!	strValue
+! output:
+!	boolValue
+! ------------------------------------------------------------------------------
+	boolValue = 0
+	if vartype(strValue) = 2 then
+		if strValue = "True" then
+			boolValue = 1
+			return
+		endif
+		if strValue = "true" then
+			boolValue = 1
+			return
+		endif
+		if strValue = "Yes" then
+			boolValue = 1
+			return
+		endif
+		if strValue = "yes" then
+			boolValue = 1
+			return
+		endif
+	else
+		boolValue = min(max(0, strValue), 1)
+	endif
+return
+
+! ------------------------------------------------------------------------------
+"stringToFloat":
+! input:
+!	strValue
+! output:
+!	floatValue
+! ------------------------------------------------------------------------------
+	floatValue = 0.0
+	if vartype(strValue) = 2 then
+		dotPos = strstr(strValue, ".")
+		if dotpos > 0 then
+			strL	= strlen(strValue)
+			fracPos	= strL - (dotpos + 1)
+			qq = split(strValue, "%n.%n", intPart, dotStr, fracPart)
+			
+			nulInt = 1
+			if fracPos = 1 then nulInt = 10
+			if fracPos = 2 then nulInt = 100
+			if fracPos = 3 then nulInt = 1000
+			if fracPos = 4 then nulInt = 10000
+			if fracPos = 5 then nulInt = 100000
+			if fracPos = 6 then nulInt = 1000000
+			
+			floatValue = intPart + fracPart / nulInt
+		else
+			qq = split(strValue, "%n", intPart)
+			floatValue = intPart
+		endif
+	else
+		floatValue = strValue
+	endif
+return
+
+
+! ==============================================================================
+!
+! End of Master Script
+!
+! ==============================================================================
+
+"endMasterSript":
+
+]]>
+</Script_1D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_PR SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_PR>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_UI SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_UI>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_VL SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_VL>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Comment SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Comment>
+
+<ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
+	<ParamSectHeader>
+		<Version>22</Version>
+		<AutoHotspots>no</AutoHotspots>
+		<StatBits>
+			<STBit_FixSize/>
+		</StatBits>
+		<WDLeftFrame>0</WDLeftFrame>
+		<WDRightFrame>0</WDRightFrame>
+		<WDTopFrame>0</WDTopFrame>
+		<WDBotFrame>0</WDBotFrame>
+		<LayFlags>65535</LayFlags>
+		<WDMirrorThickness>0</WDMirrorThickness>
+		<WDWallInset>0</WDWallInset>
+		<SymbolColor>0</SymbolColor>
+	</ParamSectHeader>
+	<Parameters>
+		<Length Name="A">
+			<Description><![CDATA["Length"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>1</Value>
+		</Length>
+		<Length Name="B">
+			<Description><![CDATA["Thickness"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>1</Value>
+		</Length>
+		<Length Name="ZZYZX">
+			<Description><![CDATA["Height"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>1</Value>
+		</Length>
+		<Boolean Name="AC_show2DHotspotsIn3D">
+			<Description><![CDATA["Show 2D Hotspots in 3D"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0</Value>
+		</Boolean>
+		<Length Name="ac_bottomlevel">
+			<Description><![CDATA["Bottom Level"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0</Value>
+		</Length>
+		<Length Name="ac_toplevel">
+			<Description><![CDATA["Top Level"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>2.7</Value>
+		</Length>
+		<Separator Name="data_family">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+		</Separator>
+		<Integer Name="datProdLang">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="9" SecondDimension="0">
+				<AVal Row="1">1</AVal>
+				<AVal Row="2">1</AVal>
+				<AVal Row="3">1</AVal>
+				<AVal Row="4">1</AVal>
+				<AVal Row="5">1</AVal>
+				<AVal Row="6">1</AVal>
+				<AVal Row="7">1</AVal>
+				<AVal Row="8">1</AVal>
+				<AVal Row="9">1</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datProdIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="9" SecondDimension="0">
+				<AVal Row="1">10000</AVal>
+				<AVal Row="2">10100</AVal>
+				<AVal Row="3">10200</AVal>
+				<AVal Row="4">10300</AVal>
+				<AVal Row="5">10400</AVal>
+				<AVal Row="6">10500</AVal>
+				<AVal Row="7">10600</AVal>
+				<AVal Row="8">10700</AVal>
+				<AVal Row="9">10800</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datProdType">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="9" SecondDimension="0">
+				<AVal Row="1">10</AVal>
+				<AVal Row="2">10</AVal>
+				<AVal Row="3">10</AVal>
+				<AVal Row="4">10</AVal>
+				<AVal Row="5">10</AVal>
+				<AVal Row="6">10</AVal>
+				<AVal Row="7">10</AVal>
+				<AVal Row="8">10</AVal>
+				<AVal Row="9">10</AVal>
+			</ArrayValues>
+		</Integer>
+		<String Name="datProdName">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="9" SecondDimension="0">
+				<AVal Row="1"><![CDATA["KS Quadro 12-1,8-DM"]]></AVal>
+				<AVal Row="2"><![CDATA["KS Quadro 16-1,8-DM"]]></AVal>
+				<AVal Row="3"><![CDATA["KS Quadro 20-1,8-DM"]]></AVal>
+				<AVal Row="4"><![CDATA["KS Quadro 20-2,0-DM"]]></AVal>
+				<AVal Row="5"><![CDATA["KS Quadro 20-2,2-DM"]]></AVal>
+				<AVal Row="6"><![CDATA["KS Quadro E 12-1,8-DM"]]></AVal>
+				<AVal Row="7"><![CDATA["KS Quadro E 20-1,8-DM"]]></AVal>
+				<AVal Row="8"><![CDATA["KS Quadro E 12-2,0-DM"]]></AVal>
+				<AVal Row="9"><![CDATA["KS Quadro E 20-2,0-DM"]]></AVal>
+			</ArrayValues>
+		</String>
+		<Length Name="datProdMinbrickSize">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="9" SecondDimension="0">
+				<AVal Row="1">0.16</AVal>
+				<AVal Row="2">0.16</AVal>
+				<AVal Row="3">0.16</AVal>
+				<AVal Row="4">0.16</AVal>
+				<AVal Row="5">0.16</AVal>
+				<AVal Row="6">0.16</AVal>
+				<AVal Row="7">0.16</AVal>
+				<AVal Row="8">0.16</AVal>
+				<AVal Row="9">0.16</AVal>
+			</ArrayValues>
+		</Length>
+		<Length Name="datProdMinBrickOverlap">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="9" SecondDimension="0">
+				<AVal Row="1">0.1</AVal>
+				<AVal Row="2">0.1</AVal>
+				<AVal Row="3">0.1</AVal>
+				<AVal Row="4">0.1</AVal>
+				<AVal Row="5">0.1</AVal>
+				<AVal Row="6">0.1</AVal>
+				<AVal Row="7">0.1</AVal>
+				<AVal Row="8">0.1</AVal>
+				<AVal Row="9">0.1</AVal>
+			</ArrayValues>
+		</Length>
+		<Boolean Name="datProdDisableJoint">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="9" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+			</ArrayValues>
+		</Boolean>
+		<Boolean Name="datProdDisableFlipRow">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="9" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+			</ArrayValues>
+		</Boolean>
+		<Boolean Name="datProdDisableBrickDir">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="9" SecondDimension="0">
+				<AVal Row="1">1</AVal>
+				<AVal Row="2">1</AVal>
+				<AVal Row="3">1</AVal>
+				<AVal Row="4">1</AVal>
+				<AVal Row="5">1</AVal>
+				<AVal Row="6">1</AVal>
+				<AVal Row="7">1</AVal>
+				<AVal Row="8">1</AVal>
+				<AVal Row="9">1</AVal>
+			</ArrayValues>
+		</Boolean>
+		<Separator Name="data_bricks">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+		</Separator>
+		<Integer Name="datBrickLang">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">1</AVal>
+				<AVal Row="2">1</AVal>
+				<AVal Row="3">1</AVal>
+				<AVal Row="4">1</AVal>
+				<AVal Row="5">1</AVal>
+				<AVal Row="6">1</AVal>
+				<AVal Row="7">1</AVal>
+				<AVal Row="8">1</AVal>
+				<AVal Row="9">1</AVal>
+				<AVal Row="10">1</AVal>
+				<AVal Row="11">1</AVal>
+				<AVal Row="12">1</AVal>
+				<AVal Row="13">1</AVal>
+				<AVal Row="14">1</AVal>
+				<AVal Row="15">1</AVal>
+				<AVal Row="16">1</AVal>
+				<AVal Row="17">1</AVal>
+				<AVal Row="18">1</AVal>
+				<AVal Row="19">1</AVal>
+				<AVal Row="20">1</AVal>
+				<AVal Row="21">1</AVal>
+				<AVal Row="22">1</AVal>
+				<AVal Row="23">1</AVal>
+				<AVal Row="24">1</AVal>
+				<AVal Row="25">1</AVal>
+				<AVal Row="26">1</AVal>
+				<AVal Row="27">1</AVal>
+				<AVal Row="28">1</AVal>
+				<AVal Row="29">1</AVal>
+				<AVal Row="30">1</AVal>
+				<AVal Row="31">1</AVal>
+				<AVal Row="32">1</AVal>
+				<AVal Row="33">1</AVal>
+				<AVal Row="34">1</AVal>
+				<AVal Row="35">1</AVal>
+				<AVal Row="36">1</AVal>
+				<AVal Row="37">1</AVal>
+				<AVal Row="38">1</AVal>
+				<AVal Row="39">1</AVal>
+				<AVal Row="40">1</AVal>
+				<AVal Row="41">1</AVal>
+				<AVal Row="42">1</AVal>
+				<AVal Row="43">1</AVal>
+				<AVal Row="44">1</AVal>
+				<AVal Row="45">1</AVal>
+				<AVal Row="46">1</AVal>
+				<AVal Row="47">1</AVal>
+				<AVal Row="48">1</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datBrickIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">10001</AVal>
+				<AVal Row="2">10002</AVal>
+				<AVal Row="3">10003</AVal>
+				<AVal Row="4">10004</AVal>
+				<AVal Row="5">10005</AVal>
+				<AVal Row="6">10006</AVal>
+				<AVal Row="7">10007</AVal>
+				<AVal Row="8">10008</AVal>
+				<AVal Row="9">10009</AVal>
+				<AVal Row="10">10010</AVal>
+				<AVal Row="11">10011</AVal>
+				<AVal Row="12">10012</AVal>
+				<AVal Row="13">10013</AVal>
+				<AVal Row="14">10014</AVal>
+				<AVal Row="15">10015</AVal>
+				<AVal Row="16">10016</AVal>
+				<AVal Row="17">10017</AVal>
+				<AVal Row="18">10018</AVal>
+				<AVal Row="19">10019</AVal>
+				<AVal Row="20">10020</AVal>
+				<AVal Row="21">10021</AVal>
+				<AVal Row="22">10022</AVal>
+				<AVal Row="23">10023</AVal>
+				<AVal Row="24">10024</AVal>
+				<AVal Row="25">10025</AVal>
+				<AVal Row="26">10026</AVal>
+				<AVal Row="27">10027</AVal>
+				<AVal Row="28">10028</AVal>
+				<AVal Row="29">10029</AVal>
+				<AVal Row="30">10030</AVal>
+				<AVal Row="31">10031</AVal>
+				<AVal Row="32">10032</AVal>
+				<AVal Row="33">10501</AVal>
+				<AVal Row="34">10502</AVal>
+				<AVal Row="35">10503</AVal>
+				<AVal Row="36">10504</AVal>
+				<AVal Row="37">10505</AVal>
+				<AVal Row="38">10506</AVal>
+				<AVal Row="39">10507</AVal>
+				<AVal Row="40">10508</AVal>
+				<AVal Row="41">10509</AVal>
+				<AVal Row="42">10510</AVal>
+				<AVal Row="43">10511</AVal>
+				<AVal Row="44">10512</AVal>
+				<AVal Row="45">10513</AVal>
+				<AVal Row="46">10514</AVal>
+				<AVal Row="47">10515</AVal>
+				<AVal Row="48">10516</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datBrickFamily">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">10000</AVal>
+				<AVal Row="2">10000</AVal>
+				<AVal Row="3">10000</AVal>
+				<AVal Row="4">10000</AVal>
+				<AVal Row="5">10000</AVal>
+				<AVal Row="6">10000</AVal>
+				<AVal Row="7">10000</AVal>
+				<AVal Row="8">10100</AVal>
+				<AVal Row="9">10100</AVal>
+				<AVal Row="10">10100</AVal>
+				<AVal Row="11">10100</AVal>
+				<AVal Row="12">10100</AVal>
+				<AVal Row="13">10100</AVal>
+				<AVal Row="14">10100</AVal>
+				<AVal Row="15">10200</AVal>
+				<AVal Row="16">10200</AVal>
+				<AVal Row="17">10200</AVal>
+				<AVal Row="18">10200</AVal>
+				<AVal Row="19">10200</AVal>
+				<AVal Row="20">10200</AVal>
+				<AVal Row="21">10200</AVal>
+				<AVal Row="22">10300</AVal>
+				<AVal Row="23">10300</AVal>
+				<AVal Row="24">10300</AVal>
+				<AVal Row="25">10300</AVal>
+				<AVal Row="26">10300</AVal>
+				<AVal Row="27">10300</AVal>
+				<AVal Row="28">10300</AVal>
+				<AVal Row="29">10400</AVal>
+				<AVal Row="30">10400</AVal>
+				<AVal Row="31">10400</AVal>
+				<AVal Row="32">10400</AVal>
+				<AVal Row="33">10500</AVal>
+				<AVal Row="34">10500</AVal>
+				<AVal Row="35">10500</AVal>
+				<AVal Row="36">10500</AVal>
+				<AVal Row="37">10600</AVal>
+				<AVal Row="38">10600</AVal>
+				<AVal Row="39">10600</AVal>
+				<AVal Row="40">10600</AVal>
+				<AVal Row="41">10700</AVal>
+				<AVal Row="42">10700</AVal>
+				<AVal Row="43">10700</AVal>
+				<AVal Row="44">10700</AVal>
+				<AVal Row="45">10800</AVal>
+				<AVal Row="46">10800</AVal>
+				<AVal Row="47">10800</AVal>
+				<AVal Row="48">10800</AVal>
+			</ArrayValues>
+		</Integer>
+		<String Name="datBrickName">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA["KS-Quadro 12-1,8-DM (115x498x498)"]]></AVal>
+				<AVal Row="2"><![CDATA["KS-Quadro 12-1,8-DM (150x498x498)"]]></AVal>
+				<AVal Row="3"><![CDATA["KS-Quadro 12-1,8-DM (175x498x498)"]]></AVal>
+				<AVal Row="4"><![CDATA["KS-Quadro 12-1,8-DM (200x498x498)"]]></AVal>
+				<AVal Row="5"><![CDATA["KS-Quadro 12-1,8-DM (240x498x498)"]]></AVal>
+				<AVal Row="6"><![CDATA["KS-Quadro 12-1,8-DM (300x498x498)"]]></AVal>
+				<AVal Row="7"><![CDATA["KS-Quadro 12-1,8-DM (365x498x498)"]]></AVal>
+				<AVal Row="8"><![CDATA["KS-Quadro 16-1,8-DM (115x498x498)"]]></AVal>
+				<AVal Row="9"><![CDATA["KS-Quadro 16-1,8-DM (150x498x498)"]]></AVal>
+				<AVal Row="10"><![CDATA["KS-Quadro 16-1,8-DM (175x498x498)"]]></AVal>
+				<AVal Row="11"><![CDATA["KS-Quadro 16-1,8-DM (200x498x498)"]]></AVal>
+				<AVal Row="12"><![CDATA["KS-Quadro 16-1,8-DM (240x498x498)"]]></AVal>
+				<AVal Row="13"><![CDATA["KS-Quadro 16-1,8-DM (300x498x498)"]]></AVal>
+				<AVal Row="14"><![CDATA["KS-Quadro 16-1,8-DM (365x498x498)"]]></AVal>
+				<AVal Row="15"><![CDATA["KS-Quadro 20-1,8-DM (115x498x498)"]]></AVal>
+				<AVal Row="16"><![CDATA["KS-Quadro 20-1,8-DM (150x498x498)"]]></AVal>
+				<AVal Row="17"><![CDATA["KS-Quadro 20-1,8-DM (175x498x498)"]]></AVal>
+				<AVal Row="18"><![CDATA["KS-Quadro 20-1,8-DM (200x498x498)"]]></AVal>
+				<AVal Row="19"><![CDATA["KS-Quadro 20-1,8-DM (240x498x498)"]]></AVal>
+				<AVal Row="20"><![CDATA["KS-Quadro 20-1,8-DM (300x498x498)"]]></AVal>
+				<AVal Row="21"><![CDATA["KS-Quadro 20-1,8-DM (365x498x498)"]]></AVal>
+				<AVal Row="22"><![CDATA["KS-Quadro 20-2-DM (115x498x498)"]]></AVal>
+				<AVal Row="23"><![CDATA["KS-Quadro 20-2-DM (150x498x498)"]]></AVal>
+				<AVal Row="24"><![CDATA["KS-Quadro 20-2-DM (175x498x498)"]]></AVal>
+				<AVal Row="25"><![CDATA["KS-Quadro 20-2-DM (200x498x498)"]]></AVal>
+				<AVal Row="26"><![CDATA["KS-Quadro 20-2-DM (240x498x498)"]]></AVal>
+				<AVal Row="27"><![CDATA["KS-Quadro 20-2-DM (300x498x498)"]]></AVal>
+				<AVal Row="28"><![CDATA["KS-Quadro 20-2-DM (365x498x498)"]]></AVal>
+				<AVal Row="29"><![CDATA["KS-Quadro 20-2,2-DM (150x498x498)"]]></AVal>
+				<AVal Row="30"><![CDATA["KS-Quadro 20-2,2-DM (175x498x498)"]]></AVal>
+				<AVal Row="31"><![CDATA["KS-Quadro 20-2,2-DM (200x498x498)"]]></AVal>
+				<AVal Row="32"><![CDATA["KS-Quadro 20-2,2-DM (240x498x498)"]]></AVal>
+				<AVal Row="33"><![CDATA["KS-Quadro E 12-1,8-DM (115x498x498)"]]></AVal>
+				<AVal Row="34"><![CDATA["KS-Quadro E 12-1,8-DM (150x498x498)"]]></AVal>
+				<AVal Row="35"><![CDATA["KS-Quadro E 12-1,8-DM (175x498x498)"]]></AVal>
+				<AVal Row="36"><![CDATA["KS-Quadro E 12-1,8-DM (240x498x498)"]]></AVal>
+				<AVal Row="37"><![CDATA["KS-Quadro E 20-1,8-DM (115x498x498)"]]></AVal>
+				<AVal Row="38"><![CDATA["KS-Quadro E 20-1,8-DM (150x498x498)"]]></AVal>
+				<AVal Row="39"><![CDATA["KS-Quadro E 20-1,8-DM (175x498x498)"]]></AVal>
+				<AVal Row="40"><![CDATA["KS-Quadro E 20-1,8-DM (240x498x498)"]]></AVal>
+				<AVal Row="41"><![CDATA["KS-Quadro E 12-2-DM (150x498x498)"]]></AVal>
+				<AVal Row="42"><![CDATA["KS-Quadro E 12-2-DM (175x498x498)"]]></AVal>
+				<AVal Row="43"><![CDATA["KS-Quadro E 12-2-DM (200x498x498)"]]></AVal>
+				<AVal Row="44"><![CDATA["KS-Quadro E 12-2-DM (240x498x498)"]]></AVal>
+				<AVal Row="45"><![CDATA["KS-Quadro E 20-2-DM (150x498x498)"]]></AVal>
+				<AVal Row="46"><![CDATA["KS-Quadro E 20-2-DM (175x498x498)"]]></AVal>
+				<AVal Row="47"><![CDATA["KS-Quadro E 20-2-DM (200x498x498)"]]></AVal>
+				<AVal Row="48"><![CDATA["KS-Quadro E 20-2-DM (240x498x498)"]]></AVal>
+			</ArrayValues>
+		</String>
+		<String Name="datBrickObjectName">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA["KS-Quadro12-18-DM-115-498-498"]]></AVal>
+				<AVal Row="2"><![CDATA["KS-Quadro12-18-DM-150-498-498"]]></AVal>
+				<AVal Row="3"><![CDATA["KS-Quadro12-18-DM-175-498-498"]]></AVal>
+				<AVal Row="4"><![CDATA["KS-Quadro12-18-DM-200-498-498"]]></AVal>
+				<AVal Row="5"><![CDATA["KS-Quadro12-18-DM-240-498-498"]]></AVal>
+				<AVal Row="6"><![CDATA["KS-Quadro12-18-DM-300-498-498"]]></AVal>
+				<AVal Row="7"><![CDATA["KS-Quadro12-18-DM-365-498-498"]]></AVal>
+				<AVal Row="8"><![CDATA["KS-Quadro16-18-DM-115-498-498"]]></AVal>
+				<AVal Row="9"><![CDATA["KS-Quadro16-18-DM-150-498-498"]]></AVal>
+				<AVal Row="10"><![CDATA["KS-Quadro16-18-DM-175-498-498"]]></AVal>
+				<AVal Row="11"><![CDATA["KS-Quadro16-18-DM-200-498-498"]]></AVal>
+				<AVal Row="12"><![CDATA["KS-Quadro16-18-DM-240-498-498"]]></AVal>
+				<AVal Row="13"><![CDATA["KS-Quadro16-18-DM-300-498-498"]]></AVal>
+				<AVal Row="14"><![CDATA["KS-Quadro16-18-DM-365-498-498"]]></AVal>
+				<AVal Row="15"><![CDATA["KS-Quadro20-18-DM-115-498-498"]]></AVal>
+				<AVal Row="16"><![CDATA["KS-Quadro20-18-DM-150-498-498"]]></AVal>
+				<AVal Row="17"><![CDATA["KS-Quadro20-18-DM-175-498-498"]]></AVal>
+				<AVal Row="18"><![CDATA["KS-Quadro20-18-DM-200-498-498"]]></AVal>
+				<AVal Row="19"><![CDATA["KS-Quadro20-18-DM-240-498-498"]]></AVal>
+				<AVal Row="20"><![CDATA["KS-Quadro20-18-DM-300-498-498"]]></AVal>
+				<AVal Row="21"><![CDATA["KS-Quadro20-18-DM-365-498-498"]]></AVal>
+				<AVal Row="22"><![CDATA["KS-Quadro20-20-DM-115-498-498"]]></AVal>
+				<AVal Row="23"><![CDATA["KS-Quadro20-20-DM-150-498-498"]]></AVal>
+				<AVal Row="24"><![CDATA["KS-Quadro20-20-DM-175-498-498"]]></AVal>
+				<AVal Row="25"><![CDATA["KS-Quadro20-20-DM-200-498-498"]]></AVal>
+				<AVal Row="26"><![CDATA["KS-Quadro20-20-DM-240-498-498"]]></AVal>
+				<AVal Row="27"><![CDATA["KS-Quadro20-20-DM-300-498-498"]]></AVal>
+				<AVal Row="28"><![CDATA["KS-Quadro20-20-DM-365-498-498"]]></AVal>
+				<AVal Row="29"><![CDATA["KS-Quadro20-22-DM-150-498-498"]]></AVal>
+				<AVal Row="30"><![CDATA["KS-Quadro20-22-DM-175-498-498"]]></AVal>
+				<AVal Row="31"><![CDATA["KS-Quadro20-22-DM-200-498-498"]]></AVal>
+				<AVal Row="32"><![CDATA["KS-Quadro20-22-DM-240-498-498"]]></AVal>
+				<AVal Row="33"><![CDATA["KS-Quadro12-18-DM-115-498-498"]]></AVal>
+				<AVal Row="34"><![CDATA["KS-Quadro12-18-DM-150-498-498"]]></AVal>
+				<AVal Row="35"><![CDATA["KS-Quadro12-18-DM-175-498-498"]]></AVal>
+				<AVal Row="36"><![CDATA["KS-Quadro12-18-DM-240-498-498"]]></AVal>
+				<AVal Row="37"><![CDATA["KS-Quadro20-18-DM-115-498-498"]]></AVal>
+				<AVal Row="38"><![CDATA["KS-Quadro20-18-DM-150-498-498"]]></AVal>
+				<AVal Row="39"><![CDATA["KS-Quadro20-18-DM-175-498-498"]]></AVal>
+				<AVal Row="40"><![CDATA["KS-Quadro20-18-DM-240-498-498"]]></AVal>
+				<AVal Row="41"><![CDATA["KS-Quadro12-20-DM-150-498-498"]]></AVal>
+				<AVal Row="42"><![CDATA["KS-Quadro12-20-DM-175-498-498"]]></AVal>
+				<AVal Row="43"><![CDATA["KS-Quadro12-20-DM-200-498-498"]]></AVal>
+				<AVal Row="44"><![CDATA["KS-Quadro12-20-DM-240-498-498"]]></AVal>
+				<AVal Row="45"><![CDATA["KS-Quadro20-20-DM-150-498-498"]]></AVal>
+				<AVal Row="46"><![CDATA["KS-Quadro20-20-DM-175-498-498"]]></AVal>
+				<AVal Row="47"><![CDATA["KS-Quadro20-20-DM-200-498-498"]]></AVal>
+				<AVal Row="48"><![CDATA["KS-Quadro20-20-DM-240-498-498"]]></AVal>
+			</ArrayValues>
+		</String>
+		<String Name="datBrickArtNo">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+				<AVal Row="2"><![CDATA[""]]></AVal>
+				<AVal Row="3"><![CDATA[""]]></AVal>
+				<AVal Row="4"><![CDATA[""]]></AVal>
+				<AVal Row="5"><![CDATA[""]]></AVal>
+				<AVal Row="6"><![CDATA[""]]></AVal>
+				<AVal Row="7"><![CDATA[""]]></AVal>
+				<AVal Row="8"><![CDATA[""]]></AVal>
+				<AVal Row="9"><![CDATA[""]]></AVal>
+				<AVal Row="10"><![CDATA[""]]></AVal>
+				<AVal Row="11"><![CDATA[""]]></AVal>
+				<AVal Row="12"><![CDATA[""]]></AVal>
+				<AVal Row="13"><![CDATA[""]]></AVal>
+				<AVal Row="14"><![CDATA[""]]></AVal>
+				<AVal Row="15"><![CDATA[""]]></AVal>
+				<AVal Row="16"><![CDATA[""]]></AVal>
+				<AVal Row="17"><![CDATA[""]]></AVal>
+				<AVal Row="18"><![CDATA[""]]></AVal>
+				<AVal Row="19"><![CDATA[""]]></AVal>
+				<AVal Row="20"><![CDATA[""]]></AVal>
+				<AVal Row="21"><![CDATA[""]]></AVal>
+				<AVal Row="22"><![CDATA[""]]></AVal>
+				<AVal Row="23"><![CDATA[""]]></AVal>
+				<AVal Row="24"><![CDATA[""]]></AVal>
+				<AVal Row="25"><![CDATA[""]]></AVal>
+				<AVal Row="26"><![CDATA[""]]></AVal>
+				<AVal Row="27"><![CDATA[""]]></AVal>
+				<AVal Row="28"><![CDATA[""]]></AVal>
+				<AVal Row="29"><![CDATA[""]]></AVal>
+				<AVal Row="30"><![CDATA[""]]></AVal>
+				<AVal Row="31"><![CDATA[""]]></AVal>
+				<AVal Row="32"><![CDATA[""]]></AVal>
+				<AVal Row="33"><![CDATA[""]]></AVal>
+				<AVal Row="34"><![CDATA[""]]></AVal>
+				<AVal Row="35"><![CDATA[""]]></AVal>
+				<AVal Row="36"><![CDATA[""]]></AVal>
+				<AVal Row="37"><![CDATA[""]]></AVal>
+				<AVal Row="38"><![CDATA[""]]></AVal>
+				<AVal Row="39"><![CDATA[""]]></AVal>
+				<AVal Row="40"><![CDATA[""]]></AVal>
+				<AVal Row="41"><![CDATA[""]]></AVal>
+				<AVal Row="42"><![CDATA[""]]></AVal>
+				<AVal Row="43"><![CDATA[""]]></AVal>
+				<AVal Row="44"><![CDATA[""]]></AVal>
+				<AVal Row="45"><![CDATA[""]]></AVal>
+				<AVal Row="46"><![CDATA[""]]></AVal>
+				<AVal Row="47"><![CDATA[""]]></AVal>
+				<AVal Row="48"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<String Name="datBrickDbNo">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+				<AVal Row="2"><![CDATA[""]]></AVal>
+				<AVal Row="3"><![CDATA[""]]></AVal>
+				<AVal Row="4"><![CDATA[""]]></AVal>
+				<AVal Row="5"><![CDATA[""]]></AVal>
+				<AVal Row="6"><![CDATA[""]]></AVal>
+				<AVal Row="7"><![CDATA[""]]></AVal>
+				<AVal Row="8"><![CDATA[""]]></AVal>
+				<AVal Row="9"><![CDATA[""]]></AVal>
+				<AVal Row="10"><![CDATA[""]]></AVal>
+				<AVal Row="11"><![CDATA[""]]></AVal>
+				<AVal Row="12"><![CDATA[""]]></AVal>
+				<AVal Row="13"><![CDATA[""]]></AVal>
+				<AVal Row="14"><![CDATA[""]]></AVal>
+				<AVal Row="15"><![CDATA[""]]></AVal>
+				<AVal Row="16"><![CDATA[""]]></AVal>
+				<AVal Row="17"><![CDATA[""]]></AVal>
+				<AVal Row="18"><![CDATA[""]]></AVal>
+				<AVal Row="19"><![CDATA[""]]></AVal>
+				<AVal Row="20"><![CDATA[""]]></AVal>
+				<AVal Row="21"><![CDATA[""]]></AVal>
+				<AVal Row="22"><![CDATA[""]]></AVal>
+				<AVal Row="23"><![CDATA[""]]></AVal>
+				<AVal Row="24"><![CDATA[""]]></AVal>
+				<AVal Row="25"><![CDATA[""]]></AVal>
+				<AVal Row="26"><![CDATA[""]]></AVal>
+				<AVal Row="27"><![CDATA[""]]></AVal>
+				<AVal Row="28"><![CDATA[""]]></AVal>
+				<AVal Row="29"><![CDATA[""]]></AVal>
+				<AVal Row="30"><![CDATA[""]]></AVal>
+				<AVal Row="31"><![CDATA[""]]></AVal>
+				<AVal Row="32"><![CDATA[""]]></AVal>
+				<AVal Row="33"><![CDATA[""]]></AVal>
+				<AVal Row="34"><![CDATA[""]]></AVal>
+				<AVal Row="35"><![CDATA[""]]></AVal>
+				<AVal Row="36"><![CDATA[""]]></AVal>
+				<AVal Row="37"><![CDATA[""]]></AVal>
+				<AVal Row="38"><![CDATA[""]]></AVal>
+				<AVal Row="39"><![CDATA[""]]></AVal>
+				<AVal Row="40"><![CDATA[""]]></AVal>
+				<AVal Row="41"><![CDATA[""]]></AVal>
+				<AVal Row="42"><![CDATA[""]]></AVal>
+				<AVal Row="43"><![CDATA[""]]></AVal>
+				<AVal Row="44"><![CDATA[""]]></AVal>
+				<AVal Row="45"><![CDATA[""]]></AVal>
+				<AVal Row="46"><![CDATA[""]]></AVal>
+				<AVal Row="47"><![CDATA[""]]></AVal>
+				<AVal Row="48"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<String Name="datBrickEan">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+				<AVal Row="2"><![CDATA[""]]></AVal>
+				<AVal Row="3"><![CDATA[""]]></AVal>
+				<AVal Row="4"><![CDATA[""]]></AVal>
+				<AVal Row="5"><![CDATA[""]]></AVal>
+				<AVal Row="6"><![CDATA[""]]></AVal>
+				<AVal Row="7"><![CDATA[""]]></AVal>
+				<AVal Row="8"><![CDATA[""]]></AVal>
+				<AVal Row="9"><![CDATA[""]]></AVal>
+				<AVal Row="10"><![CDATA[""]]></AVal>
+				<AVal Row="11"><![CDATA[""]]></AVal>
+				<AVal Row="12"><![CDATA[""]]></AVal>
+				<AVal Row="13"><![CDATA[""]]></AVal>
+				<AVal Row="14"><![CDATA[""]]></AVal>
+				<AVal Row="15"><![CDATA[""]]></AVal>
+				<AVal Row="16"><![CDATA[""]]></AVal>
+				<AVal Row="17"><![CDATA[""]]></AVal>
+				<AVal Row="18"><![CDATA[""]]></AVal>
+				<AVal Row="19"><![CDATA[""]]></AVal>
+				<AVal Row="20"><![CDATA[""]]></AVal>
+				<AVal Row="21"><![CDATA[""]]></AVal>
+				<AVal Row="22"><![CDATA[""]]></AVal>
+				<AVal Row="23"><![CDATA[""]]></AVal>
+				<AVal Row="24"><![CDATA[""]]></AVal>
+				<AVal Row="25"><![CDATA[""]]></AVal>
+				<AVal Row="26"><![CDATA[""]]></AVal>
+				<AVal Row="27"><![CDATA[""]]></AVal>
+				<AVal Row="28"><![CDATA[""]]></AVal>
+				<AVal Row="29"><![CDATA[""]]></AVal>
+				<AVal Row="30"><![CDATA[""]]></AVal>
+				<AVal Row="31"><![CDATA[""]]></AVal>
+				<AVal Row="32"><![CDATA[""]]></AVal>
+				<AVal Row="33"><![CDATA[""]]></AVal>
+				<AVal Row="34"><![CDATA[""]]></AVal>
+				<AVal Row="35"><![CDATA[""]]></AVal>
+				<AVal Row="36"><![CDATA[""]]></AVal>
+				<AVal Row="37"><![CDATA[""]]></AVal>
+				<AVal Row="38"><![CDATA[""]]></AVal>
+				<AVal Row="39"><![CDATA[""]]></AVal>
+				<AVal Row="40"><![CDATA[""]]></AVal>
+				<AVal Row="41"><![CDATA[""]]></AVal>
+				<AVal Row="42"><![CDATA[""]]></AVal>
+				<AVal Row="43"><![CDATA[""]]></AVal>
+				<AVal Row="44"><![CDATA[""]]></AVal>
+				<AVal Row="45"><![CDATA[""]]></AVal>
+				<AVal Row="46"><![CDATA[""]]></AVal>
+				<AVal Row="47"><![CDATA[""]]></AVal>
+				<AVal Row="48"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<Boolean Name="datBrickCustomName">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</Boolean>
+		<Length Name="datBrickSize">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="3">
+				<AVal Column="1" Row="1">0.115</AVal>
+				<AVal Column="2" Row="1">0.498</AVal>
+				<AVal Column="3" Row="1">0.498</AVal>
+				<AVal Column="1" Row="2">0.15</AVal>
+				<AVal Column="2" Row="2">0.498</AVal>
+				<AVal Column="3" Row="2">0.498</AVal>
+				<AVal Column="1" Row="3">0.175</AVal>
+				<AVal Column="2" Row="3">0.498</AVal>
+				<AVal Column="3" Row="3">0.498</AVal>
+				<AVal Column="1" Row="4">0.2</AVal>
+				<AVal Column="2" Row="4">0.498</AVal>
+				<AVal Column="3" Row="4">0.498</AVal>
+				<AVal Column="1" Row="5">0.24</AVal>
+				<AVal Column="2" Row="5">0.498</AVal>
+				<AVal Column="3" Row="5">0.498</AVal>
+				<AVal Column="1" Row="6">0.3</AVal>
+				<AVal Column="2" Row="6">0.498</AVal>
+				<AVal Column="3" Row="6">0.498</AVal>
+				<AVal Column="1" Row="7">0.365</AVal>
+				<AVal Column="2" Row="7">0.498</AVal>
+				<AVal Column="3" Row="7">0.498</AVal>
+				<AVal Column="1" Row="8">0.115</AVal>
+				<AVal Column="2" Row="8">0.498</AVal>
+				<AVal Column="3" Row="8">0.498</AVal>
+				<AVal Column="1" Row="9">0.15</AVal>
+				<AVal Column="2" Row="9">0.498</AVal>
+				<AVal Column="3" Row="9">0.498</AVal>
+				<AVal Column="1" Row="10">0.175</AVal>
+				<AVal Column="2" Row="10">0.498</AVal>
+				<AVal Column="3" Row="10">0.498</AVal>
+				<AVal Column="1" Row="11">0.2</AVal>
+				<AVal Column="2" Row="11">0.498</AVal>
+				<AVal Column="3" Row="11">0.498</AVal>
+				<AVal Column="1" Row="12">0.24</AVal>
+				<AVal Column="2" Row="12">0.498</AVal>
+				<AVal Column="3" Row="12">0.498</AVal>
+				<AVal Column="1" Row="13">0.3</AVal>
+				<AVal Column="2" Row="13">0.498</AVal>
+				<AVal Column="3" Row="13">0.498</AVal>
+				<AVal Column="1" Row="14">0.365</AVal>
+				<AVal Column="2" Row="14">0.498</AVal>
+				<AVal Column="3" Row="14">0.498</AVal>
+				<AVal Column="1" Row="15">0.115</AVal>
+				<AVal Column="2" Row="15">0.498</AVal>
+				<AVal Column="3" Row="15">0.498</AVal>
+				<AVal Column="1" Row="16">0.15</AVal>
+				<AVal Column="2" Row="16">0.498</AVal>
+				<AVal Column="3" Row="16">0.498</AVal>
+				<AVal Column="1" Row="17">0.175</AVal>
+				<AVal Column="2" Row="17">0.498</AVal>
+				<AVal Column="3" Row="17">0.498</AVal>
+				<AVal Column="1" Row="18">0.2</AVal>
+				<AVal Column="2" Row="18">0.498</AVal>
+				<AVal Column="3" Row="18">0.498</AVal>
+				<AVal Column="1" Row="19">0.24</AVal>
+				<AVal Column="2" Row="19">0.498</AVal>
+				<AVal Column="3" Row="19">0.498</AVal>
+				<AVal Column="1" Row="20">0.3</AVal>
+				<AVal Column="2" Row="20">0.498</AVal>
+				<AVal Column="3" Row="20">0.498</AVal>
+				<AVal Column="1" Row="21">0.365</AVal>
+				<AVal Column="2" Row="21">0.498</AVal>
+				<AVal Column="3" Row="21">0.498</AVal>
+				<AVal Column="1" Row="22">0.115</AVal>
+				<AVal Column="2" Row="22">0.498</AVal>
+				<AVal Column="3" Row="22">0.498</AVal>
+				<AVal Column="1" Row="23">0.15</AVal>
+				<AVal Column="2" Row="23">0.498</AVal>
+				<AVal Column="3" Row="23">0.498</AVal>
+				<AVal Column="1" Row="24">0.175</AVal>
+				<AVal Column="2" Row="24">0.498</AVal>
+				<AVal Column="3" Row="24">0.498</AVal>
+				<AVal Column="1" Row="25">0.2</AVal>
+				<AVal Column="2" Row="25">0.498</AVal>
+				<AVal Column="3" Row="25">0.498</AVal>
+				<AVal Column="1" Row="26">0.24</AVal>
+				<AVal Column="2" Row="26">0.498</AVal>
+				<AVal Column="3" Row="26">0.498</AVal>
+				<AVal Column="1" Row="27">0.3</AVal>
+				<AVal Column="2" Row="27">0.498</AVal>
+				<AVal Column="3" Row="27">0.498</AVal>
+				<AVal Column="1" Row="28">0.365</AVal>
+				<AVal Column="2" Row="28">0.498</AVal>
+				<AVal Column="3" Row="28">0.498</AVal>
+				<AVal Column="1" Row="29">0.15</AVal>
+				<AVal Column="2" Row="29">0.498</AVal>
+				<AVal Column="3" Row="29">0.498</AVal>
+				<AVal Column="1" Row="30">0.175</AVal>
+				<AVal Column="2" Row="30">0.498</AVal>
+				<AVal Column="3" Row="30">0.498</AVal>
+				<AVal Column="1" Row="31">0.2</AVal>
+				<AVal Column="2" Row="31">0.498</AVal>
+				<AVal Column="3" Row="31">0.498</AVal>
+				<AVal Column="1" Row="32">0.24</AVal>
+				<AVal Column="2" Row="32">0.498</AVal>
+				<AVal Column="3" Row="32">0.498</AVal>
+				<AVal Column="1" Row="33">0.115</AVal>
+				<AVal Column="2" Row="33">0.498</AVal>
+				<AVal Column="3" Row="33">0.498</AVal>
+				<AVal Column="1" Row="34">0.15</AVal>
+				<AVal Column="2" Row="34">0.498</AVal>
+				<AVal Column="3" Row="34">0.498</AVal>
+				<AVal Column="1" Row="35">0.175</AVal>
+				<AVal Column="2" Row="35">0.498</AVal>
+				<AVal Column="3" Row="35">0.498</AVal>
+				<AVal Column="1" Row="36">0.24</AVal>
+				<AVal Column="2" Row="36">0.498</AVal>
+				<AVal Column="3" Row="36">0.498</AVal>
+				<AVal Column="1" Row="37">0.115</AVal>
+				<AVal Column="2" Row="37">0.498</AVal>
+				<AVal Column="3" Row="37">0.498</AVal>
+				<AVal Column="1" Row="38">0.15</AVal>
+				<AVal Column="2" Row="38">0.498</AVal>
+				<AVal Column="3" Row="38">0.498</AVal>
+				<AVal Column="1" Row="39">0.175</AVal>
+				<AVal Column="2" Row="39">0.498</AVal>
+				<AVal Column="3" Row="39">0.498</AVal>
+				<AVal Column="1" Row="40">0.24</AVal>
+				<AVal Column="2" Row="40">0.498</AVal>
+				<AVal Column="3" Row="40">0.498</AVal>
+				<AVal Column="1" Row="41">0.15</AVal>
+				<AVal Column="2" Row="41">0.498</AVal>
+				<AVal Column="3" Row="41">0.498</AVal>
+				<AVal Column="1" Row="42">0.175</AVal>
+				<AVal Column="2" Row="42">0.498</AVal>
+				<AVal Column="3" Row="42">0.498</AVal>
+				<AVal Column="1" Row="43">0.2</AVal>
+				<AVal Column="2" Row="43">0.498</AVal>
+				<AVal Column="3" Row="43">0.498</AVal>
+				<AVal Column="1" Row="44">0.24</AVal>
+				<AVal Column="2" Row="44">0.498</AVal>
+				<AVal Column="3" Row="44">0.498</AVal>
+				<AVal Column="1" Row="45">0.15</AVal>
+				<AVal Column="2" Row="45">0.498</AVal>
+				<AVal Column="3" Row="45">0.498</AVal>
+				<AVal Column="1" Row="46">0.175</AVal>
+				<AVal Column="2" Row="46">0.498</AVal>
+				<AVal Column="3" Row="46">0.498</AVal>
+				<AVal Column="1" Row="47">0.2</AVal>
+				<AVal Column="2" Row="47">0.498</AVal>
+				<AVal Column="3" Row="47">0.498</AVal>
+				<AVal Column="1" Row="48">0.24</AVal>
+				<AVal Column="2" Row="48">0.498</AVal>
+				<AVal Column="3" Row="48">0.498</AVal>
+			</ArrayValues>
+		</Length>
+		<String Name="datBrickNutProf">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+				<AVal Row="2"><![CDATA[""]]></AVal>
+				<AVal Row="3"><![CDATA[""]]></AVal>
+				<AVal Row="4"><![CDATA[""]]></AVal>
+				<AVal Row="5"><![CDATA[""]]></AVal>
+				<AVal Row="6"><![CDATA[""]]></AVal>
+				<AVal Row="7"><![CDATA[""]]></AVal>
+				<AVal Row="8"><![CDATA[""]]></AVal>
+				<AVal Row="9"><![CDATA[""]]></AVal>
+				<AVal Row="10"><![CDATA[""]]></AVal>
+				<AVal Row="11"><![CDATA[""]]></AVal>
+				<AVal Row="12"><![CDATA[""]]></AVal>
+				<AVal Row="13"><![CDATA[""]]></AVal>
+				<AVal Row="14"><![CDATA[""]]></AVal>
+				<AVal Row="15"><![CDATA[""]]></AVal>
+				<AVal Row="16"><![CDATA[""]]></AVal>
+				<AVal Row="17"><![CDATA[""]]></AVal>
+				<AVal Row="18"><![CDATA[""]]></AVal>
+				<AVal Row="19"><![CDATA[""]]></AVal>
+				<AVal Row="20"><![CDATA[""]]></AVal>
+				<AVal Row="21"><![CDATA[""]]></AVal>
+				<AVal Row="22"><![CDATA[""]]></AVal>
+				<AVal Row="23"><![CDATA[""]]></AVal>
+				<AVal Row="24"><![CDATA[""]]></AVal>
+				<AVal Row="25"><![CDATA[""]]></AVal>
+				<AVal Row="26"><![CDATA[""]]></AVal>
+				<AVal Row="27"><![CDATA[""]]></AVal>
+				<AVal Row="28"><![CDATA[""]]></AVal>
+				<AVal Row="29"><![CDATA[""]]></AVal>
+				<AVal Row="30"><![CDATA[""]]></AVal>
+				<AVal Row="31"><![CDATA[""]]></AVal>
+				<AVal Row="32"><![CDATA[""]]></AVal>
+				<AVal Row="33"><![CDATA[""]]></AVal>
+				<AVal Row="34"><![CDATA[""]]></AVal>
+				<AVal Row="35"><![CDATA[""]]></AVal>
+				<AVal Row="36"><![CDATA[""]]></AVal>
+				<AVal Row="37"><![CDATA[""]]></AVal>
+				<AVal Row="38"><![CDATA[""]]></AVal>
+				<AVal Row="39"><![CDATA[""]]></AVal>
+				<AVal Row="40"><![CDATA[""]]></AVal>
+				<AVal Row="41"><![CDATA[""]]></AVal>
+				<AVal Row="42"><![CDATA[""]]></AVal>
+				<AVal Row="43"><![CDATA[""]]></AVal>
+				<AVal Row="44"><![CDATA[""]]></AVal>
+				<AVal Row="45"><![CDATA[""]]></AVal>
+				<AVal Row="46"><![CDATA[""]]></AVal>
+				<AVal Row="47"><![CDATA[""]]></AVal>
+				<AVal Row="48"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<Integer Name="datBrickWallType">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">1</AVal>
+				<AVal Row="2">2</AVal>
+				<AVal Row="3">2</AVal>
+				<AVal Row="4">2</AVal>
+				<AVal Row="5">2</AVal>
+				<AVal Row="6">2</AVal>
+				<AVal Row="7">2</AVal>
+				<AVal Row="8">1</AVal>
+				<AVal Row="9">2</AVal>
+				<AVal Row="10">2</AVal>
+				<AVal Row="11">2</AVal>
+				<AVal Row="12">2</AVal>
+				<AVal Row="13">2</AVal>
+				<AVal Row="14">2</AVal>
+				<AVal Row="15">1</AVal>
+				<AVal Row="16">2</AVal>
+				<AVal Row="17">2</AVal>
+				<AVal Row="18">2</AVal>
+				<AVal Row="19">2</AVal>
+				<AVal Row="20">2</AVal>
+				<AVal Row="21">2</AVal>
+				<AVal Row="22">1</AVal>
+				<AVal Row="23">2</AVal>
+				<AVal Row="24">2</AVal>
+				<AVal Row="25">2</AVal>
+				<AVal Row="26">2</AVal>
+				<AVal Row="27">2</AVal>
+				<AVal Row="28">2</AVal>
+				<AVal Row="29">2</AVal>
+				<AVal Row="30">2</AVal>
+				<AVal Row="31">2</AVal>
+				<AVal Row="32">2</AVal>
+				<AVal Row="33">1</AVal>
+				<AVal Row="34">2</AVal>
+				<AVal Row="35">2</AVal>
+				<AVal Row="36">2</AVal>
+				<AVal Row="37">1</AVal>
+				<AVal Row="38">2</AVal>
+				<AVal Row="39">2</AVal>
+				<AVal Row="40">2</AVal>
+				<AVal Row="41">2</AVal>
+				<AVal Row="42">2</AVal>
+				<AVal Row="43">2</AVal>
+				<AVal Row="44">2</AVal>
+				<AVal Row="45">2</AVal>
+				<AVal Row="46">2</AVal>
+				<AVal Row="47">2</AVal>
+				<AVal Row="48">2</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datBrickHasEndElem">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datBrickEndElemIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datBrickWindowIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datBrickHalfIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</Integer>
+		<Boolean Name="datBrickHasProfile">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</Boolean>
+		<Integer Name="datBrickColumn">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</Integer>
+		<Length Name="datBrickEndElemWith">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0.498</AVal>
+				<AVal Row="2">0.498</AVal>
+				<AVal Row="3">0.498</AVal>
+				<AVal Row="4">0.498</AVal>
+				<AVal Row="5">0.498</AVal>
+				<AVal Row="6">0.498</AVal>
+				<AVal Row="7">0.498</AVal>
+				<AVal Row="8">0.498</AVal>
+				<AVal Row="9">0.498</AVal>
+				<AVal Row="10">0.498</AVal>
+				<AVal Row="11">0.498</AVal>
+				<AVal Row="12">0.498</AVal>
+				<AVal Row="13">0.498</AVal>
+				<AVal Row="14">0.498</AVal>
+				<AVal Row="15">0.498</AVal>
+				<AVal Row="16">0.498</AVal>
+				<AVal Row="17">0.498</AVal>
+				<AVal Row="18">0.498</AVal>
+				<AVal Row="19">0.498</AVal>
+				<AVal Row="20">0.498</AVal>
+				<AVal Row="21">0.498</AVal>
+				<AVal Row="22">0.498</AVal>
+				<AVal Row="23">0.498</AVal>
+				<AVal Row="24">0.498</AVal>
+				<AVal Row="25">0.498</AVal>
+				<AVal Row="26">0.498</AVal>
+				<AVal Row="27">0.498</AVal>
+				<AVal Row="28">0.498</AVal>
+				<AVal Row="29">0.498</AVal>
+				<AVal Row="30">0.498</AVal>
+				<AVal Row="31">0.498</AVal>
+				<AVal Row="32">0.498</AVal>
+				<AVal Row="33">0.498</AVal>
+				<AVal Row="34">0.498</AVal>
+				<AVal Row="35">0.498</AVal>
+				<AVal Row="36">0.498</AVal>
+				<AVal Row="37">0.498</AVal>
+				<AVal Row="38">0.498</AVal>
+				<AVal Row="39">0.498</AVal>
+				<AVal Row="40">0.498</AVal>
+				<AVal Row="41">0.498</AVal>
+				<AVal Row="42">0.498</AVal>
+				<AVal Row="43">0.498</AVal>
+				<AVal Row="44">0.498</AVal>
+				<AVal Row="45">0.498</AVal>
+				<AVal Row="46">0.498</AVal>
+				<AVal Row="47">0.498</AVal>
+				<AVal Row="48">0.498</AVal>
+			</ArrayValues>
+		</Length>
+		<Length Name="datBrickHalfElemHeight">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</Length>
+		<RealNum Name="datBrickLambdaDry">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickLambdaNormal">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<String Name="datBrickCert">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+				<AVal Row="2"><![CDATA[""]]></AVal>
+				<AVal Row="3"><![CDATA[""]]></AVal>
+				<AVal Row="4"><![CDATA[""]]></AVal>
+				<AVal Row="5"><![CDATA[""]]></AVal>
+				<AVal Row="6"><![CDATA[""]]></AVal>
+				<AVal Row="7"><![CDATA[""]]></AVal>
+				<AVal Row="8"><![CDATA[""]]></AVal>
+				<AVal Row="9"><![CDATA[""]]></AVal>
+				<AVal Row="10"><![CDATA[""]]></AVal>
+				<AVal Row="11"><![CDATA[""]]></AVal>
+				<AVal Row="12"><![CDATA[""]]></AVal>
+				<AVal Row="13"><![CDATA[""]]></AVal>
+				<AVal Row="14"><![CDATA[""]]></AVal>
+				<AVal Row="15"><![CDATA[""]]></AVal>
+				<AVal Row="16"><![CDATA[""]]></AVal>
+				<AVal Row="17"><![CDATA[""]]></AVal>
+				<AVal Row="18"><![CDATA[""]]></AVal>
+				<AVal Row="19"><![CDATA[""]]></AVal>
+				<AVal Row="20"><![CDATA[""]]></AVal>
+				<AVal Row="21"><![CDATA[""]]></AVal>
+				<AVal Row="22"><![CDATA[""]]></AVal>
+				<AVal Row="23"><![CDATA[""]]></AVal>
+				<AVal Row="24"><![CDATA[""]]></AVal>
+				<AVal Row="25"><![CDATA[""]]></AVal>
+				<AVal Row="26"><![CDATA[""]]></AVal>
+				<AVal Row="27"><![CDATA[""]]></AVal>
+				<AVal Row="28"><![CDATA[""]]></AVal>
+				<AVal Row="29"><![CDATA[""]]></AVal>
+				<AVal Row="30"><![CDATA[""]]></AVal>
+				<AVal Row="31"><![CDATA[""]]></AVal>
+				<AVal Row="32"><![CDATA[""]]></AVal>
+				<AVal Row="33"><![CDATA[""]]></AVal>
+				<AVal Row="34"><![CDATA[""]]></AVal>
+				<AVal Row="35"><![CDATA[""]]></AVal>
+				<AVal Row="36"><![CDATA[""]]></AVal>
+				<AVal Row="37"><![CDATA[""]]></AVal>
+				<AVal Row="38"><![CDATA[""]]></AVal>
+				<AVal Row="39"><![CDATA[""]]></AVal>
+				<AVal Row="40"><![CDATA[""]]></AVal>
+				<AVal Row="41"><![CDATA[""]]></AVal>
+				<AVal Row="42"><![CDATA[""]]></AVal>
+				<AVal Row="43"><![CDATA[""]]></AVal>
+				<AVal Row="44"><![CDATA[""]]></AVal>
+				<AVal Row="45"><![CDATA[""]]></AVal>
+				<AVal Row="46"><![CDATA[""]]></AVal>
+				<AVal Row="47"><![CDATA[""]]></AVal>
+				<AVal Row="48"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<RealNum Name="datBrickNperMm2">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">9.4</AVal>
+				<AVal Row="2">9.4</AVal>
+				<AVal Row="3">9.4</AVal>
+				<AVal Row="4">9.4</AVal>
+				<AVal Row="5">9.4</AVal>
+				<AVal Row="6">9.4</AVal>
+				<AVal Row="7">9.4</AVal>
+				<AVal Row="8">11.2</AVal>
+				<AVal Row="9">11.2</AVal>
+				<AVal Row="10">11.2</AVal>
+				<AVal Row="11">11.2</AVal>
+				<AVal Row="12">11.2</AVal>
+				<AVal Row="13">11.2</AVal>
+				<AVal Row="14">11.2</AVal>
+				<AVal Row="15">12.9</AVal>
+				<AVal Row="16">12.9</AVal>
+				<AVal Row="17">12.9</AVal>
+				<AVal Row="18">12.9</AVal>
+				<AVal Row="19">12.9</AVal>
+				<AVal Row="20">12.9</AVal>
+				<AVal Row="21">12.9</AVal>
+				<AVal Row="22">12.9</AVal>
+				<AVal Row="23">12.9</AVal>
+				<AVal Row="24">12.9</AVal>
+				<AVal Row="25">12.9</AVal>
+				<AVal Row="26">12.9</AVal>
+				<AVal Row="27">12.9</AVal>
+				<AVal Row="28">12.9</AVal>
+				<AVal Row="29">12.9</AVal>
+				<AVal Row="30">12.9</AVal>
+				<AVal Row="31">12.9</AVal>
+				<AVal Row="32">12.9</AVal>
+				<AVal Row="33">7</AVal>
+				<AVal Row="34">7</AVal>
+				<AVal Row="35">7</AVal>
+				<AVal Row="36">7</AVal>
+				<AVal Row="37">10.5</AVal>
+				<AVal Row="38">10.5</AVal>
+				<AVal Row="39">10.5</AVal>
+				<AVal Row="40">10.5</AVal>
+				<AVal Row="41">7</AVal>
+				<AVal Row="42">7</AVal>
+				<AVal Row="43">7</AVal>
+				<AVal Row="44">7</AVal>
+				<AVal Row="45">10.5</AVal>
+				<AVal Row="46">10.5</AVal>
+				<AVal Row="47">10.5</AVal>
+				<AVal Row="48">10.5</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickKgPerM3">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickKgPerPc">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickPcPerM2">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickM2PerPc">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickGrossDensity">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickShearStrength">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickFk">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickKNperm3">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">18</AVal>
+				<AVal Row="2">18</AVal>
+				<AVal Row="3">18</AVal>
+				<AVal Row="4">18</AVal>
+				<AVal Row="5">18</AVal>
+				<AVal Row="6">18</AVal>
+				<AVal Row="7">18</AVal>
+				<AVal Row="8">18</AVal>
+				<AVal Row="9">18</AVal>
+				<AVal Row="10">18</AVal>
+				<AVal Row="11">18</AVal>
+				<AVal Row="12">18</AVal>
+				<AVal Row="13">18</AVal>
+				<AVal Row="14">18</AVal>
+				<AVal Row="15">18</AVal>
+				<AVal Row="16">18</AVal>
+				<AVal Row="17">18</AVal>
+				<AVal Row="18">18</AVal>
+				<AVal Row="19">18</AVal>
+				<AVal Row="20">18</AVal>
+				<AVal Row="21">18</AVal>
+				<AVal Row="22">20</AVal>
+				<AVal Row="23">20</AVal>
+				<AVal Row="24">20</AVal>
+				<AVal Row="25">20</AVal>
+				<AVal Row="26">20</AVal>
+				<AVal Row="27">20</AVal>
+				<AVal Row="28">20</AVal>
+				<AVal Row="29">22</AVal>
+				<AVal Row="30">22</AVal>
+				<AVal Row="31">22</AVal>
+				<AVal Row="32">22</AVal>
+				<AVal Row="33">18</AVal>
+				<AVal Row="34">18</AVal>
+				<AVal Row="35">18</AVal>
+				<AVal Row="36">18</AVal>
+				<AVal Row="37">18</AVal>
+				<AVal Row="38">18</AVal>
+				<AVal Row="39">18</AVal>
+				<AVal Row="40">18</AVal>
+				<AVal Row="41">20</AVal>
+				<AVal Row="42">20</AVal>
+				<AVal Row="43">20</AVal>
+				<AVal Row="44">20</AVal>
+				<AVal Row="45">20</AVal>
+				<AVal Row="46">20</AVal>
+				<AVal Row="47">20</AVal>
+				<AVal Row="48">20</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickMortarPerM2">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<String Name="datBrickMortarPerM2Str">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+				<AVal Row="2"><![CDATA[""]]></AVal>
+				<AVal Row="3"><![CDATA[""]]></AVal>
+				<AVal Row="4"><![CDATA[""]]></AVal>
+				<AVal Row="5"><![CDATA[""]]></AVal>
+				<AVal Row="6"><![CDATA[""]]></AVal>
+				<AVal Row="7"><![CDATA[""]]></AVal>
+				<AVal Row="8"><![CDATA[""]]></AVal>
+				<AVal Row="9"><![CDATA[""]]></AVal>
+				<AVal Row="10"><![CDATA[""]]></AVal>
+				<AVal Row="11"><![CDATA[""]]></AVal>
+				<AVal Row="12"><![CDATA[""]]></AVal>
+				<AVal Row="13"><![CDATA[""]]></AVal>
+				<AVal Row="14"><![CDATA[""]]></AVal>
+				<AVal Row="15"><![CDATA[""]]></AVal>
+				<AVal Row="16"><![CDATA[""]]></AVal>
+				<AVal Row="17"><![CDATA[""]]></AVal>
+				<AVal Row="18"><![CDATA[""]]></AVal>
+				<AVal Row="19"><![CDATA[""]]></AVal>
+				<AVal Row="20"><![CDATA[""]]></AVal>
+				<AVal Row="21"><![CDATA[""]]></AVal>
+				<AVal Row="22"><![CDATA[""]]></AVal>
+				<AVal Row="23"><![CDATA[""]]></AVal>
+				<AVal Row="24"><![CDATA[""]]></AVal>
+				<AVal Row="25"><![CDATA[""]]></AVal>
+				<AVal Row="26"><![CDATA[""]]></AVal>
+				<AVal Row="27"><![CDATA[""]]></AVal>
+				<AVal Row="28"><![CDATA[""]]></AVal>
+				<AVal Row="29"><![CDATA[""]]></AVal>
+				<AVal Row="30"><![CDATA[""]]></AVal>
+				<AVal Row="31"><![CDATA[""]]></AVal>
+				<AVal Row="32"><![CDATA[""]]></AVal>
+				<AVal Row="33"><![CDATA[""]]></AVal>
+				<AVal Row="34"><![CDATA[""]]></AVal>
+				<AVal Row="35"><![CDATA[""]]></AVal>
+				<AVal Row="36"><![CDATA[""]]></AVal>
+				<AVal Row="37"><![CDATA[""]]></AVal>
+				<AVal Row="38"><![CDATA[""]]></AVal>
+				<AVal Row="39"><![CDATA[""]]></AVal>
+				<AVal Row="40"><![CDATA[""]]></AVal>
+				<AVal Row="41"><![CDATA[""]]></AVal>
+				<AVal Row="42"><![CDATA[""]]></AVal>
+				<AVal Row="43"><![CDATA[""]]></AVal>
+				<AVal Row="44"><![CDATA[""]]></AVal>
+				<AVal Row="45"><![CDATA[""]]></AVal>
+				<AVal Row="46"><![CDATA[""]]></AVal>
+				<AVal Row="47"><![CDATA[""]]></AVal>
+				<AVal Row="48"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<RealNum Name="datBrickWorkHperStructure">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBrickWorkHperFull">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+				<AVal Row="2">0</AVal>
+				<AVal Row="3">0</AVal>
+				<AVal Row="4">0</AVal>
+				<AVal Row="5">0</AVal>
+				<AVal Row="6">0</AVal>
+				<AVal Row="7">0</AVal>
+				<AVal Row="8">0</AVal>
+				<AVal Row="9">0</AVal>
+				<AVal Row="10">0</AVal>
+				<AVal Row="11">0</AVal>
+				<AVal Row="12">0</AVal>
+				<AVal Row="13">0</AVal>
+				<AVal Row="14">0</AVal>
+				<AVal Row="15">0</AVal>
+				<AVal Row="16">0</AVal>
+				<AVal Row="17">0</AVal>
+				<AVal Row="18">0</AVal>
+				<AVal Row="19">0</AVal>
+				<AVal Row="20">0</AVal>
+				<AVal Row="21">0</AVal>
+				<AVal Row="22">0</AVal>
+				<AVal Row="23">0</AVal>
+				<AVal Row="24">0</AVal>
+				<AVal Row="25">0</AVal>
+				<AVal Row="26">0</AVal>
+				<AVal Row="27">0</AVal>
+				<AVal Row="28">0</AVal>
+				<AVal Row="29">0</AVal>
+				<AVal Row="30">0</AVal>
+				<AVal Row="31">0</AVal>
+				<AVal Row="32">0</AVal>
+				<AVal Row="33">0</AVal>
+				<AVal Row="34">0</AVal>
+				<AVal Row="35">0</AVal>
+				<AVal Row="36">0</AVal>
+				<AVal Row="37">0</AVal>
+				<AVal Row="38">0</AVal>
+				<AVal Row="39">0</AVal>
+				<AVal Row="40">0</AVal>
+				<AVal Row="41">0</AVal>
+				<AVal Row="42">0</AVal>
+				<AVal Row="43">0</AVal>
+				<AVal Row="44">0</AVal>
+				<AVal Row="45">0</AVal>
+				<AVal Row="46">0</AVal>
+				<AVal Row="47">0</AVal>
+				<AVal Row="48">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<String Name="datBrickFireResistance">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+				<AVal Row="2"><![CDATA[""]]></AVal>
+				<AVal Row="3"><![CDATA[""]]></AVal>
+				<AVal Row="4"><![CDATA[""]]></AVal>
+				<AVal Row="5"><![CDATA[""]]></AVal>
+				<AVal Row="6"><![CDATA[""]]></AVal>
+				<AVal Row="7"><![CDATA[""]]></AVal>
+				<AVal Row="8"><![CDATA[""]]></AVal>
+				<AVal Row="9"><![CDATA[""]]></AVal>
+				<AVal Row="10"><![CDATA[""]]></AVal>
+				<AVal Row="11"><![CDATA[""]]></AVal>
+				<AVal Row="12"><![CDATA[""]]></AVal>
+				<AVal Row="13"><![CDATA[""]]></AVal>
+				<AVal Row="14"><![CDATA[""]]></AVal>
+				<AVal Row="15"><![CDATA[""]]></AVal>
+				<AVal Row="16"><![CDATA[""]]></AVal>
+				<AVal Row="17"><![CDATA[""]]></AVal>
+				<AVal Row="18"><![CDATA[""]]></AVal>
+				<AVal Row="19"><![CDATA[""]]></AVal>
+				<AVal Row="20"><![CDATA[""]]></AVal>
+				<AVal Row="21"><![CDATA[""]]></AVal>
+				<AVal Row="22"><![CDATA[""]]></AVal>
+				<AVal Row="23"><![CDATA[""]]></AVal>
+				<AVal Row="24"><![CDATA[""]]></AVal>
+				<AVal Row="25"><![CDATA[""]]></AVal>
+				<AVal Row="26"><![CDATA[""]]></AVal>
+				<AVal Row="27"><![CDATA[""]]></AVal>
+				<AVal Row="28"><![CDATA[""]]></AVal>
+				<AVal Row="29"><![CDATA[""]]></AVal>
+				<AVal Row="30"><![CDATA[""]]></AVal>
+				<AVal Row="31"><![CDATA[""]]></AVal>
+				<AVal Row="32"><![CDATA[""]]></AVal>
+				<AVal Row="33"><![CDATA[""]]></AVal>
+				<AVal Row="34"><![CDATA[""]]></AVal>
+				<AVal Row="35"><![CDATA[""]]></AVal>
+				<AVal Row="36"><![CDATA[""]]></AVal>
+				<AVal Row="37"><![CDATA[""]]></AVal>
+				<AVal Row="38"><![CDATA[""]]></AVal>
+				<AVal Row="39"><![CDATA[""]]></AVal>
+				<AVal Row="40"><![CDATA[""]]></AVal>
+				<AVal Row="41"><![CDATA[""]]></AVal>
+				<AVal Row="42"><![CDATA[""]]></AVal>
+				<AVal Row="43"><![CDATA[""]]></AVal>
+				<AVal Row="44"><![CDATA[""]]></AVal>
+				<AVal Row="45"><![CDATA[""]]></AVal>
+				<AVal Row="46"><![CDATA[""]]></AVal>
+				<AVal Row="47"><![CDATA[""]]></AVal>
+				<AVal Row="48"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<String Name="datBrickAcustic">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+				<AVal Row="2"><![CDATA[""]]></AVal>
+				<AVal Row="3"><![CDATA[""]]></AVal>
+				<AVal Row="4"><![CDATA[""]]></AVal>
+				<AVal Row="5"><![CDATA[""]]></AVal>
+				<AVal Row="6"><![CDATA[""]]></AVal>
+				<AVal Row="7"><![CDATA[""]]></AVal>
+				<AVal Row="8"><![CDATA[""]]></AVal>
+				<AVal Row="9"><![CDATA[""]]></AVal>
+				<AVal Row="10"><![CDATA[""]]></AVal>
+				<AVal Row="11"><![CDATA[""]]></AVal>
+				<AVal Row="12"><![CDATA[""]]></AVal>
+				<AVal Row="13"><![CDATA[""]]></AVal>
+				<AVal Row="14"><![CDATA[""]]></AVal>
+				<AVal Row="15"><![CDATA[""]]></AVal>
+				<AVal Row="16"><![CDATA[""]]></AVal>
+				<AVal Row="17"><![CDATA[""]]></AVal>
+				<AVal Row="18"><![CDATA[""]]></AVal>
+				<AVal Row="19"><![CDATA[""]]></AVal>
+				<AVal Row="20"><![CDATA[""]]></AVal>
+				<AVal Row="21"><![CDATA[""]]></AVal>
+				<AVal Row="22"><![CDATA[""]]></AVal>
+				<AVal Row="23"><![CDATA[""]]></AVal>
+				<AVal Row="24"><![CDATA[""]]></AVal>
+				<AVal Row="25"><![CDATA[""]]></AVal>
+				<AVal Row="26"><![CDATA[""]]></AVal>
+				<AVal Row="27"><![CDATA[""]]></AVal>
+				<AVal Row="28"><![CDATA[""]]></AVal>
+				<AVal Row="29"><![CDATA[""]]></AVal>
+				<AVal Row="30"><![CDATA[""]]></AVal>
+				<AVal Row="31"><![CDATA[""]]></AVal>
+				<AVal Row="32"><![CDATA[""]]></AVal>
+				<AVal Row="33"><![CDATA[""]]></AVal>
+				<AVal Row="34"><![CDATA[""]]></AVal>
+				<AVal Row="35"><![CDATA[""]]></AVal>
+				<AVal Row="36"><![CDATA[""]]></AVal>
+				<AVal Row="37"><![CDATA[""]]></AVal>
+				<AVal Row="38"><![CDATA[""]]></AVal>
+				<AVal Row="39"><![CDATA[""]]></AVal>
+				<AVal Row="40"><![CDATA[""]]></AVal>
+				<AVal Row="41"><![CDATA[""]]></AVal>
+				<AVal Row="42"><![CDATA[""]]></AVal>
+				<AVal Row="43"><![CDATA[""]]></AVal>
+				<AVal Row="44"><![CDATA[""]]></AVal>
+				<AVal Row="45"><![CDATA[""]]></AVal>
+				<AVal Row="46"><![CDATA[""]]></AVal>
+				<AVal Row="47"><![CDATA[""]]></AVal>
+				<AVal Row="48"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<RealNum Name="datBrickUvalue">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="48" SecondDimension="0">
+				<AVal Row="1">0.99</AVal>
+				<AVal Row="2">0.99</AVal>
+				<AVal Row="3">0.99</AVal>
+				<AVal Row="4">0.99</AVal>
+				<AVal Row="5">0.99</AVal>
+				<AVal Row="6">0.99</AVal>
+				<AVal Row="7">0.99</AVal>
+				<AVal Row="8">0.99</AVal>
+				<AVal Row="9">0.99</AVal>
+				<AVal Row="10">0.99</AVal>
+				<AVal Row="11">0.99</AVal>
+				<AVal Row="12">0.99</AVal>
+				<AVal Row="13">0.99</AVal>
+				<AVal Row="14">0.99</AVal>
+				<AVal Row="15">0.99</AVal>
+				<AVal Row="16">0.99</AVal>
+				<AVal Row="17">0.99</AVal>
+				<AVal Row="18">0.99</AVal>
+				<AVal Row="19">0.99</AVal>
+				<AVal Row="20">0.99</AVal>
+				<AVal Row="21">0.99</AVal>
+				<AVal Row="22">1.1</AVal>
+				<AVal Row="23">1.1</AVal>
+				<AVal Row="24">1.1</AVal>
+				<AVal Row="25">1.1</AVal>
+				<AVal Row="26">1.1</AVal>
+				<AVal Row="27">1.1</AVal>
+				<AVal Row="28">1.1</AVal>
+				<AVal Row="29">1.3</AVal>
+				<AVal Row="30">1.3</AVal>
+				<AVal Row="31">1.3</AVal>
+				<AVal Row="32">1.3</AVal>
+				<AVal Row="33">0.99</AVal>
+				<AVal Row="34">0.99</AVal>
+				<AVal Row="35">0.99</AVal>
+				<AVal Row="36">0.99</AVal>
+				<AVal Row="37">0.99</AVal>
+				<AVal Row="38">0.99</AVal>
+				<AVal Row="39">0.99</AVal>
+				<AVal Row="40">0.99</AVal>
+				<AVal Row="41">1.1</AVal>
+				<AVal Row="42">1.1</AVal>
+				<AVal Row="43">1.1</AVal>
+				<AVal Row="44">1.1</AVal>
+				<AVal Row="45">1.1</AVal>
+				<AVal Row="46">1.1</AVal>
+				<AVal Row="47">1.1</AVal>
+				<AVal Row="48">1.1</AVal>
+			</ArrayValues>
+		</RealNum>
+		<Separator Name="data_beamFamilys">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+		</Separator>
+		<Integer Name="datProdBeamLang">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">1</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datProdBeamIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">100</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datProdBeamType">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">4</AVal>
+			</ArrayValues>
+		</Integer>
+		<String Name="datProdBeamName">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1"><![CDATA["KS-Quadro beam"]]></AVal>
+			</ArrayValues>
+		</String>
+		<Boolean Name="datProdBeamCuttable">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</Boolean>
+		<Boolean Name="datProdBeamMulti">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</Boolean>
+		<String Name="datProdBeamCert">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<RealNum Name="datProdBeamKgPerM3">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datProdBeamKnPerM3">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datProdBeamLambdaDry">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datProdBeamLambdaNormal">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<Length Name="datProdBeamGroutBottom">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</Length>
+		<Length Name="datProdBeamGroutTop">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</Length>
+		<Integer Name="datProdBeamVerticalGlue">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">1</AVal>
+			</ArrayValues>
+		</Integer>
+		<Separator Name="data_beams">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+		</Separator>
+		<Integer Name="datBeamLang">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datBeamIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</Integer>
+		<Integer Name="datBeamFamily">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</Integer>
+		<String Name="datBeamName">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<String Name="datBeamArtNo">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<String Name="datBeamDbNo">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<String Name="datBeamEan">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1"><![CDATA[""]]></AVal>
+			</ArrayValues>
+		</String>
+		<Boolean Name="datBeamCustom">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</Boolean>
+		<Length Name="datBeamSize">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="5">
+				<AVal Column="1" Row="1">0</AVal>
+				<AVal Column="2" Row="1">0</AVal>
+				<AVal Column="3" Row="1">0</AVal>
+				<AVal Column="4" Row="1">0</AVal>
+				<AVal Column="5" Row="1">0</AVal>
+			</ArrayValues>
+		</Length>
+		<Length Name="datBeamOverhang">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</Length>
+		<RealNum Name="datBeamLoadCapacity">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBeamKgPerPc">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</RealNum>
+		<RealNum Name="datBeamMortarPerM">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<ArrayValues FirstDimension="1" SecondDimension="0">
+				<AVal Row="1">0</AVal>
+			</ArrayValues>
+		</RealNum>
+	</Parameters>
+</ParamSection>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_FWM SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_FWM>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_BWM SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_BWM>
+
+<Copyright SectVersion="1" SectionFlags="0" SubIdent="0">
+	<Author></Author>
+	<License>
+		<Type>CC BY-ND</Type>
+		<Version>3.0</Version>
+	</License>
+</Copyright>
+
+<Keywords SectVersion="1" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Keywords>
+
+</Symbol>

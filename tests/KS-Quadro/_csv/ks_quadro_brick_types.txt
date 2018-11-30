@@ -1,0 +1,9 @@
+﻿de	DE_KSQ_12_18_DM	BLOCK	KS Quadro 12-1,8-DM	[de] KS-Quadro		0.16	0.1	
+de	DE_KSQ_16_18_DM	BLOCK	KS Quadro 16-1,8-DM	[de] KS-Quadro		0.16	0.1	
+de	DE_KSQ_20_18_DM	BLOCK	KS Quadro 20-1,8-DM	[de] KS-Quadro		0.16	0.1	
+de	DE_KSQ_20_20_DM	BLOCK	KS Quadro 20-2,0-DM	[de] KS-Quadro		0.16	0.1	
+de	DE_KSQ_20_22_DM	BLOCK	KS Quadro 20-2,2-DM	[de] KS-Quadro		0.16	0.1	
+de	DE_KSQE_12_18_DM	BLOCK	KS Quadro E 12-1,8-DM	[de] KS-Quadro E		0.16	0.1	
+de	DE_KSQE_20_18_DM	BLOCK	KS Quadro E 20-1,8-DM	[de] KS-Quadro E		0.16	0.1	
+de	DE_KSQE_12_20_DM	BLOCK	KS Quadro E 12-2,0-DM	[de] KS-Quadro E		0.16	0.1	
+de	DE_KSQE_20_20_DM	BLOCK	KS Quadro E 20-2,0-DM	[de] KS-Quadro E		0.16	0.1	

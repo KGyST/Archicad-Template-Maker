@@ -1,0 +1,1396 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Symbol IsArchivable="no" IsPlaceable="no" MainGUID="10D759A4-38F8-4042-A9CA-7BADDA47EA9C" MigrationValue="Normal" Owner="1196638531" Signature="1196644685" Version="34">
+<Ancestry SectVersion="1" SectionFlags="0" SubIdent="0" Template="no">
+	<MainGUID>F938E33A-329D-4A36-BE3E-85E126820996</MainGUID>
+	<MainGUID>103E8D2C-8230-42E1-9597-46F84CCE28C0</MainGUID>
+</Ancestry>
+
+<CalledMacros SectVersion="2" SectionFlags="0" SubIdent="0">
+</CalledMacros>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_3D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+if iDetlevel3D = DETLEVEL_3D_NONE then end
+
+pen pen3D
+sect_fill gs_fill_type, gs_back_pen, gs_fill_pen, gs_cont_pen
+
+texScale = 0.1
+
+if iDetlevel3D = DETLEVEL_3D_WIRE then
+	iDetlevel3D = DETLEVEL_3D_SIMPLE
+	model wire
+endif
+
+if iDetlevel3D = DETLEVEL_3D_SIMPLE then gs_resol = max(int(gs_resol / 3), 4)
+
+resol gs_resol
+material brickMat
+
+! ------------------------------------------------------------------------------
+! Hotspots
+! ------------------------------------------------------------------------------
+if not(bNoHotspot) then
+	if bMirrored then
+		rotz 180
+		add -brickWidth, -brickThk, 0
+	endif
+
+	hotspot sCut,							0,			0, unID		: unID = unID + 1
+	hotspot brickWidth-eCut,				0,			0, unID		: unID = unID + 1
+	hotspot brickWidth-eCut,				brickThk,	0, unID		: unID = unID + 1
+	hotspot sCut,							brickThk,	0, unID		: unID = unID + 1
+	hotspot sCut+(brickWidth-sCut-eCut)/2,	brickThk/2,	0, unID		: unID = unID + 1
+	
+	hotspot sCut,							0,			brickHeight, unID		: unID = unID + 1
+	hotspot brickWidth-eCut,				0,			brickHeight, unID		: unID = unID + 1
+	hotspot brickWidth-eCut,				brickThk,	brickHeight, unID		: unID = unID + 1
+	hotspot sCut,							brickThk,	brickHeight, unID		: unID = unID + 1
+	hotspot sCut+(brickWidth-sCut-eCut)/2,	brickThk/2,	brickHeight, unID		: unID = unID + 1
+
+
+	hotspot 0,			brickThk/2, 0, unID, startCut, 1+128	: unID = unID + 1
+	hotspot -1,			brickThk/2, 0, unID, startCut, 3		: unID = unID + 1
+	hotspot startCut,	brickThk/2, 0, unID, startCut, 2		: unID = unID + 1
+
+	hotspot 0,			brickThk/2, brickHeight, unID, startCut, 1+128	: unID = unID + 1
+	hotspot -1,			brickThk/2, brickHeight, unID, startCut, 3		: unID = unID + 1
+	hotspot startCut,	brickThk/2, brickHeight, unID, startCut, 2		: unID = unID + 1
+	
+	hotspot brickWidth,			brickThk/2, 0, unID, endCut, 1+128	: unID = unID + 1
+	hotspot brickWidth+1,		brickThk/2, 0, unID, endCut, 3		: unID = unID + 1
+	hotspot brickWidth-endCut,	brickThk/2, 0, unID, endCut, 2		: unID = unID + 1
+
+	hotspot brickWidth,			brickThk/2, brickHeight, unID, endCut, 1+128	: unID = unID + 1
+	hotspot brickWidth+1,		brickThk/2, brickHeight, unID, endCut, 3		: unID = unID + 1
+	hotspot brickWidth-endCut,	brickThk/2, brickHeight, unID, endCut, 2		: unID = unID + 1
+	
+	hotspot sCut+minBrickOverlap,	0,			0, unID		: unID = unID + 1
+	hotspot sCut+minBrickOverlap,	brickThk,	0, unID		: unID = unID + 1
+
+	hotspot sCut+minBrickOverlap,	0,			brickHeight, unID		: unID = unID + 1
+	hotspot sCut+minBrickOverlap,	brickThk,	brickHeight, unID		: unID = unID + 1
+
+	hotspot brickWidth-eCut-minBrickOverlap,	0,			0, unID	: unID = unID + 1
+	hotspot brickWidth-eCut-minBrickOverlap,	brickThk,	0, unID	: unID = unID + 1
+
+	hotspot brickWidth-eCut-minBrickOverlap,	0,			brickHeight, unID	: unID = unID + 1
+	hotspot brickWidth-eCut-minBrickOverlap,	brickThk,	brickHeight, unID	: unID = unID + 1
+
+	if abs(startCut-90) < EPS then
+		d1 = 0
+	else
+		d1 = brickThk / tan(startCutAngle)
+	endif
+
+	if abs(endCutAngle-90) < EPS then
+		d2 = 0
+	else
+		d2 = brickThk / tan(endCutAngle)
+	endif
+
+	if (startCut > EPS) then
+		hotspot startCut,			0,			0, unID, startCutAngle,6 		: unID=unID+1
+		hotspot startCut+brickThk, 	0,			0, unID, startCutAngle,4+128	: unID=unID+1
+		hotspot startCut+d1,		brickThk, 	0, unID, startCutAngle,5		: unID=unID+1
+
+		hotspot startCut,			0,			brickHeight, unID, startCutAngle,6 		: unID=unID+1
+		hotspot startCut+brickThk, 	0,			brickHeight, unID, startCutAngle,4+128	: unID=unID+1
+		hotspot startCut+d1,		brickThk, 	brickHeight, unID, startCutAngle,5		: unID=unID+1
+	endif
+	
+	if (endCut > EPS) then
+		hotspot brickWidth-endCut,				0,			0, unID, endCutAngle,6 		: unID=unID+1
+		hotspot brickWidth-endCut+brickThk, 	0,			0, unID, endCutAngle,4+128	: unID=unID+1
+		hotspot brickWidth-endCut+d2,			brickThk, 	0, unID, endCutAngle,5		: unID=unID+1
+
+		hotspot brickWidth-endCut,				0,			brickHeight, unID, endCutAngle,6 		: unID=unID+1
+		hotspot brickWidth-endCut+brickThk, 	0,			brickHeight, unID, endCutAngle,4+128	: unID=unID+1
+		hotspot brickWidth-endCut+d2,			brickThk, 	brickHeight, unID, endCutAngle,5		: unID=unID+1
+	endif
+
+	del 2*bMirrored
+endif
+
+
+! ------------------------------------------------------------------------------
+! Cutting
+! ------------------------------------------------------------------------------
+nCut = 0
+if startCut > eps then
+	roty -90
+	addz -startCut
+	rotx -90+startCutAngle
+	cutplane
+	nCut = nCut + 1
+	del 3
+endif
+
+if endCut > eps then
+	roty 90
+	addz brickWidth-endCut
+	rotx 90-endCutAngle
+	cutplane
+	nCut = nCut + 1
+	del 3
+endif
+
+if topCut > eps then
+	addz brickHeight - topCut
+	cutplane
+	nCut = nCut + 1
+	del 1
+endif
+
+! ------------------------------------------------------------------------------
+! Controller
+! ------------------------------------------------------------------------------
+if bMirrored then
+	rotz 180
+	add -brickWidth, -brickThk, 0
+endif
+
+if not(bCustom) then
+	gosub "boxPut"
+else
+	gosub iProductType
+endif
+base
+prism_ nsp/3, brickHeight, get(nsp)
+gosub 10000
+
+del 2*bMirrored
+
+for i = 1 to nCut
+	cutend
+next i
+
+! ==============================================================================
+!
+end unID
+!
+! ==============================================================================
+
+
+! ==============================================================================
+!
+! Subrutines
+!
+! ==============================================================================
+10900:		! BRICK_DE_PP_CORNER_2_40_010_240
+10901:		! BRICK_DE_PP_CORNER_2_40_010_300
+10902:		! BRICK_DE_PP_CORNER_2_40_010_365
+10903:		! BRICK_DE_PP_CORNER_2_40_010_400
+10904:		! BRICK_DE_PP_CORNER_2_40_010_425
+10905:		! BRICK_DE_PP_CORNER_2_40_010_480
+109001:		! FR_CORNER_150
+109002:		! FR_CORNER_200
+109003:		! FR_CORNER_225
+109004:		! FR_CORNER_250
+109005:		! FR_CORNER_300
+109006:		! FR_CORNER_365
+109007:		! FR_CORNER_420
+119001:		! ES_CORNER_625_200_500
+119002:		! ES_CORNER_625_250_500
+119003:		! ES_CORNER_625_300_500
+119004:		! ES_CORNER_625_150_250
+119005:		! ES_CORNER_625_200_250
+119006:		! ES_CORNER_625_250_250
+119007:		! ES_CORNER_625_300_250
+119008:		! ES_CORNER_625_365_250
+139001:		! BRICK_IT_CORNER_200
+139002:		! BRICK_IT_CORNER_240
+139003:		! BRICK_IT_CORNER_300
+139004:		! BRICK_IT_CORNER_360
+139005:		! BRICK_IT_CORNER_400
+149001:		! XK_CORNER_250
+149002:		! XK_CORNER_300
+149003:		! XK_CORNER_375
+159001:		! SI_CORNER_PZB_1
+159002:		! SI_CORNER_PZB_2
+159003:		! SI_CORNER_PZB_3
+159004:		! SI_CORNER_PZB_4
+159005:		! SI_CORNER_PZB_9
+159006:		! SI_CORNER_PZB_10
+159007:		! SI_CORNER_PZB_8
+169001:		! BA_CORNER_PB_25
+169002:		! BA_CORNER_PB_25_STAR
+169003:		! BA_CORNER_PB_25_20
+169004:		! BA_CORNER_PB_25_20_STAR
+169005:		! BA_CORNER_PB_30
+169006:		! BA_CORNER_PB_30_STAR
+169007:		! BA_CORNER_PB_40
+169008:		! BA_CORNER_PB_40_STAR
+170901:		! HR_ZIDNI_CORNER_300
+170902:		! HR_ZIDNI_CORNER_400
+189001:		! RS_CORNER_250
+189002:		! RS_CORNER_300
+189003:		! RS_CORNER_375
+189004:		! RS_CORNER_PLUS_300
+189005:		! RS_CORNER_PLUS_375
+199001:		! HU_P2_50_CORNER_300
+199002:		! HU_P2_50_CORNER_375
+199003:		! HU_P4_60_CORNER_300
+199004:		! HU_P4_60_CORNER_375
+209001:		! BG_CORNER_EXTRA_PLUS_600_250_250
+209002:		! BG_CORNER_EXTRA_PLUS_600_300_250
+209003:		! BG_CORNER_EXTRA_PLUS_600_350_250
+209004:		! BG_CORNER_A_PLUS_600_250_250
+209005:		! BG_CORNER_A_PLUS_600_300_250
+209006:		! BG_CORNER_A_PLUS_600_350_250
+209007:		! BG_CORNER_B50_D600_600_250_250
+209008:		! BG_CORNER_B50_D600_600_300_250
+209009:		! BG_CORNER_B50_D600_600_350_250
+219001:		! RO_CORNER_200
+219002:		! RO_CORNER_250
+219003:		! RO_CORNER_300
+219004:		! RO_CORNER_350
+219005:		! RO_CORNER_400
+239001:		! SK_CORNER_300
+249001:		! CZ_CORNER_300
+
+
+	r = 0.1
+	!!if pType = P_PP_CORNER_2_40_010_240 then r = 0.075
+	!!if pType = BRICK_IT_CORNER_200		then r = 0.05
+	!!if pType = BRICK_IT_CORNER_240		then r = 0.075
+	if brickThk < 0.2+EPS then r = 0.05
+	if brickThk < 0.25+EPS then r = 0.075
+
+	put 0, 0, 15,
+		brickWidth, 0, 15,
+		brickWidth, brickThk, 15,
+		0, brickThk, 15,
+		0, 0, -1,
+
+		brickThk/2, brickThk/2-r, 79,
+		brickThk/2, brickThk/2, 900,
+		0, 180, 4079,
+		brickThk/2, brickThk/2+r, 79,
+		brickThk/2, brickThk/2, 900,
+		0, 180, 4079,
+		brickThk/2, brickThk/2-r, -1
+
+	hotspot brickThk/2, brickThk/2, 0, unID : unID=unID+1
+	hotspot brickThk/2, brickThk/2, brickHeight, unID : unID=unID+1
+return
+
+31001:		! CH_ANSCHLAG_600_300_250
+31002:		! CH_ANSCHLAG_600_365_250
+31003:		! CH_ANSCHLAG_600_400_250
+31004:		! CH_ANSCHLAG_600_480_250
+31005:		! CH_ANSCHLAG_600_500_250
+
+	if bMirrored then
+		put -0.08, brickThk, 15,
+			-0.08, brickThk-0.2, 15,
+			0, brickThk-0.2, 15,
+			0, 0, 15,
+			brickWidth, 0, 15,
+			brickWidth, 0.2, 15,
+			brickWidth-0.08, 0.2, 15,
+			brickWidth-0.08, brickThk, 15,
+			-0.08, brickThk, -1
+	
+		hotspot -0.08,	brickThk,		0,	unID : unID=unID+1
+		hotspot -0.08,	brickThk-0.2,	0,	unID : unID=unID+1
+		hotspot  0,		brickThk-0.2,	0,	unID : unID=unID+1
+	
+		hotspot -0.08,	brickThk,		brickHeight,	unID : unID=unID+1
+		hotspot -0.08,	brickThk-0.2,	brickHeight,	unID : unID=unID+1
+		hotspot  0,		brickThk-0.2,	brickHeight,	unID : unID=unID+1
+	else
+		put -0.08, 0, 15,
+			-0.08, 0.2, 15,
+			0, 0.2, 15,
+			0, brickThk, 15,
+			brickWidth, brickThk, 15,
+			brickWidth, brickThk-0.2, 15,
+			brickWidth-0.08, brickThk-0.2, 15,
+			brickWidth-0.08, 0, 15,
+			-0.08, 0, -1
+	
+		hotspot -0.08,	0,		0,	unID : unID=unID+1
+		hotspot -0.08,	0.2,	0,	unID : unID=unID+1
+		hotspot  0,		0.2,	0,	unID : unID=unID+1
+	
+		hotspot -0.08,	0,		brickHeight,	unID : unID=unID+1
+		hotspot -0.08,	0.2,	brickHeight,	unID : unID=unID+1
+		hotspot  0,		0.2,	brickHeight,	unID : unID=unID+1
+	endif
+return
+
+"boxPut":
+	put 0, 0, 15,
+		brickWidth, 0, 15,
+		brickWidth, brickThk, 15,
+		0, brickThk, 15,
+		0, 0, -1
+return
+
+! ------------------------------------------------------------------------------
+10000:		!textura
+! ------------------------------------------------------------------------------
+	
+	vert 0, 0, 0
+	vert texScale, 0, 0
+	vert 0, texScale, 0
+	vert 0, 0, texScale
+	
+	coor 2+256+1024, -1, -2, -3, -4
+	body -1
+return
+
+]]>
+</Script_3D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_2D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+fill gs_fill_type
+pen gs_cont_pen
+
+
+! ------------------------------------------------------------------------------
+! Hotspots
+! ------------------------------------------------------------------------------
+if bMirrored then
+	rot2 180
+	add2 -brickWidth, -brickThk
+endif
+hotspot2 sCut,				0,			unID		: unID = unID + 1
+hotspot2 brickWidth-eCut,	0,			unID		: unID = unID + 1
+hotspot2 brickWidth-eCut,	brickThk,	unID		: unID = unID + 1
+hotspot2 sCut,				brickThk,	unID		: unID = unID + 1
+hotspot2 sCut+(brickWidth-sCut-eCut)/2,		brickThk/2,	unID		: unID = unID + 1
+
+if not(bNoHotspot) then
+	hotspot2 0,			brickThk/2, unID, startCut, 1+128	: unID = unID + 1
+	hotspot2 -1,		brickThk/2, unID, startCut, 3		: unID = unID + 1
+	hotspot2 startCut,	brickThk/2, unID, startCut, 2		: unID = unID + 1
+	
+	hotspot2 brickWidth,		brickThk/2, unID, endCut, 1+128	: unID = unID + 1
+	hotspot2 brickWidth+1,		brickThk/2, unID, endCut, 3		: unID = unID + 1
+	hotspot2 brickWidth-endCut,	brickThk/2, unID, endCut, 2		: unID = unID + 1
+	
+	hotspot2 sCut+minBrickOverlap,	0,			unID		: unID = unID + 1
+	hotspot2 sCut+minBrickOverlap,	brickThk,	unID		: unID = unID + 1
+
+	hotspot2 brickWidth-eCut-minBrickOverlap,	0,			unID	: unID = unID + 1
+	hotspot2 brickWidth-eCut-minBrickOverlap,	brickThk,	unID	: unID = unID + 1
+
+	if (startCut > EPS) then
+		if abs(startCut-90) < EPS then
+			d1 = 0
+		else
+			d1 = brickThk / tan(startCutAngle)
+		endif
+
+		hotspot2 startCut,				0,			unID, startCutAngle,6 		: unID=unID+1
+		hotspot2 startCut+brickThk, 	0,			unID, startCutAngle,4+128	: unID=unID+1
+		hotspot2 startCut+d1,			brickThk, 	unID, startCutAngle,5		: unID=unID+1
+	endif
+	
+	if (endCut > EPS) then
+		if abs(endCutAngle-90) < EPS then
+			d2 = 0
+		else
+			d2 = brickThk / tan(endCutAngle)
+		endif
+
+		hotspot2 brickWidth-endCut,				0,			unID, endCutAngle,6 		: unID=unID+1
+		hotspot2 brickWidth-endCut+brickThk, 	0,			unID, endCutAngle,4+128	: unID=unID+1
+		hotspot2 brickWidth-endCut+d2,			brickThk, 	unID, endCutAngle,5		: unID=unID+1
+	endif
+endif
+
+del 2*bMirrored
+
+
+! ------------------------------------------------------------------------------
+! Controller
+! ------------------------------------------------------------------------------
+if bMirrored then
+	rot2 180
+	add2 -brickWidth, -brickThk
+endif
+
+bPolyOp = (startCut > EPS | endCut > EPS)
+if bPolyOp then
+	angle90			= 90
+	angle180		= -180
+	cutOverSizeX	= 100
+	cutOverSizeY	= 1
+endif
+
+
+if not(bCustom) then
+	gosub "brickBlock"
+else
+	gosub iProductType
+endif
+if bPolyOp then
+	if not(bCustom) then
+		gosub "brickBlock"
+	else
+		gosub iProductType
+		gosub "polyToPolyopPoly"
+	endif
+	gosub "polyOp"
+else
+	if not(bCustom) then
+		gosub "boxPut"
+	else
+		gosub iProductType
+	endif
+	poly2_b nsp/3, 1+2, gs_fill_pen, gs_back_pen, get(nsp)
+endif
+
+del 2*bMirrored
+
+
+! ==============================================================================
+!
+end unID
+!
+! ==============================================================================
+
+
+! ==============================================================================
+!
+! Subrutines
+!
+! ==============================================================================
+10900:		! BRICK_DE_PP_CORNER_2_40_010_240
+10901:		! BRICK_DE_PP_CORNER_2_40_010_300
+10902:		! BRICK_DE_PP_CORNER_2_40_010_365
+10903:		! BRICK_DE_PP_CORNER_2_40_010_400
+10904:		! BRICK_DE_PP_CORNER_2_40_010_425
+10905:		! BRICK_DE_PP_CORNER_2_40_010_480
+109001:		! FR_CORNER_150
+109002:		! FR_CORNER_200
+109003:		! FR_CORNER_225
+109004:		! FR_CORNER_250
+109005:		! FR_CORNER_300
+109006:		! FR_CORNER_365
+109007:		! FR_CORNER_420
+119001:		! ES_CORNER_625_200_500
+119002:		! ES_CORNER_625_250_500
+119003:		! ES_CORNER_625_300_500
+119004:		! ES_CORNER_625_150_250
+119005:		! ES_CORNER_625_200_250
+119006:		! ES_CORNER_625_250_250
+119007:		! ES_CORNER_625_300_250
+119008:		! ES_CORNER_625_365_250
+139001:		! BRICK_IT_CORNER_200
+139002:		! BRICK_IT_CORNER_240
+139003:		! BRICK_IT_CORNER_300
+139004:		! BRICK_IT_CORNER_360
+139005:		! BRICK_IT_CORNER_400
+149001:		! XK_CORNER_250
+149002:		! XK_CORNER_300
+149003:		! XK_CORNER_375
+159001:		! SI_CORNER_PZB_1
+159002:		! SI_CORNER_PZB_2
+159003:		! SI_CORNER_PZB_3
+159004:		! SI_CORNER_PZB_4
+159005:		! SI_CORNER_PZB_9
+159006:		! SI_CORNER_PZB_10
+159007:		! SI_CORNER_PZB_8
+169001:		! BA_CORNER_PB_25
+169002:		! BA_CORNER_PB_25_STAR
+169003:		! BA_CORNER_PB_25_20
+169004:		! BA_CORNER_PB_25_20_STAR
+169005:		! BA_CORNER_PB_30
+169006:		! BA_CORNER_PB_30_STAR
+169007:		! BA_CORNER_PB_40
+169008:		! BA_CORNER_PB_40_STAR
+170901:		! HR_ZIDNI_CORNER_300
+170902:		! HR_ZIDNI_CORNER_400
+189001:		! RS_CORNER_250
+189002:		! RS_CORNER_300
+189003:		! RS_CORNER_375
+189004:		! RS_CORNER_PLUS_300
+189005:		! RS_CORNER_PLUS_375
+199001:		! HU_P2_50_CORNER_300
+199002:		! HU_P2_50_CORNER_375
+199003:		! HU_P4_60_CORNER_300
+199004:		! HU_P4_60_CORNER_375
+209001:		! BG_CORNER_EXTRA_PLUS_600_250_250
+209002:		! BG_CORNER_EXTRA_PLUS_600_300_250
+209003:		! BG_CORNER_EXTRA_PLUS_600_350_250
+209004:		! BG_CORNER_A_PLUS_600_250_250
+209005:		! BG_CORNER_A_PLUS_600_300_250
+209006:		! BG_CORNER_A_PLUS_600_350_250
+209007:		! BG_CORNER_B50_D600_600_250_250
+209008:		! BG_CORNER_B50_D600_600_300_250
+209009:		! BG_CORNER_B50_D600_600_350_250
+219001:		! RO_CORNER_200
+219002:		! RO_CORNER_250
+219003:		! RO_CORNER_300
+219004:		! RO_CORNER_350
+219005:		! RO_CORNER_400
+239001:		! SK_CORNER_300
+249001:		! CZ_CORNER_300
+
+
+	r = 0.1
+	!!if pType = P_PP_CORNER_2_40_010_240 then r = 0.075
+	!!if pType = BRICK_IT_CORNER_200		then r = 0.05
+	!!if pType = BRICK_IT_CORNER_240		then r = 0.075
+	if brickThk < 0.2+EPS then r = 0.05
+	if brickThk < 0.25+EPS then r = 0.075
+
+	put 0, 0, 1,
+		brickWidth, 0, 1,
+		brickWidth, brickThk, 1,
+		0, brickThk, 1,
+		0, 0, -1,
+
+		brickThk/2, brickThk/2-r, 1,
+		brickThk/2, brickThk/2, 901,
+		0, 180, 4001,
+		brickThk/2, brickThk/2+r, 1,
+		brickThk/2, brickThk/2, 901,
+		0, 180, 4001,
+		brickThk/2, brickThk/2-r, -1
+
+	hotspot2 brickThk/2, brickThk/2, unID : unID=unID+1
+return
+
+31001:		! CH_ANSCHLAG_600_300_250
+31002:		! CH_ANSCHLAG_600_365_250
+31003:		! CH_ANSCHLAG_600_400_250
+31004:		! CH_ANSCHLAG_600_480_250
+31005:		! CH_ANSCHLAG_600_500_250
+	
+	if bMirrored then
+		put -0.08, brickThk, 1,
+			-0.08, brickThk-0.2, 1,
+			0, brickThk-0.2, 1,
+			0, 0, 1,
+			brickWidth, 0, 1,
+			brickWidth, 0.2, 1,
+			brickWidth-0.08, 0.2, 1,
+			brickWidth-0.08, brickThk, 1,
+			-0.08, brickThk, -1
+	
+		hotspot2 -0.08, brickThk,		unID : unID=unID+1
+		hotspot2 -0.08, brickThk-0.2,	unID : unID=unID+1
+		hotspot2  0,	brickThk-0.2,	unID : unID=unID+1
+	else
+		put -0.08, 0, 1,
+			-0.08, 0.2, 1,
+			0, 0.2, 1,
+			0, brickThk, 1,
+			brickWidth, brickThk, 1,
+			brickWidth, brickThk-0.2, 1,
+			brickWidth-0.08, brickThk-0.2, 1,
+			brickWidth-0.08, 0, 1,
+			-0.08, 0, -1
+	
+		hotspot2 -0.08, 0,		unID : unID=unID+1
+		hotspot2 -0.08, 0.2,	unID : unID=unID+1
+		hotspot2  0,	0.2,	unID : unID=unID+1
+	endif
+return
+
+"boxPut":
+	put 0, 0, 1,
+		brickWidth, 0, 1,
+		brickWidth, brickThk, 1,
+		0, brickThk, 1,
+		0, 0, -1
+return
+
+! ------------------------------------------------------------------------------
+"brickBlock":
+! ------------------------------------------------------------------------------
+	dim contArr[]
+	dim vertArr[5][3]
+	nContour	  = 1
+	nVertices	  = 5
+	contArr[1]	  = 5
+
+	vertArr[1][1] = 0.0
+	vertArr[1][2] = 0.0
+	vertArr[1][3] = 0.0
+
+	vertArr[2][1] = brickWidth
+	vertArr[2][2] = 0.0
+	vertArr[2][3] = 0.0
+
+	vertArr[3][1] = brickWidth
+	vertArr[3][2] = brickThk
+	vertArr[3][3] = 0.0
+
+	vertArr[4][1] = 0.0
+	vertArr[4][2] = brickThk
+	vertArr[4][3] = 0.0
+
+	vertArr[5][1] = 0.0
+	vertArr[5][2] = 0.0
+	vertArr[5][3] = 0.0
+return
+
+! ------------------------------------------------------------------------------
+"polyToPolyopPoly":
+! ------------------------------------------------------------------------------
+	nContour = 0
+	dim contArr[]
+
+	! Save Quene
+	nQuene = nsp/3
+	dim quene[][3]
+	quene[nQuene][3] = 0
+
+	for i = 1 to nQuene
+		quene[i][1] = get(1)
+		quene[i][2] = get(1)
+		quene[i][3] = get(1)
+	next i
+
+	!Rearrange
+	n = 0
+	for i = 1 to nQuene
+		if quene[i][3] < 0 then
+			n					= n + 1
+			nContour			= nContour + 1
+			contArr[nContour]	= n
+			put quene[i][1], quene[i][2], 0
+		else
+			!TODO itt lehet vizsgálni hogy jó e a zárás
+			if quene[i+1][3] > 800 & quene[i+1][3] < 1000 then
+				n = n + 1
+				put quene[i][1], quene[i][2], quene[i+2][2]
+				i = i + 2		!TODO ez lehetne szebb is
+			else
+				n = n + 1
+				put quene[i][1], quene[i][2], 0
+			endif
+		endif
+	next i
+
+	!!print nsp/3, nContour, contArr
+
+	!Put vertives
+	nVertices	= nsp/3
+	dim vertArr[][3]
+	vertArr[nVertices][1] = 0
+	for i = 1 to nVertices
+		vertArr[i][1] = get(1)
+		vertArr[i][2] = get(1)
+		vertArr[i][3] = get(1)
+	next i
+return
+
+! ------------------------------------------------------------------------------
+! PolyOperations
+! ------------------------------------------------------------------------------
+"polyOp":
+	
+	ch = INITADDONSCOPE ("PolyOperations", "", "")
+
+	nDestContainer = 1
+	prevSourceContainer	= "mySourceContainer"
+	lastDestContainer	= "myDestinationContainer" + STR(nDestContainer,1,0)
+
+	PREPAREFUNCTION ch, "CreateContainer", prevSourceContainer, ""
+	PREPAREFUNCTION ch, "CreateContainer", lastDestContainer, ""
+
+	PREPAREFUNCTION ch, "SetSourceContainer",		prevSourceContainer, ""
+	PREPAREFUNCTION ch, "SetDestinationContainer",	lastDestContainer, ""
+	
+
+	!---- Brick -----------
+	PREPAREFUNCTION ch, "Store", "brick", nVertices, nContour, vertArr, contArr
+	dim contourNames[]
+	contourNames[1]	= "brick"
+	numContour		= 1
+
+	!---- sCut -----------
+	if bsCut then
+		dim vertArr[4][3]
+		dim contArr[]
+	
+		vertArr[1][1] 		= -cutOverSizeX
+		vertArr[1][2] 		= cutOverSizeY
+		vertArr[1][3] 		= 0.0
+	
+		vertArr[2][1] 		= -cutOverSizeX
+		vertArr[2][2] 		= -cutOverSizeY
+		vertArr[2][3] 		= 0.0
+	
+		if abs(sAngle-90) < eps then
+			vertArr[3][1] 		= sCut
+			vertArr[3][2] 		= -cutOverSizeY
+			vertArr[3][3] 		= 0.0
+	
+			vertArr[4][1] 		= sCut
+			vertArr[4][2] 		= cutOverSizeY
+			vertArr[4][3] 		= 0.0
+		else
+			vertArr[3][1] 		= sCut-cutOverSizeY/tan(sAngle)
+			vertArr[3][2] 		= -cutOverSizeY
+			vertArr[3][3] 		= 0.0
+	
+			vertArr[4][1] 		= sCut+cutOverSizeY/tan(sAngle)
+			vertArr[4][2] 		= cutOverSizeY
+			vertArr[4][3] 		= 0.0
+		endif
+	
+		nVertices	= 4
+		nContour	= 1
+		contArr[1]	= 5
+	
+		PREPAREFUNCTION ch, "Store", "sCut", nVertices, nContour, vertArr, contArr
+
+		dim tempResPolyIDArr[]
+		numContour		= CALLFUNCTION(ch, contourNames[1] + " - sCut", "", tempResPolyIDArr)
+		contourNames	= tempResPolyIDArr
+
+		if prevSourceContainer <> "" then
+			PREPAREFUNCTION ch, "DeleteContainer",		prevSourceContainer, ""
+		endif
+		PREPAREFUNCTION ch, "SetSourceContainer",		lastDestContainer, ""
+		prevSourceContainer	= lastDestContainer
+		nDestContainer = nDestContainer + 1
+		lastDestContainer = "myDestinationContainer" + STR(nDestContainer,1,0)
+		PREPAREFUNCTION ch, "CreateContainer",			lastDestContainer, ""
+		PREPAREFUNCTION ch, "SetDestinationContainer",	lastDestContainer, ""
+	endif
+
+
+	!---- EndtCut -----------
+	if beCut then
+		dim vertArr[4][3]
+		dim contArr[]
+	
+		vertArr[1][1] 		= brickWidth+cutOverSizeX
+		vertArr[1][2] 		= cutOverSizeY
+		vertArr[1][3] 		= 0.0
+	
+		vertArr[2][1] 		= brickWidth+cutOverSizeX
+		vertArr[2][2] 		= -cutOverSizeY
+		vertArr[2][3] 		= 0.0
+	
+		if abs(eAngle-90) < eps then
+			vertArr[3][1] 		= brickWidth-eCut
+			vertArr[3][2] 		= -cutOverSizeY
+			vertArr[3][3] 		= 0.0
+	
+			vertArr[4][1] 		= brickWidth-eCut
+			vertArr[4][2] 		= cutOverSizeY
+			vertArr[4][3] 		= 0.0
+		else
+			vertArr[3][1] 		= brickWidth-eCut-cutOverSizeY/tan(eAngle)
+			vertArr[3][2] 		= -cutOverSizeY
+			vertArr[3][3] 		= 0.0
+	
+			vertArr[4][1] 		= brickWidth-eCut+cutOverSizeY/tan(eAngle)
+			vertArr[4][2] 		= cutOverSizeY
+			vertArr[4][3] 		= 0.0
+		endif
+	
+		nVertices	= 4
+		nContour	= 1
+		contArr[1]	= 5
+	
+		PREPAREFUNCTION ch, "Store", "eCut", nVertices, nContour, vertArr, contArr
+
+		dim tempResPolyIDArr[]
+		for nC = 1 to numContour
+			tempNumPoly = CALLFUNCTION(ch, contourNames[nC] + " - eCut", "", tempResPolyIDArr)
+		next nC
+
+		if prevSourceContainer <> "" then
+			PREPAREFUNCTION ch, "DeleteContainer",		prevSourceContainer, ""
+		endif
+		PREPAREFUNCTION ch, "SetSourceContainer",		lastDestContainer, ""
+		prevSourceContainer	= lastDestContainer
+		nDestContainer = nDestContainer + 1
+		lastDestContainer = "myDestinationContainer" + STR(nDestContainer,1,0)
+		PREPAREFUNCTION ch, "CreateContainer",			lastDestContainer, ""
+		PREPAREFUNCTION ch, "SetDestinationContainer",	lastDestContainer, ""
+	endif
+	
+	if lastDestContainer <> "" then
+		PREPAREFUNCTION ch, "DeleteContainer",		lastDestContainer, ""
+	endif
+	lastDestContainer = prevSourceContainer
+	PREPAREFUNCTION ch, "SetDestinationContainer",	lastDestContainer, ""
+
+	dim resPolyIDArr[]
+	numPoly = CALLFUNCTION(ch, "GetDestinationPolygons", "", resPolyIDArr)
+	for cP = 1 to numPoly
+		polygonID	= resPolyIDArr[cP]
+		mask		= 1
+		gosub "getGDLpolygonFromAPI"
+		if nsp > 8 then
+			poly2_b nsp/3, 1+2, gs_fill_pen, gs_back_pen, get(nsp)
+		else
+			for k = 1 to nsp
+				temp = get(1)
+			next k
+		endif
+	next cP
+
+	CLOSEADDONSCOPE ch
+
+return
+
+
+! ==============================================================================
+! GET GDL Polygon
+! ------------------------------------------------------------------------------
+! Input variables:
+!	ch:				Channel ID
+!	polygonID:		Polygon ID
+!	mask:
+!	bEdgeInfo:
+!
+! Returned variables:
+!	GDL stack:			GDL polygon
+! ==============================================================================
+"getGDLpolygonFromAPI":
+	!TODO: ez a hibás kell még rajta finomitani (csempézobol átvenni)
+	dim resVertices[]
+	numVertices = CALLFUNCTION (ch, "GetVertices", polygonID, resVertices)
+	numVertices = numVertices / 3
+
+	dim contArray[]
+	numContours = CALLFUNCTION (ch, "GetContourEnds", polygonID, contArray)
+
+	for contIndex = 1 to numContours
+		if contIndex = 1 then
+			begIdx = 0
+		else
+			begIdx = endIdx +1
+		endif
+		if contIndex = numContours then
+			endIdx = numVertices - 1
+		else
+			endIdx = contArray[contIndex + 1] - 2 -(contIndex - 1)
+		endif
+
+		bClosed = 0
+		bStartWithLast = 0
+
+		index = endIdx * 3
+		lastVertX = resVertices[index + 1]
+		lastVertY = resVertices[index + 2]
+		lastVertA = resVertices[index + 3]
+
+		if abs(lastVertA) > EPS then
+			put lastVertX, lastVertY, mask
+			bStartWithLast = 1
+		endif
+
+		for vertIndex = begIdx to endIdx
+			index = vertIndex * 3
+			actVertX = resVertices[index + 1]
+			actVertY = resVertices[index + 2]
+			actVertA = resVertices[index + 3]
+
+			if vertIndex = begIdx then
+				if bStartWithLast then
+					ac2gdl_spx = lastVertX
+					ac2gdl_spy = lastVertY
+				else
+					ac2gdl_spx = actVertX
+					ac2gdl_spy = actVertY
+				endif
+			endif
+
+			if abs(lastVertA) > EPS then
+				ac2gdl_mx = (actVertX + lastVertX) / 2
+				ac2gdl_my = (actVertY + lastVertY) / 2
+				ac2gdl_ratio = 1 / 2 / tan (lastVertA / 2)
+			
+				ac2gdl_cx = ac2gdl_mx - ac2gdl_ratio * (actVertY - lastVertY)	! Arc center
+				ac2gdl_cy = ac2gdl_my + ac2gdl_ratio * (actVertX - lastVertX)
+			
+				put ac2gdl_cx,	ac2gdl_cy,	900+mask,
+					0,			lastVertA,	4000+mask
+			endif
+
+			bPointMatch = 0
+			if bStartWithLast | (vertIndex > begIdx) then
+				if abs(lastVertX - actVertX) < EPS then
+					if abs(lastVertY - actVertY) < EPS then
+						bPointMatch = 1
+					endif
+				endif
+			endif
+
+			if not(bPointMatch) then
+				if vertIndex > begIdx & ABS(ac2gdl_spx - actVertX) < EPS & ABS(ac2gdl_spy - actVertY) < EPS then
+					PUT ac2gdl_spx, ac2gdl_spy, -1
+					bClosed = 1
+				else
+					if vertIndex < endIdx | NOT(bStartWithLast) then
+						PUT actVertX, actVertY, 1
+					endif
+				endif
+			endif
+
+			lastVertX = actVertX
+			lastVertY = actVertY
+			lastVertA = actVertA
+
+		next vertIndex
+
+		if not(bClosed) then	! Close the polygon if it has holes
+			put ac2gdl_spx, ac2gdl_spy, -1
+		endif
+
+	next contIndex
+return
+]]>
+</Script_2D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_1D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+EPS					= 0.0001
+BIGEPS				= 0.001
+
+
+! ------------------------------------------------------------------------------
+! Definitions
+! ------------------------------------------------------------------------------
+! iFamily
+	BRICK_FAMILY_NONE		= 0
+
+! iWallType
+	WALLTYPE_NONE			= 0
+	WALLTYPE_INTERNAL_WALL	= 1
+	WALLTYPE_EXTERNAL_WALL	= 2
+	WALLTYPE_INSULATED_WALL	= 3
+
+! iHasEndElem
+	HAS_END_ELEM_NONE		= 0
+	HAS_END_ELEM_NORMAL		= 1
+	HAS_END_ELEM_SPECIAL	= 2
+
+! Column element
+	COLUMN_NONE				= 0
+	COLUMN_EMPTY			= 1
+	COLUMN_CONCRETE			= 2
+	COLUMN_CONCRETE_OFFSET	= 3
+
+!iDetlevel3D:
+	DETLEVEL_3D_NONE		= 0
+	DETLEVEL_3D_SIMPLE		= 1
+	DETLEVEL_3D_DETAILED	= 2
+	DETLEVEL_3D_BLOCK		= 3
+	DETLEVEL_3D_WIRE		= 4
+
+!iDetlevel2D:
+	DETLEVEL_2D_BLOCK		= 1
+	DETLEVEL_2D_SIMPLE		= 2
+	DETLEVEL_2D_DETAILED	= 3
+
+!lod
+	LOD_BLOCK	= 1
+	LOD_SIMPLE	= 2
+	LOD_DETAIL	= 3
+
+
+! ------------------------------------------------------------------------------
+! Data
+! ------------------------------------------------------------------------------
+bCustom = (iFamily = BRICK_FAMILY_NONE)		!Ezek a custom elemek
+
+
+! ------------------------------------------------------------------------------
+! Sizes
+! ------------------------------------------------------------------------------
+if not(bMirrored) then
+	sCut	= startCut
+	eCut	= endCut
+	sAngle	= startCutAngle
+	eAngle	= endCutAngle
+	bsCut	= (sCut > BIGEPS)
+	beCut	= (eCut > BIGEPS)
+else
+	sCut	= endCut
+	eCut	= startCut
+	sAngle	= endCutAngle
+	eAngle	= startCutAngle
+	bsCut	= (sCut > BIGEPS)
+	beCut	= (eCut > BIGEPS)
+endif
+
+
+
+]]>
+</Script_1D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_PR SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+! ------------------------------------------------------------------------------
+! Localization
+! ------------------------------------------------------------------------------
+listLength		= `l=`
+listArtNo		= `Art.No.:`
+dbName			= `KS-Quadro wall component`
+
+
+! ------------------------------------------------------------------------------
+! Database
+! ------------------------------------------------------------------------------
+DATABASE_SET `KS-Quadro Wall`
+
+unitDB	= "001"
+unitM	= "002"
+unitCM	= "003"
+unitM2	= "004"
+
+mmMultiplier = 1000
+
+separator	= " | "
+
+
+! ------------------------------------------------------------------------------
+! Component
+! ------------------------------------------------------------------------------
+!listTxt = brickName + separator + listArtNo + " " + brickArticle
+listTxt = brickName + str(brickThk*mmMultiplier,1,0) + "x" + str(brickHeight*mmMultiplier,1,0) + "x" + str(brickWidth*mmMultiplier,1,0)
+if brickWidth-sCut-eCut < brickWidth-0.01 then
+	if ((startCut > EPS) | (endCut > EPS)) then
+		listTxt = listTxt + separator + listLength + str((brickWidth-sCut-eCut)*mmMultiplier,1,0)+"mm"
+	endif 
+endif
+
+component listTxt, 1,  `pc`, 1, dbName, "001", unitDB
+
+]]>
+</Script_PR>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_UI SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_UI>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_VL SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+! ------------------------------------------------------------------------------
+! Sizes 
+! ------------------------------------------------------------------------------
+values "startCut"		range [0, brickWidth-endCut-minBrickSize]
+values "endCut"			range [0, brickWidth-startCut-minBrickSize]
+values "startCutAngle"	range (0, 180)
+values "endCutAngle"	range (0, 180)
+
+
+
+
+]]>
+</Script_VL>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Comment SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Comment>
+
+<ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
+	<ParamSectHeader>
+		<Version>22</Version>
+		<AutoHotspots>no</AutoHotspots>
+		<StatBits>
+			<STBit_FixSize/>
+		</StatBits>
+		<WDLeftFrame>0</WDLeftFrame>
+		<WDRightFrame>0</WDRightFrame>
+		<WDTopFrame>0</WDTopFrame>
+		<WDBotFrame>0</WDBotFrame>
+		<LayFlags>65535</LayFlags>
+		<WDMirrorThickness>0</WDMirrorThickness>
+		<WDWallInset>0</WDWallInset>
+		<SymbolColor>0</SymbolColor>
+	</ParamSectHeader>
+	<Parameters>
+		<Length Name="A">
+			<Description><![CDATA["Dimension 1"]]></Description>
+			<Value>0.5</Value>
+		</Length>
+		<Length Name="B">
+			<Description><![CDATA["Dimension 2"]]></Description>
+			<Value>0.2</Value>
+		</Length>
+		<Length Name="ZZYZX">
+			<Description><![CDATA["Height"]]></Description>
+			<Value>0.2</Value>
+		</Length>
+		<Boolean Name="AC_show2DHotspotsIn3D">
+			<Description><![CDATA["Show 2D Hotspots in 3D"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0</Value>
+		</Boolean>
+		<Length Name="ac_bottomlevel">
+			<Description><![CDATA["Bottom Level"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0</Value>
+		</Length>
+		<Length Name="ac_toplevel">
+			<Description><![CDATA["Top Level"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0.2</Value>
+		</Length>
+
+		<!-- inputParams: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="inputParams">
+			<Description><![CDATA[""]]></Description>
+		</Title>
+		<String Name="brickName">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value><![CDATA[""]]></Value>
+		</String>
+		<Integer Name="iFamily">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>1</Value>
+		</Integer>
+		<Integer Name="iProductType">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>1</Value>
+		</Integer>
+		<Integer Name="iProductIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>1</Value>
+		</Integer>
+		<Boolean Name="bMirrored">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Boolean>
+		<Boolean Name="bNoHotspot">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Boolean>
+		<Integer Name="unID">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>1</Value>
+		</Integer>
+
+		<!-- sizes: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="sizes">
+			<Description><![CDATA[""]]></Description>
+		</Title>
+		<Length Name="brickWidth">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0.5</Value>
+		</Length>
+		<Length Name="brickThk">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0.2</Value>
+		</Length>
+		<Length Name="brickHeight">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0.25</Value>
+		</Length>
+		<Length Name="minBrickSize">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0.016</Value>
+		</Length>
+		<Length Name="minBrickOverlap">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0.008</Value>
+		</Length>
+
+		<!-- cutting: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="cutting">
+			<Description><![CDATA[""]]></Description>
+		</Title>
+		<Length Name="startCut">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Length>
+		<Length Name="endCut">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Length>
+		<Length Name="topCut">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Length>
+		<Angle Name="startCutAngle">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>90</Value>
+		</Angle>
+		<Angle Name="endCutAngle">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>90</Value>
+		</Angle>
+
+		<!-- gs_2D_representation: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="gs_2D_representation">
+			<Description><![CDATA["2D Representation"]]></Description>
+		</Title>
+		<Integer Name="iDetlevel2D">
+			<Description><![CDATA["2D Detail Level"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>3</Value>
+		</Integer>
+		<PenColor Name="gs_cont_pen">
+			<Description><![CDATA["Contour Pen"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</PenColor>
+		<FillPattern Name="gs_fill_type">
+			<Description><![CDATA["Fill Type"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>24</Value>
+		</FillPattern>
+		<PenColor Name="gs_fill_pen">
+			<Description><![CDATA["Fill Pen"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</PenColor>
+		<PenColor Name="gs_back_pen">
+			<Description><![CDATA["Fill Background Pen"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>19</Value>
+		</PenColor>
+
+		<!-- gs_3D_representation: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="gs_3D_representation">
+			<Description><![CDATA["3D Representation"]]></Description>
+		</Title>
+		<Integer Name="iDetlevel3D">
+			<Description><![CDATA["3D Detail Level"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</Integer>
+		<PenColor Name="pen3D">
+			<Description><![CDATA["3D Pen"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</PenColor>
+		<Material Name="brickMat">
+			<Description><![CDATA["Material"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>4</Value>
+		</Material>
+		<Integer Name="gs_resol">
+			<Description><![CDATA["Resolution"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>24</Value>
+		</Integer>
+	</Parameters>
+</ParamSection>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_FWM SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_FWM>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_BWM SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_BWM>
+
+<Copyright SectVersion="1" SectionFlags="0" SubIdent="0">
+	<Author></Author>
+	<License>
+		<Type>CC BY-ND</Type>
+		<Version>3.0</Version>
+	</License>
+</Copyright>
+
+<Keywords SectVersion="1" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Keywords>
+
+</Symbol>

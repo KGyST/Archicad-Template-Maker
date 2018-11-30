@@ -1,0 +1,442 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Symbol IsArchivable="no" IsPlaceable="no" MainGUID="7BDF8326-C493-402A-AE3A-9AF395FCA7DF" MigrationValue="Normal" Owner="1196638531" Signature="1196644685" Version="34">
+<Ancestry SectVersion="1" SectionFlags="0" SubIdent="0" Template="no">
+	<MainGUID>F938E33A-329D-4A36-BE3E-85E126820996</MainGUID>
+	<MainGUID>103E8D2C-8230-42E1-9597-46F84CCE28C0</MainGUID>
+</Ancestry>
+
+<CalledMacros SectVersion="2" SectionFlags="0" SubIdent="0">
+</CalledMacros>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_3D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+resol gs_resol
+
+
+gosub iSignType
+
+
+! ==============================================================================
+
+end
+
+! ==============================================================================
+
+! -----------------------------------------------------------------------
+1:		! WarnigSign
+! -----------------------------------------------------------------------
+	mul A/0.991, B/0.866, 1
+		n=REQUEST("Pen_of_RGB", "255 0 0", penDrawing)
+		define material "Sign_red" 2, 255/255, 0/255, 0/255
+		material "Sign_red"
+		pen penDrawing
+
+		prism_ 14, EPS,
+			-0.49134,	0.045,	79,
+			-0.465359,	0.03,	900,
+			0,	120,	4079,
+			0.465359,	0,	79,
+			0.465359,	0.03,	900,
+			0,	120,	4079,
+			0.0259808,	0.851025,	79,
+			-1.06581e-014,	0.836025,	900,
+			0,	120,	4079,
+			-0.49134,	0.045,	-1,
+			0.413397,	0.06,	15,
+			-0.413397,	0.06,	15,
+			0,	0.776025,	15,
+			0.413397,	0.06,	-1
+
+!!		prism_ 4, EPS,
+!!			-0.413397,	0.06,	15,
+!!			0.413397,	0.06,	15,
+!!			0,	0.776025,	15,
+!!			-0.413397,	0.06,	-1
+
+		n=REQUEST("Pen_of_RGB", "0 0 0", penDrawing)
+		define material "Sign_black" 2, 0/255, 0/255, 0/255
+		material "Sign_black"
+		pen penDrawing
+
+		prism_ 13, EPS,
+			-0.0395646,	0.568345,	79,
+			-0.0395646,	0.548345,	900,
+			0,	95.2941,	4079,
+			-0.0288806,	0.216289,	79,
+			-0.00896591,	0.218135,	900,
+			0,	84.7059,	4079,
+			0.00896591,	0.198135,	79,
+			0.00896591,	0.218135,	900,
+			0,	84.7059,	4079,
+			0.0594793,	0.5465,	79,
+			0.0395646,	0.548345,	900,
+			0,	95.2941,	4079,
+			-0.0395646,	0.568345,	-1
+
+		prism_ 7, EPS,
+			0.03,	0.129866,	79,
+			0,	0.129866,	900,
+			0,	180,	4079,
+			-0.03,	0.129866,	79,
+			0,	0.129866,	900,
+			0,	180,	4079,
+			0.03,	0.129866,	-1
+
+		n=REQUEST("Pen_of_RGB", "255 0 0", penDrawing)
+		pen penDrawing
+
+		poly2_b 14, 3, penDrawing, penDrawing,
+			-0.49134,	0.045,	1,
+			-0.465359,	0.03,	900,
+			0,	120,	4001,
+			0.465359,	0,	1,
+			0.465359,	0.03,	900,
+			0,	120,	4001,
+			0.0259808,	0.851025,	1,
+			-1.06581e-014,	0.836025,	900,
+			0,	120,	4001,
+			-0.49134,	0.045,	-1,
+			0.413397,	0.06,	1,
+			-0.413397,	0.06,	1,
+			0,	0.776025,	1,
+			0.413397,	0.06,	-1
+
+	del 1
+return
+
+
+! -----------------------------------------------------------------------
+2:		! Collision Sign
+! -----------------------------------------------------------------------
+	wTriangle		= B
+	distTriangle	= B/5
+
+	n=REQUEST("Pen_of_RGB", "255 0 0", penDrawing)
+	define material "Sign_red_C" 2, 255/255, 0/255, 0/255
+	material "Sign_red"
+	pen penDrawing
+
+	rotx 90
+	addz -wTriangle
+		for i = 0 to 1
+			roty 180 * i
+				plane 3, 
+					-wTriangle / 2, 0, -wTriangle,
+					wTriangle / 2 - distTriangle, 0, wTriangle,
+					-wTriangle / 2, 0, wTriangle
+			del 1
+		next i
+	del 2
+return
+]]>
+</Script_3D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_2D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+define solid_fill "Solid"
+fill "Solid"
+
+
+gosub iSignType
+
+
+! ==============================================================================
+
+end
+
+! ==============================================================================
+
+! -----------------------------------------------------------------------
+1:		! WarnigSign
+! -----------------------------------------------------------------------
+	mul2 A/0.991, B/0.866
+
+		n=REQUEST("Pen_of_RGB", "255 0 0", penDrawing)
+		pen penDrawing
+
+		poly2_b 14, 3, penDrawing, penDrawing,
+			-0.49134,	0.045,	1,
+			-0.465359,	0.03,	900,
+			0,	120,	4001,
+			0.465359,	0,	1,
+			0.465359,	0.03,	900,
+			0,	120,	4001,
+			0.0259808,	0.851025,	1,
+			-1.06581e-014,	0.836025,	900,
+			0,	120,	4001,
+			-0.49134,	0.045,	-1,
+			0.413397,	0.06,	1,
+			-0.413397,	0.06,	1,
+			0,	0.776025,	1,
+			0.413397,	0.06,	-1
+
+!		poly2_b 4, 3, penDrawing, penDrawing,
+!			-0.413397,	0.06,	1,
+!			0.413397,	0.06,	1,
+!			0,	0.776025,	1,
+!			-0.413397,	0.06,	-1
+!
+		n=REQUEST("Pen_of_RGB", "0 0 0", penDrawing)
+		pen penDrawing
+
+		poly2_b 13, 3, penDrawing, penDrawing,
+			-0.0395646,	0.568345,	1,
+			-0.0395646,	0.548345,	900,
+			0,	95.2941,	4001,
+			-0.0288806,	0.216289,	1,
+			-0.00896591,	0.218135,	900,
+			0,	84.7059,	4001,
+			0.00896591,	0.198135,	1,
+			0.00896591,	0.218135,	900,
+			0,	84.7059,	4001,
+			0.0594793,	0.5465,	1,
+			0.0395646,	0.548345,	900,
+			0,	95.2941,	4001,
+			-0.0395646,	0.568345,	-1
+
+		poly2_b 7, 3, penDrawing, penDrawing,
+			0.03,	0.129866,	1,
+			0,	0.129866,	900,
+			0,	180,	4001,
+			-0.03,	0.129866,	1,
+			0,	0.129866,	900,
+			0,	180,	4001,
+			0.03,	0.129866,	-1
+
+	del 1
+return
+
+! -----------------------------------------------------------------------
+2:		! Collision Sign
+! -----------------------------------------------------------------------
+	wTriangle		= B
+	distTriangle	= B/5
+
+	n=REQUEST("Pen_of_RGB", "255 0 0", penDrawing)
+	pen penDrawing
+
+	for i = 0 to 1
+		rot2 180 * i
+			poly2_b 3, 7, penDrawing, penDrawing,
+				-wTriangle / 2, -wTriangle, 1,
+				wTriangle / 2 - distTriangle, wTriangle, 1,
+				-wTriangle / 2, wTriangle, 1
+		del 1
+	next i
+return
+]]>
+</Script_2D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_1D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+eps = 0.0001
+
+! ==============================================================================
+! Definitions
+! ==============================================================================
+!iSignType
+	SIGN_WARNING	= 1
+	SIGN_COLLISION	= 2
+
+
+
+! ==============================================================================
+!
+! End of Master Script
+!
+! ==============================================================================
+
+goto "endMasterSript"
+
+! ==============================================================================
+!
+! Subrutines
+!
+! ==============================================================================
+! -----------------------------------------------------------------------
+! Pen Colors
+! -----------------------------------------------------------------------
+"penColor":
+	matreqrFull = STR(INT(matreqr),1,0)
+	matreqrPart = STR(ABS(matreqr-INT(matreqr))*1000,1,0)
+	matreqgFull = STR(INT(matreqg),1,0)
+	matreqgPart = STR(ABS(matreqg-INT(matreqg))*1000,1,0)
+	matreqbFull = STR(INT(matreqb),1,0)
+	matreqbPart = STR(ABS(matreqb-INT(matreqb))*1000,1,0)
+	 
+	stringtxt = matreqrFull  + "." + matreqrPart
+	stringtxt = stringtxt + " " + matreqgFull  + "." + matreqgPart
+	stringtxt = stringtxt + " " + matreqbFull  + "." + matreqbPart 
+return
+
+
+
+! ==============================================================================
+!
+! End of Master Script
+!
+! ==============================================================================
+
+"endMasterSript":
+]]>
+</Script_1D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_PR SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_PR>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_UI SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_UI>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_VL SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_VL>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Comment SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Comment>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_FWM SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_FWM>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_BWM SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_BWM>
+
+<ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
+	<ParamSectHeader>
+		<Version>22</Version>
+		<AutoHotspots>no</AutoHotspots>
+		<StatBits>
+			<STBit_FixSize/>
+		</StatBits>
+		<WDLeftFrame>0</WDLeftFrame>
+		<WDRightFrame>0</WDRightFrame>
+		<WDTopFrame>0</WDTopFrame>
+		<WDBotFrame>0</WDBotFrame>
+		<LayFlags>65535</LayFlags>
+		<WDMirrorThickness>0</WDMirrorThickness>
+		<WDWallInset>0</WDWallInset>
+		<SymbolColor>0</SymbolColor>
+	</ParamSectHeader>
+	<Parameters>
+		<Length Name="A">
+			<Description><![CDATA["Dimension 1"]]></Description>
+			<Value>0.2</Value>
+		</Length>
+		<Length Name="B">
+			<Description><![CDATA["Dimension 2"]]></Description>
+			<Value>0.2</Value>
+		</Length>
+		<Length Name="ZZYZX">
+			<Description><![CDATA["Height"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>1</Value>
+		</Length>
+		<Boolean Name="AC_show2DHotspotsIn3D">
+			<Description><![CDATA["Show 2D Hotspots in 3D"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>1</Value>
+		</Boolean>
+		<Length Name="ac_bottomlevel">
+			<Description><![CDATA["Bottom Level"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>1</Value>
+		</Length>
+		<Length Name="ac_toplevel">
+			<Description><![CDATA["Top Level"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0</Value>
+		</Length>
+		<Integer Name="iSignType">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_BoldName/>
+			</Flags>
+			<Value>2</Value>
+		</Integer>
+
+		<!-- gs_2D_represenation: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="gs_2D_represenation">
+			<Description><![CDATA["2D Representation"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+		</Title>
+		<PenColor Name="gs_cont_pen">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>2</Value>
+		</PenColor>
+
+		<!-- gs_3D_representation: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="gs_3D_representation">
+			<Description><![CDATA["3D Representation"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+		</Title>
+		<PenColor Name="pen3D">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>2</Value>
+		</PenColor>
+		<Integer Name="gs_resol">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>12</Value>
+		</Integer>
+	</Parameters>
+</ParamSection>
+
+<Copyright SectVersion="1" SectionFlags="0" SubIdent="0">
+	<Author></Author>
+	<License>
+		<Type>CC BY-ND</Type>
+		<Version>3.0</Version>
+	</License>
+</Copyright>
+
+<Keywords SectVersion="1" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Keywords>
+
+</Symbol>

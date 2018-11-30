@@ -1,0 +1,9 @@
+﻿! Document name: MASTER_GDL_hebel_wall
+!
+DATABASE_SET "KS-Quadro Wall" \
+	"",
+	"ks_quadro_wall_comp.txt",
+	"ks_quadro_wall_unit.txt",
+	"ks_quadro_wall_key.txt",
+	"ks_quadro_wall_crit.lic",
+	"ks_quadro_wall_sheme.lis"

@@ -1,0 +1,750 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<Symbol IsArchivable="no" IsPlaceable="no" MainGUID="7C7BDCAB-FB20-4578-8CF4-97490E05F8C5" MigrationValue="Normal" Owner="1196638531" Signature="1196644685" Version="34">
+<Ancestry SectVersion="1" SectionFlags="0" SubIdent="0" Template="no">
+	<MainGUID>F938E33A-329D-4A36-BE3E-85E126820996</MainGUID>
+	<MainGUID>103E8D2C-8230-42E1-9597-46F84CCE28C0</MainGUID>
+</Ancestry>
+
+<CalledMacros SectVersion="2" SectionFlags="0" SubIdent="0">
+	<Macro>
+		<MName><![CDATA["ks_quadro_sign"]]></MName>
+		<MainGUID>7BDF8326-C493-402A-AE3A-9AF395FCA7DF</MainGUID>
+	</Macro>
+</CalledMacros>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_3D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+if iDetlevel3D = DETLEVEL_3D_NONE then end
+
+pen pen3D
+sect_fill gs_fill_type, gs_back_pen, gs_fill_pen, gs_cont_pen
+
+
+
+! ------------------------------------------------------------------------------
+! Hotspots
+! ------------------------------------------------------------------------------
+if not(bNoHotspot) then
+	hotspot -beamWidth/2,	0,			0, unID		: unID = unID + 1
+	hotspot  beamWidth/2,	0,			0, unID		: unID = unID + 1
+	hotspot -beamWidth/2,	beamThk,	0, unID		: unID = unID + 1
+	hotspot  beamWidth/2,	beamThk,	0, unID		: unID = unID + 1
+	hotspot  0,				beamThk/2,	0, unID		: unID = unID + 1
+	
+	hotspot -beamWidth/2,	0,			beamHeight, unID		: unID = unID + 1
+	hotspot  beamWidth/2,	0,			beamHeight, unID		: unID = unID + 1
+	hotspot -beamWidth/2,	beamThk,	beamHeight, unID		: unID = unID + 1
+	hotspot  beamWidth/2,	beamThk,	beamHeight, unID		: unID = unID + 1
+	hotspot  0,				beamThk/2,	beamHeight, unID		: unID = unID + 1
+
+	hotspot  -beamWidth/2+overhang,	0,	0,	unID		: unID = unID + 1
+	hotspot   beamWidth/2-overhang,	0,	0,	unID		: unID = unID + 1
+	hotspot  -beamWidth/2+overhang,	beamThk,	0,	unID		: unID = unID + 1
+	hotspot   beamWidth/2-overhang,	beamThk,	0,	unID		: unID = unID + 1
+endif
+
+
+! ------------------------------------------------------------------------------
+! Body
+! ------------------------------------------------------------------------------
+if	iBeamFamily	= BEAM_FAMILY_UBLOCK_CONT_200	|\
+	iBeamFamily	= BEAM_FAMILY_UBLOCK_CONT_250	|\
+	iBeamFamily	= BEAM_FAMILY_UBLOCK_200		|\
+	iBeamFamily	= BEAM_FAMILY_UBLOCK_250		\
+then
+	wb = 0.075
+	ws = 0.05
+	if iBeam = BEAM_UBLOCK_CONT_250_300	then ws = 0.055
+	if iBeam = BEAM_UBLOCK_CONT_250_365	then ws = 0.0625
+	if	iBeam = BEAM_UBLOCK_250_400_500	|\
+		iBeam = BEAM_UBLOCK_250_425_500	|\
+		iBeam = BEAM_UBLOCK_250_480_500	|\
+		iBeam = BEAM_UBLOCK_200_300_600	|\
+		iBeam = BEAM_UBLOCK_200_300_500	|\
+		iBeam = BEAM_UBLOCK_250_300_600	|\
+		iBeam = BEAM_UBLOCK_250_300_500	|\
+		iBeam = BEAM_UBLOCK_200_365_600	|\
+		iBeam = BEAM_UBLOCK_200_365_500	|\
+		iBeam = BEAM_UBLOCK_250_365_600	|\
+		iBeam = BEAM_UBLOCK_250_365_500	|\
+		iBeam = BEAM_UBLOCK_200_400_600	|\
+		iBeam = BEAM_UBLOCK_200_400_500	|\
+		iBeam = BEAM_UBLOCK_250_400_600	|\
+		iBeam = BEAM_UBLOCK_250_400_500	\
+	then
+		ws = 0.075
+	endif
+
+	put 0, 0, 15,
+		beamThk, 0, 15,
+		beamThk, beamHeight, 15,
+		beamThk-ws, beamHeight, 15,
+		beamThk-ws, wb, 15,
+		ws, wb, 15,
+		ws, beamHeight, 15,
+		0, beamHeight, 15,
+		0, 0, -1
+else
+	if iBeamFamily <> BEAM_FAMILY_NONE & iBeamFamily <> BEAM_FAMILY_CUSTOM then
+		put 0, 0, 15,
+			beamThk, 0, 15,
+			beamThk, beamHeight, 15,
+			0, beamHeight, 15,
+			0, 0, -1
+	endif
+endif
+
+if nsp then
+	if iBeamType = BEAM_TYP_BLOCK then
+		for i = 1 to n
+			addx -beamWidth/2 + (i-1)*(groutWidth + brickWidthOne)
+			roty 90
+			rotz 90
+				if i = n then
+					prism_ nsp/3, brickWidthOne, get(nsp)
+				else
+					prism_ nsp/3, brickWidthOne, use(nsp)
+				endif
+			del 3
+		next i
+	else
+		addx -beamWidth/2 + BIGEPS/2
+		roty 90
+		rotz 90
+		prism_ nsp/3, beamWidth - BIGEPS, get(nsp)
+		del 3
+	endif
+endif
+
+
+! ------------------------------------------------------------------------------
+! Warning
+! ------------------------------------------------------------------------------
+if bOversized | bOverLapped then
+ 
+	rotx 90
+	addz 2*EPS
+
+	if bOversized then
+		for i = 1 to 2
+			call "ks_quadro_sign" parameters	A			= 0.2,
+											B			= 0.2,
+											iSignType	= 1
+			addz -beamThk-5*EPS
+		next i
+		del 2
+	endif
+
+	if bOverLapped then
+		addx bOversized * 0.20
+		for i = 1 to 2
+			call "ks_quadro_sign" parameters	A			= 0.1,
+											B			= 0.1,
+											iSignType	= 2
+			addz -beamThk-5*EPS
+		next i
+		del 3
+	endif
+
+	del 2
+endif
+
+
+
+! ==============================================================================
+!
+end unID
+!
+! ==============================================================================
+
+]]>
+</Script_3D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_2D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+fill gs_fill_type
+pen gs_cont_pen
+
+! ------------------------------------------------------------------------------
+! Hotspots
+! ------------------------------------------------------------------------------
+hotspot2 -beamWidth/2,	0,			unID		: unID = unID + 1
+hotspot2  beamWidth/2,	0,			unID		: unID = unID + 1
+hotspot2 -beamWidth/2,	beamThk,	unID		: unID = unID + 1
+hotspot2  beamWidth/2,	beamThk,	unID		: unID = unID + 1
+hotspot2  0,			beamThk/2,	unID		: unID = unID + 1
+
+hotspot2  -beamWidth/2+overhang,		beamThk/2,	unID		: unID = unID + 1
+hotspot2   beamWidth/2-overhang,		beamThk/2,	unID		: unID = unID + 1
+
+! ------------------------------------------------------------------------------
+! Drawing
+! ------------------------------------------------------------------------------
+if iBeamType = BEAM_TYP_BLOCK then
+	for i = 1 to n
+		add2 -beamWidth/2 + brickWidthOne/2 + (i-1)*(groutWidth + brickWidthOne), 0
+			poly2_b 5, 1+2, gs_fill_pen, gs_back_pen,
+				-brickWidthOne/2,		0, 1,
+				 brickWidthOne/2,		0, 1,
+				 brickWidthOne/2,		beamThk, 1,
+				-brickWidthOne/2,		beamThk, 1,
+				-brickWidthOne/2,		0, -1
+		del 1
+	next i
+else
+	poly2_b 5, 1+2, gs_fill_pen, gs_back_pen,
+		-beamWidth/2,		0, 1,
+		 beamWidth/2,		0, 1,
+		 beamWidth/2,		beamThk, 1,
+		-beamWidth/2,		beamThk, 1,
+		-beamWidth/2,		0, -1
+endif
+
+
+! ==============================================================================
+!
+end unID
+!
+! ==============================================================================
+]]>
+</Script_2D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_1D SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+EPS		= 0.0001
+BIGEPS	= 0.001
+
+! ------------------------------------------------------------------------------
+! Definitions
+! ------------------------------------------------------------------------------
+! iBeamType
+	BEAM_TYP_NONE		= 0
+	BEAM_TYP_CUSTOM		= 1
+	BEAM_TYP_NORMAL		= 2
+	BEAM_TYP_RANGE		= 3
+	BEAM_TYP_BLOCK		= 4
+
+! iBeamFamily
+	BEAM_FAMILY_AUTO			= 1
+	BEAM_FAMILY_NONE			= 2
+	BEAM_FAMILY_CUSTOM			= 3
+    BEAM_FAMILY_INTERNAL        = 10
+    BEAM_FAMILY_LOW             = 20
+    BEAM_FAMILY_HIGH            = 30
+    BEAM_FAMILY_DE_PSF          = 100
+    BEAM_FAMILY_DE_PST          = 110
+    BEAM_FAMILY_DE_PSN          = 120
+    BEAM_FAMILY_AT_ST           = 200
+    BEAM_FAMILY_AT_FL           = 210
+    BEAM_FAMILY_AT_SN           = 220
+    BEAM_FAMILY_SE_BALKAR       = 500
+    BEAM_FAMILY_NO_ENERGY       = 600
+    BEAM_FAMILY_NO_MASSIV       = 610
+    BEAM_FAMILY_NO_LETT         = 620
+    BEAM_FAMILY_DK_NORMAL       = 700
+    BEAM_FAMILY_DK_MASSIV       = 710
+    BEAM_FAMILY_DK_CONCRETE     = 720
+    BEAM_FAMILY_DK_NONBEARING   = 730
+	BEAM_FAMILY_NL_SEPARATIE    = 810
+    BEAM_FAMILY_NL_LATEIEN      = 820
+    BEAM_FAMILY_PL_YN           = 2200
+    BEAM_FAMILY_PL_YF           = 2210
+    BEAM_FAMILY_PL_YD           = 2220
+    BEAM_FAMILY_UBLOCK_CONT_200 = 9000
+    BEAM_FAMILY_UBLOCK_CONT_250 = 9100
+    BEAM_FAMILY_UBLOCK_200      = 9200
+    BEAM_FAMILY_UBLOCK_250      = 9300
+
+
+! iBeam
+    ! BEAM_FAMILY.UBLOCK_CONT_200
+
+    ! BEAM_FAMILY.UBLOCK_CONT_250
+    BEAM_UBLOCK_CONT_250_175       = 91001
+    BEAM_UBLOCK_CONT_250_200       = 91002
+    BEAM_UBLOCK_CONT_250_240       = 91003
+    BEAM_UBLOCK_CONT_250_300       = 91004
+    BEAM_UBLOCK_CONT_250_365       = 91005
+
+    BEAM_UBLOCK_CONT_250_200_2000  = 91101
+    BEAM_UBLOCK_CONT_250_200_2500  = 91102
+    BEAM_UBLOCK_CONT_250_200_3000  = 91103
+    BEAM_UBLOCK_CONT_250_200_3500  = 91104
+    BEAM_UBLOCK_CONT_250_200_4000  = 91105
+    BEAM_UBLOCK_CONT_250_200_5000  = 91106
+    BEAM_UBLOCK_CONT_250_200_5020  = 91107
+    BEAM_UBLOCK_CONT_250_200_6030  = 91108
+    BEAM_UBLOCK_CONT_250_240_2000  = 91109
+    BEAM_UBLOCK_CONT_250_240_2500  = 91110
+    BEAM_UBLOCK_CONT_250_240_3000  = 91111
+    BEAM_UBLOCK_CONT_250_240_3500  = 91112
+    BEAM_UBLOCK_CONT_250_240_4000  = 91113
+    BEAM_UBLOCK_CONT_250_240_5000  = 91114
+    BEAM_UBLOCK_CONT_250_240_5020  = 91115
+    BEAM_UBLOCK_CONT_250_240_6030  = 91116
+    BEAM_UBLOCK_CONT_250_300_2000  = 91117
+    BEAM_UBLOCK_CONT_250_300_2500  = 91118
+    BEAM_UBLOCK_CONT_250_300_3000  = 91119
+    BEAM_UBLOCK_CONT_250_300_3500  = 91120
+    BEAM_UBLOCK_CONT_250_300_4000  = 91121
+    BEAM_UBLOCK_CONT_250_300_5000  = 91122
+    BEAM_UBLOCK_CONT_250_300_5020  = 91123
+    BEAM_UBLOCK_CONT_250_300_6000  = 91124
+    BEAM_UBLOCK_CONT_250_300_6030  = 91125
+    BEAM_UBLOCK_CONT_250_365_2000  = 91126
+    BEAM_UBLOCK_CONT_250_365_2500  = 91127
+    BEAM_UBLOCK_CONT_250_365_3000  = 91128
+    BEAM_UBLOCK_CONT_250_365_3500  = 91129
+    BEAM_UBLOCK_CONT_250_365_4000  = 91130
+    BEAM_UBLOCK_CONT_250_365_5000  = 91131
+    BEAM_UBLOCK_CONT_250_365_5020  = 91132
+    BEAM_UBLOCK_CONT_250_365_6000  = 91133
+    BEAM_UBLOCK_CONT_250_365_6030  = 91134
+
+    !BEAM_FAMILY.UBLOCK_200
+    BEAM_UBLOCK_200_175_500        = 92101
+    BEAM_UBLOCK_200_200_500        = 92102
+    BEAM_UBLOCK_200_240_500        = 92103
+    BEAM_UBLOCK_200_250_500        = 92104
+    BEAM_UBLOCK_200_300_500        = 92105
+    BEAM_UBLOCK_200_365_500        = 92106
+    BEAM_UBLOCK_200_400_500        = 92107
+    BEAM_UBLOCK_200_425_500        = 92108
+    BEAM_UBLOCK_200_480_500        = 92109
+
+    BEAM_UBLOCK_200_175_600        = 92201
+    BEAM_UBLOCK_200_200_600        = 92202
+    BEAM_UBLOCK_200_240_600        = 92203
+    BEAM_UBLOCK_200_250_600        = 92204
+    BEAM_UBLOCK_200_300_600        = 92205
+    BEAM_UBLOCK_200_365_600        = 92206
+    BEAM_UBLOCK_200_400_600        = 92207
+    BEAM_UBLOCK_200_425_600        = 92208
+    BEAM_UBLOCK_200_480_600        = 92209
+
+    ! BEAM_FAMILY.UBLOCK_250
+    BEAM_UBLOCK_250_175_500        = 93101
+    BEAM_UBLOCK_250_200_500        = 93102
+    BEAM_UBLOCK_250_240_500        = 93103
+    BEAM_UBLOCK_250_250_500        = 93104
+    BEAM_UBLOCK_250_300_500        = 93105
+    BEAM_UBLOCK_250_365_500        = 93106
+    BEAM_UBLOCK_250_400_500        = 93107
+    BEAM_UBLOCK_250_425_500        = 93108
+    BEAM_UBLOCK_250_480_500        = 93109
+
+    BEAM_UBLOCK_250_175_600        = 93201
+    BEAM_UBLOCK_250_200_600        = 93202
+    BEAM_UBLOCK_250_240_600        = 93203
+    BEAM_UBLOCK_250_250_600        = 93204
+    BEAM_UBLOCK_250_300_600        = 93205
+    BEAM_UBLOCK_250_365_600        = 93206
+    BEAM_UBLOCK_250_400_600        = 93207
+    BEAM_UBLOCK_250_425_600        = 93208
+    BEAM_UBLOCK_250_480_600        = 93209
+
+    BEAM_UBLOCK_250_175_620        = 93301
+    BEAM_UBLOCK_250_200_620        = 93302
+    BEAM_UBLOCK_250_240_620        = 93303
+    BEAM_UBLOCK_250_250_620        = 93304
+    BEAM_UBLOCK_250_300_620        = 93305
+    BEAM_UBLOCK_250_365_620        = 93306
+    BEAM_UBLOCK_250_400_620        = 93307
+    BEAM_UBLOCK_250_425_620        = 93308
+    BEAM_UBLOCK_250_480_620        = 93309
+
+    BEAM_UBLOCK_250_175_625        = 93401
+    BEAM_UBLOCK_250_200_625        = 93402
+    BEAM_UBLOCK_250_240_625        = 93403
+    BEAM_UBLOCK_250_300_625        = 93404
+    BEAM_UBLOCK_250_360_625        = 93405
+    BEAM_UBLOCK_250_365_625        = 93406
+    BEAM_UBLOCK_250_400_625        = 93407
+
+!iDetlevel3D:
+	DETLEVEL_3D_NONE		= 0
+	DETLEVEL_3D_SIMPLE		= 1
+	DETLEVEL_3D_DETAILED	= 2
+	DETLEVEL_3D_BLOCK		= 3
+	DETLEVEL_3D_WIRE		= 4
+
+
+
+! ------------------------------------------------------------------------------
+! Data
+! ------------------------------------------------------------------------------
+n = 1
+if iBeamType = BEAM_TYP_CUSTOM | iBeamType = BEAM_TYP_RANGE then
+	beamWidth = customLength
+endif
+if iBeamType = BEAM_TYP_BLOCK then
+	brickWidthOne	= beamWidth
+	n				= int(customLength / brickWidthOne)
+	if n > 1 then
+		groutWidth	= (customLength - n*brickWidthOne) / (n-1)
+	else
+		groutWidth	= customLength - n*brickWidthOne
+	endif
+	beamWidth		= customLength
+endif
+
+
+
+]]>
+</Script_1D>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_PR SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+if iBeamType = BEAM_TYP_NONE | iBeamType = BEAM_TYP_CUSTOM then end
+
+! ------------------------------------------------------------------------------
+! Localization
+! ------------------------------------------------------------------------------
+stCustomLength	= `Warning: Custom Length`
+listLength		= `l=`
+listArtNo		= `Art.No.:`
+dbName			= `KS-Quadro wall component`
+
+
+! ------------------------------------------------------------------------------
+! Database
+! ------------------------------------------------------------------------------
+DATABASE_SET `KS-Quadro Wall`
+
+unitDB	= "001"
+unitM	= "002"
+unitCM	= "003"
+unitM2	= "004"
+
+mmMultiplier = 1000
+
+separator	= " | "
+
+
+! ------------------------------------------------------------------------------
+! Component
+! ------------------------------------------------------------------------------
+!listTxt = beamName + separator + listArtNo + " " + brickArticle
+listTxt = beamName + str(beamThk*mmMultiplier,1,0) + "x" + str(beamHeight*mmMultiplier,1,0) + "x"
+if bOversized & iBeamType <> BEAM_TYP_BLOCK then
+	listTxt = listTxt + str(customLength*mmMultiplier,1,0)+"mm" + separator + stCustomLength
+else
+	if iBeamType <> BEAM_TYP_BLOCK then
+		listTxt = listTxt + str(beamWidth*mmMultiplier,1,0) + "mm"
+	else
+		listTxt = listTxt + str(brickWidthOne*mmMultiplier,1,0) + "mm"
+	endif
+endif
+
+for i = 1 to n
+	component listTxt, 1,  `pc`, 1, dbName, "001", unitDB
+next i
+]]>
+</Script_PR>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_UI SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_UI>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_VL SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[
+! ------------------------------------------------------------------------------
+! Datas
+! ------------------------------------------------------------------------------
+values "iBeamType"	BEAM_TYP_NONE,
+					BEAM_TYP_CUSTOM,
+					BEAM_TYP_NORMAL,
+					BEAM_TYP_RANGE,
+					BEAM_TYP_BLOCK
+
+]]>
+</Script_VL>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Comment SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Comment>
+
+<ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
+	<ParamSectHeader>
+		<Version>22</Version>
+		<AutoHotspots>no</AutoHotspots>
+		<StatBits>
+			<STBit_FixSize/>
+		</StatBits>
+		<WDLeftFrame>0</WDLeftFrame>
+		<WDRightFrame>0</WDRightFrame>
+		<WDTopFrame>0</WDTopFrame>
+		<WDBotFrame>0</WDBotFrame>
+		<LayFlags>65535</LayFlags>
+		<WDMirrorThickness>0</WDMirrorThickness>
+		<WDWallInset>0</WDWallInset>
+		<SymbolColor>0</SymbolColor>
+	</ParamSectHeader>
+	<Parameters>
+		<Length Name="A">
+			<Description><![CDATA["Dimension 1"]]></Description>
+			<Value>1.5</Value>
+		</Length>
+		<Length Name="B">
+			<Description><![CDATA["Dimension 2"]]></Description>
+			<Value>0.075</Value>
+		</Length>
+		<Length Name="ZZYZX">
+			<Description><![CDATA["Height"]]></Description>
+			<Value>0.19</Value>
+		</Length>
+		<Boolean Name="AC_show2DHotspotsIn3D">
+			<Description><![CDATA["Show 2D Hotspots in 3D"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0</Value>
+		</Boolean>
+		<Length Name="ac_bottomlevel">
+			<Description><![CDATA["Bottom Level"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0</Value>
+		</Length>
+		<Length Name="ac_toplevel">
+			<Description><![CDATA["Top Level"]]></Description>
+			<Flags>
+				<ParFlg_Hidden/>
+			</Flags>
+			<Value>0.19</Value>
+		</Length>
+
+		<!-- inputParams: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="inputParams">
+			<Description><![CDATA[""]]></Description>
+		</Title>
+		<String Name="beamName">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value><![CDATA[""]]></Value>
+		</String>
+		<Integer Name="iBeamFamily">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>1</Value>
+		</Integer>
+		<Integer Name="iBeamFamilyIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Integer>
+		<Integer Name="iBeamType">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Integer>
+		<Integer Name="iBeam">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Integer>
+		<Integer Name="iBeamIdx">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Integer>
+		<Boolean Name="bNoHotspot">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Boolean>
+		<Boolean Name="bOversized">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Boolean>
+		<Boolean Name="bOverLapped">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Boolean>
+		<Boolean Name="bPosError">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0</Value>
+		</Boolean>
+		<Integer Name="unID">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>1</Value>
+		</Integer>
+
+		<!-- sizes: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="sizes">
+			<Description><![CDATA[""]]></Description>
+		</Title>
+		<Length Name="overhang">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0.2</Value>
+		</Length>
+		<Length Name="customLength">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</Length>
+		<Length Name="brickWidthOne">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0.5</Value>
+		</Length>
+		<Length Name="beamWidth">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</Length>
+		<Length Name="beamThk">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0.2</Value>
+		</Length>
+		<Length Name="beamHeight">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>0.16</Value>
+		</Length>
+
+		<!-- gs_2D_representation: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="gs_2D_representation">
+			<Description><![CDATA["2D Representation"]]></Description>
+		</Title>
+		<PenColor Name="gs_cont_pen">
+			<Description><![CDATA["Contour Pen"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</PenColor>
+		<FillPattern Name="gs_fill_type">
+			<Description><![CDATA["Fill Type"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>24</Value>
+		</FillPattern>
+		<PenColor Name="gs_fill_pen">
+			<Description><![CDATA["Fill Pen"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</PenColor>
+		<PenColor Name="gs_back_pen">
+			<Description><![CDATA["Fill Background Pen"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>19</Value>
+		</PenColor>
+
+		<!-- gs_3D_representation: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK -->
+
+		<Title Name="gs_3D_representation">
+			<Description><![CDATA["3D Representation"]]></Description>
+		</Title>
+		<Integer Name="iDetlevel3D">
+			<Description><![CDATA["3D Detail Level"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</Integer>
+		<PenColor Name="pen3D">
+			<Description><![CDATA["3D Pen"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>2</Value>
+		</PenColor>
+		<Material Name="brickMat">
+			<Description><![CDATA["Material"]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>4</Value>
+		</Material>
+	</Parameters>
+</ParamSection>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_FWM SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_FWM>
+
+<!-- GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT ===== GDL SCRIPT -->
+
+<Script_BWM SectVersion="20" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Script_BWM>
+
+<Copyright SectVersion="1" SectionFlags="0" SubIdent="0">
+	<Author></Author>
+	<License>
+		<Type>CC BY-ND</Type>
+		<Version>3.0</Version>
+	</License>
+</Copyright>
+
+<Keywords SectVersion="1" SectionFlags="0" SubIdent="0">
+<![CDATA[]]>
+</Keywords>
+
+</Symbol>
