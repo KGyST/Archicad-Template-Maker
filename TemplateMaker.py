@@ -526,7 +526,7 @@ class SourceFile(GeneralFile):
 class DestFile(GeneralFile):
     def __init__(self, sourceFile):
         super(DestFile, self).__init__(sourceFile)
-        self.sourceFile = replacement_dict[string.upper(self.name)]
+        # self.sourceFile = replacement_dict[string.upper(self.sourceFile.name)]
         self.ext        = self.sourceFile.ext
 
 
@@ -630,8 +630,10 @@ class SourceXML (XMLFile, SourceFile):
         #Parameter manipulation: checking usage and later add custom pars
         self.parameters = ParamSection(mroot.find("./ParamSection"))
 
-        for sc in SCRIPT_NAMES_LIST:
-            self.scripts[sc] = mroot.find("./%s" % sc).text
+        for scriptName in SCRIPT_NAMES_LIST:
+            script = mroot.find("./%s" % scriptName)
+            if script:
+                self.scripts[scriptName] = script.text
 
         for par in self.parameters:
             par.isUsed = self.checkParameterUsage(par, set())
@@ -675,11 +677,11 @@ class DestXML (XMLFile, DestFile):
             # if "XML Target file exists!" in self.warnings:
             #     self.warnings.remove("XML Target file exists!")
             #     self.refreshFileNames()
+        self.sourceFile     = sourceFile
 
         super(DestXML, self).__init__(self.name)
         self.warnings = []
 
-        self.sourceFile     = sourceFile
         # self.sourceFileName = sourceFile.name
         # self.path           = os.path.normpath(TargetXMLDirName.get() + "\\" + sourceFile.relPath)
         #FIXME refresh paths if XML folder is changed OR do it on the fly
@@ -1460,19 +1462,21 @@ def main2():
                         m.find(ID).text = d.guid
 
         for sect in ["./Script_2D", "./Script_3D", "./Script_1D", "./Script_PR", "./Script_UI", "./Script_VL", "./Script_FWM", "./Script_BWM", ]:
-            t = mdp.find(sect).text
+            section = mdp.find(sect)
+            if section:
+                t = section.text
 
-            for dI in dest_dict.keys():
-                # if re.search(dest_dict[dI].sourceFile.fileName, t):
-                #     print "*****************", dest_dict[dI].sourceFile.fileName, dest_dict[dI].fileName
-                t = re.sub(dest_dict[dI].sourceFile.name, dest_dict[dI].name, t, flags=re.IGNORECASE)
+                for dI in dest_dict.keys():
+                    # if re.search(dest_dict[dI].sourceFile.fileName, t):
+                    #     print "*****************", dest_dict[dI].sourceFile.fileName, dest_dict[dI].fileName
+                    t = re.sub(dest_dict[dI].sourceFile.name, dest_dict[dI].name, t, flags=re.IGNORECASE)
 
-            for pr in pict_dict.keys():
-                #Replacing images
-                # print pict_dict[pr].originalName
-                t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt, pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
+                for pr in pict_dict.keys():
+                    #Replacing images
+                    # print pict_dict[pr].originalName
+                    t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt, pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
 
-            mdp.find(sect).text = etree.CDATA(t)
+                section.text = etree.CDATA(t)
 
         # ---------------------AC18 and over: adding licensing statically---------------------
         if dest.iVersion >= AC_18:
