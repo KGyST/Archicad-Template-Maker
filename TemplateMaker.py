@@ -1589,6 +1589,7 @@ def main2():
                 os.makedirs(TargetXMLDirName.get() + "\\" + pict_dict[f].dirName)
                 shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetXMLDirName.get() + "\\" + pict_dict[f].relPath)
 
+    print "x2l Command being executed..."
     x2lCommand = '"%s\LP_XMLConverter.exe" x2l -img "%s" "%s" "%s"' % (ACLocation.get(), tempPicDir, tempdir, TargetGDLDirName.get())
 
     if bDebug.get():
