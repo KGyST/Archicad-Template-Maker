@@ -66,9 +66,9 @@ source_pict_dict = {}
 
 
 class ParamSection:
-    '''
+    """
     iterable class of all params
-    '''
+    """
     def __init__(self, inETree):
         self.eTree          = inETree
         self.__header       = inETree.find("ParamSectHeader")
@@ -78,8 +78,7 @@ class ParamSection:
         self.usedParamSet   = {}
         for p in inETree.find("Parameters"):
             param = Param(p)
-            self.__paramList += [param]
-            self.__paramDict[param.name] = param
+            self.append(param, param.name)
 
     def __iter__(self):
         return self
@@ -91,8 +90,10 @@ class ParamSection:
             self.__index += 1
             return self.__paramList[self.__index]
 
-    def append(self, inEtree):
+    def append(self, inEtree, inName):
         self.__paramList.append(inEtree)
+        if not isinstance(inEtree, etree._Comment):
+            self.__paramDict[inName] = inEtree
 
     def insertAfter(self, inParName, inEtree):
         self.__paramList.insert(self.__getIndex(inParName) + 1, inEtree)
@@ -123,8 +124,9 @@ class ParamSection:
 
     def remove_param(self, inParName):
         obj = self.__paramDict[inParName]
-        self.__paramList.remove(obj)
-        del obj
+        while obj in self.__paramList:
+            self.__paramList.remove(obj)
+        del self.__paramDict[inParName]
 
     def upsert_param(self, inParName):
         #TODO
@@ -142,11 +144,11 @@ class ParamSection:
         return self.__paramList[self.__getIndex(inName)]
 
     def getChildren(self, inETree):
-        '''
+        """
         Return children of a Parameter
         :param inETree:
         :return:        List of children, as lxml Elements
-        '''
+        """
         result = []
         idx = self.__getIndex(inETree.name)
         if inETree.iType != PAR_TITLE:    return None
@@ -156,30 +158,22 @@ class ParamSection:
             else:
                 return result
 
-    # def refreshDependencies(self, inSourceXML):
-    #     '''
-    #     refreshing parameter dependencies
-    #     :return:
-    #     '''
-    #     calledMarcoList = []
-    #
-    #     for _, calledMacro in inSourceXML.calledMacros.iteritems():
-    #         calledMarcoList += [replacement_dict[calledMacro]]
-    #
-    #     for p in self.__paramList:
-    #         isUsed = False
-    #         p.
-    #         if p.isUsed:
-
     def toEtree(self):
         eTree = etree.Element("ParamSection", SectVersion="25", SectionFlags="0", SubIdent="0", )
         eTree.append(self.__header)
+        eTree.tail = '\n'
 
         parTree = etree.Element("Parameters")
+        parTree.tail = '\n'
         eTree.append(parTree)
         for par in self.__paramList:
-            elem = par.toEtree()
-
+            elem = par.toEtree
+            ix = self.__paramList.index(par)
+            if ix == len(self.__paramList) - 1:
+                elem.tail = '\n\t'
+            else:
+                if self.__paramList[ix + 1].iType == PAR_COMMENT:
+                    elem.tail = '\n\n\t\t'
             parTree.append(elem)
         return eTree
 
@@ -195,38 +189,49 @@ class ParamSection:
         conn = httplib.HTTPSConnection("api.bimobject.com")
         conn.request("POST", "/GetBimObjectInfoXml2", _xml, headers)
         response = conn.getresponse()
-        r = response.read()
+        resp = response.read()
+        resTree = etree.fromstring(resp)
 
-        tree = etree.fromstring(r)
-        print r
-
-        BO_PARAM_TUPLE = ('BO_Title', 'BO_Separator', 'BO_prodinfo', 'BO_prodsku', 'BO_Manufac', 'BO_edinum', 'BO_width')
+        BO_PARAM_TUPLE = ('BO_Title',
+                          'BO_Separator',
+                          'BO_prodinfo',
+                          'BO_prodsku', 'BO_Manufac', 'BO_brandurl', 'BO_prodfam', 'BO_prodgroup',
+                          'BO_mancont', 'BO_designcont', 'BO_publisdat', 'BO_edinum', 'BO_width',
+                          'BO_height', 'BO_depth', 'BO_weight', 'BO_productguid',
+                          'BO_links',
+                          'BO_boqrurl', 'BO_producturl', 'BO_montins', 'BO_prodcert', 'BO_techcert',
+                          'BO_youtube', 'BO_ean',
+                          'BO_real',
+                          'BO_mainmat', 'BO_secmat',
+                          'BO_classific',
+                          'BO_bocat', 'BO_ifcclas', 'BO_unspc', 'BO_uniclass_1_4_code', 'BO_uniclass_1_4_desc',
+                          'BO_uniclass_2_0_code', 'BO_uniclass_2_0_desc', 'BO_uniclass2015_code', 'BO_uniclass2015_desc', 'BO_nbs_ref',
+                          'BO_nbs_desc', 'BO_omniclass_code', 'BO_omniclass_name', 'BO_masterformat2014_code', 'BO_masterformat2014_name',
+                          'BO_uniformat2_code', 'BO_uniformat2_name', 'BO_cobie_type_cat',
+                          'BO_regions',
+                          'BO_europe', 'BO_northamerica', 'BO_southamerica', 'BO_middleeast', 'BO_asia',
+                          'BO_oceania', 'BO_africa', 'BO_antarctica', 'BO_Separator2',)
         for p in BO_PARAM_TUPLE:
             self.remove_param(p)
 
         for p in BO_PARAM_TUPLE:
-            print p
-            e = next((par for par in tree.findall("Object/Parameters/Parameter") if par.get('VariableName') == p), '')
-            print e
-            # if e.text:
-            #     print e.text
-            if p in ('BO_Title',):
-                comment = Param(  inName='BO_Title',
-                           inValue='teszt*********************',
-                            inType=PAR_TITLE,)
-                self.append(comment)
-            elif p in ('BO_Separator'):
-                pass
-            else:
-                param = Param(  inName=e.get('VariableName'),
+            e = next((par for par in resTree.findall("Object/Parameters/Parameter") if par.get('VariableName') == p), '')
+            if isinstance(e, etree._Element):
+                varName = e.get('VariableName')
+                if varName in ('BO_Title', 'BO_prodinfo', 'BO_links', 'BO_real', 'BO_classific', 'BO_regions',):
+                    comment = Param(inName=varName,
                                 inDesc=e.get('VariableDescription'),
-                               inValue=e.text,
-                                inType=e.get('VariableType'),
-                               inAVals=None,
-                               inChild=(e.get('VariableModifier')=='Child'),
-                                inBold=(e.get('VariableStyle')=='Bold'),)
-                self.append(param)
-
+                                inType=PAR_COMMENT,)
+                    self.append(comment, 'BO_Title')
+                param = Param(inName=varName,
+                              inDesc=e.get('VariableDescription'),
+                              inValue=e.text,
+                              inTypeStr=e.get('VariableType'),
+                              inAVals=None,
+                              inChild=(e.get('VariableModifier')=='Child'),
+                              inBold=(e.get('VariableStyle')=='Bold'), )
+                self.append(param, varName)
+            self.__paramList[-1].tail = '\n\t'
 
 class Param:
     tagBackList = ["", "Length", "Angle", "RealNum", "Integer", "Boolean", "String", "Material",
@@ -239,8 +244,11 @@ class Param:
                  inValue = None,
                  inAVals = None,
                  inChild=False,
+                 inTypeStr = '',
                  inBold=False):
-        if inETree != None:
+        self.value      = None
+
+        if inETree is not None:
             self.text = inETree.text
             self.tail = inETree.tail
             if not isinstance(inETree, etree._Comment):
@@ -253,7 +261,7 @@ class Param:
                 self.descTail = self.__eTree.find("Description").tail
 
                 val = self.__eTree.find("Value")
-                if val != None:
+                if val is not None:
                     self.value = self.__toFormat(val.text)
                     self.valTail = val.tail
                 else:
@@ -261,7 +269,7 @@ class Param:
                     self.valTail = None
 
                 __aVals = self.__eTree.find("ArrayValues")
-                if __aVals != None:
+                if __aVals is not None:
                     fd = int(__aVals.attrib["FirstDimension"])
                     sd = int(__aVals.attrib["SecondDimension"])
                     if sd > 0:
@@ -279,7 +287,7 @@ class Param:
                 else:
                     self.aVals = None
 
-                if self.__eTree.find("Flags") != None:
+                if self.__eTree.find("Flags") is not None:
                     self.flagsTail = self.__eTree.find("Flags").tail
                     for f in self.__eTree.find("Flags"):
                         if f.tag == "ParFlg_Hidden":    self.flags |= {PARFLG_HIDDEN}
@@ -294,20 +302,26 @@ class Param:
                 self.aVals = None
         else:            # Start from a scratch
             self.iType  = inType
+            if inTypeStr:
+                self.iType  = self.getTypeFromString(inTypeStr)
+
             self.name   = inName
-            self.desc   = inDesc
-            self.value  = inValue
-            self.aVals  = inAVals
-            self.flags = set()
-            if inChild:
-                self.flags |= {PARFLG_CHILD}
-            if inBold:
-                self.flags |= {PARFLG_BOLDNAME}
-            #FIXME
-            # self.descTail
-            # self.tail
-            # self.aValsTail
-            # self.valTail = val.tail
+            if inValue is not None:
+                self.value = inValue
+
+            if self.iType not in (PAR_COMMENT, PAR_SEPARATOR):
+                self.desc   = inDesc
+                self.aVals  = inAVals
+                self.flags = set()
+                if inChild:
+                    self.flags |= {PARFLG_CHILD}
+                if inBold:
+                    self.flags |= {PARFLG_BOLDNAME}
+                #FIXME
+            elif self.iType == PAR_SEPARATOR:
+                self.desc = inDesc
+            elif self.iType == PAR_COMMENT:
+                pass
         self.isInherited    = False
         self.isUsed         = True
 
@@ -330,7 +344,7 @@ class Param:
 
     def __valueFormat(self, inVal):
         if self.iType in (PAR_STRING, ):
-            return etree.CDATA(inVal)
+                return etree.CDATA('"' + inVal + '"') if inVal is not None else etree.CDATA('""')
         elif self.iType in (PAR_BOOL, ):
             return "0" if not inVal else "1"
         elif self.iType in (PAR_SEPARATOR, ):
@@ -338,52 +352,56 @@ class Param:
         else:
             return str(inVal)
 
+    @property
     def toEtree(self):
         if self.iType < PAR_COMMENT:
             tagString = self.tagBackList[self.iType]
             elem = etree.Element(tagString, Name=self.name)
+            nTabs = 3 if self.desc or self.flags or self.value or self.aVals else 2
+            elem.text = '\n' + nTabs * '\t'
 
             desc = etree.Element("Description")
-            desc.tail = self.descTail
+            desc.text = etree.CDATA('"' + self.desc + '"')
+            nTabs = 3 if self.flags or self.value or self.aVals else 2
+            desc.tail = '\n' + nTabs * '\t'
             elem.append(desc)
-            desc.text = etree.CDATA(self.desc)
 
             if self.flags:
                 flags = etree.Element("Flags")
+                nTabs = 3 if self.value or self.aVals else 2
+                flags.tail = '\n' + nTabs * '\t'
+                flags.text = '\n' + 4 * '\t'
                 elem.append(flags)
-                flags.tail = self.flagsTail
 
-            for f in self.flags:
-                if f == PARFLG_HIDDEN:   flags.append(etree.Element("ParFlg_Hidden"))
-                if f == PARFLG_CHILD:    flags.append(etree.Element("ParFlg_Child"))
-                if f == PARFLG_BOLDNAME: flags.append(etree.Element("ParFlg_BoldName"))
+            flagList = list(self.flags)
+            for f in flagList:
+                if f == PARFLG_HIDDEN:   element = etree.Element("ParFlg_Hidden")
+                elif f == PARFLG_CHILD:    element = etree.Element("ParFlg_Child")
+                elif f == PARFLG_BOLDNAME: element = etree.Element("ParFlg_BoldName")
+                nTabs = 4 if flagList.index(f) < len(flagList) - 1 else 3
+                element.tail = '\n' + nTabs * '\t'
+                flags.append(element)
 
-            if self.value != None:
+            if self.value is not None or self.iType == PAR_STRING:
                 value = etree.Element("Value")
-                elem.append(value)
-                # if isinstance(self.value, basestring):
                 value.text = self.__valueFormat(self.value)
-                # elif isinstance(self.value, bool):
-                #     value.text = "0" if not self.value else "1"
-                # else:
-                #     value.text = str(self.value)
-                value.tail = self.valTail
-
-            elif self.aVals != None:
+                value.tail = '\n' + 2 * '\t'
+                elem.append(value)
+            elif self.aVals is not None:
                 fd = len(self.aVals[0])
                 sd = len(self.aVals)
                 aValue = etree.Element("ArrayValues", FirstDimension=str(fd), SecondDimension=str(sd))
-                aValue.tail = self.aValsTail
+                aValue.tail = '\n' + 2 * '\t'
                 elem.append(aValue)
                 for colIdx, col in enumerate(self.aVals):
                     for rowIdx, cell in enumerate(col):
                         arrayValue = etree.Element("AVal", Column=str(colIdx + 1), Row=str(rowIdx + 1))
                         aValue.append(arrayValue)
                         arrayValue.text = self.__valueFormat(cell)
+            elem.tail = '\n' + 2 * '\t'
         else:
-            elem = etree.Comment(self.name)
-        elem.text = self.text
-        elem.tail = self.tail
+            elem = etree.Comment(" %s: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK " % self.name)
+            elem.tail = 2 * '\n' + 2 * '\t'
         return elem
 
     @staticmethod
@@ -650,7 +668,6 @@ class SourceXML (XMLFile, SourceFile):
                 if macroName not in inMacroSet:
                     if replacement_dict[macroName].checkParameterUsage(inPar, inMacroSet):
                         return True
-
         return False
 
 
@@ -676,9 +693,7 @@ class DestXML (XMLFile, DestFile):
         super(DestXML, self).__init__(self.relPath, sourceFile=sourceFile)
         self.warnings               = []
 
-        #FIXME refresh paths if XML folder is changed OR do it on the fly
         self.sourceFile             = sourceFile
-        self.fullGDLPath            = TargetGDLDirName.get() + "\\" + self.fileNameWithOutExt + ".gsm"
         self.guid                   = str(uuid.uuid4()).upper()
         self.bPlaceable             = sourceFile.bPlaceable
         self.iVersion               = sourceFile.iVersion
@@ -703,11 +718,11 @@ class DestXML (XMLFile, DestFile):
                 #     self.ID = "UNID"
                 self.guid = mdp.getroot().attrib[ID]
                 print mdp.getroot().attrib[ID]
-
             else:
                 self.warnings += ["XML Target file exists!"]
 
-        if os.path.isfile(self.fullGDLPath):
+        fullGDLPath                 = TargetGDLDirName.get() + "\\" + self.fileNameWithOutExt + ".gsm"
+        if os.path.isfile(fullGDLPath):
             self.warnings += ["GDL Target file exists!"]
 
         if self.iVersion >= AC_18:
@@ -1313,6 +1328,7 @@ class GUIApp(tk.Frame):
     def modifyDestItemdata(self, *_):
         self.destItem.proDatURL = self.proDatURL.get()
         self.destItem.parameters.BO_update(self.destItem.proDatURL)
+        print 1
 
     def modifyDestItem(self, *_):
         fN = self.fileName.get().upper()
