@@ -20,11 +20,13 @@ import urllib, httplib
 import copy
 
 from ConfigParser import *
+import csv
 
 PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"
-GUID_REGEX = "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}"
+# GUID_REGEX = "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}"
 #FIXME to check this:
 # GUID_REGEX = r"([0-9A-Fa-f]){8}-\1{4}-\1{4}-\1{4}-\1{12}"
+
 ID = ''
 LISTBOX_SEPARATOR = '--------'
 AC_18   = 28
@@ -63,6 +65,9 @@ replacement_dict = {}   #SourceXMLs' list, idx by name
 id_dict = {}            #Source GUID -> dest GUID
 pict_dict = {}
 source_pict_dict = {}
+all_keywords = set()
+
+# ------------------- parameter classes --------------------------------------------------------------------------------
 
 
 class ParamSection:
@@ -89,6 +94,14 @@ class ParamSection:
         else:
             self.__index += 1
             return self.__paramList[self.__index]
+
+    def __contains__(self, item):
+        return item in self.__paramDict
+
+    def __setitem__(self, key, value):
+        #FIXME currently only existing ones
+        if key in self.__paramDict:
+            self.__paramDict[key].setValue(value)
 
     def append(self, inEtree, inName):
         self.__paramList.append(inEtree)
@@ -178,6 +191,8 @@ class ParamSection:
         return eTree
 
     def BO_update(self, prodatURL):
+        #FIXME code for unsuccessful updates, BO_edinum to -1, removing BO_productguid
+        #FIXME new authentication
         headers = {"Content-type": "application/x-www-form-urlencoded"}
         _xml = urllib.urlencode({"value": "<?xml version='1.0' encoding='UTF-8'?>"
                                             "<Bim API='%s'>"
@@ -220,8 +235,8 @@ class ParamSection:
                 varName = e.get('VariableName')
                 if varName in ('BO_Title', 'BO_prodinfo', 'BO_links', 'BO_real', 'BO_classific', 'BO_regions',):
                     comment = Param(inName=varName,
-                                inDesc=e.get('VariableDescription'),
-                                inType=PAR_COMMENT,)
+                                    inDesc=e.get('VariableDescription'),
+                                    inType=PAR_COMMENT,)
                     self.append(comment, 'BO_Title')
                 param = Param(inName=varName,
                               inDesc=e.get('VariableDescription'),
@@ -232,6 +247,7 @@ class ParamSection:
                               inBold=(e.get('VariableStyle')=='Bold'), )
                 self.append(param, varName)
             self.__paramList[-1].tail = '\n\t'
+
 
 class Param:
     tagBackList = ["", "Length", "Angle", "RealNum", "Integer", "Boolean", "String", "Material",
@@ -325,12 +341,15 @@ class Param:
         self.isInherited    = False
         self.isUsed         = True
 
+    def setValue(self, inVal):
+        self.value = self.__toFormat(inVal)
+
     def __toFormat(self, inData):
-        '''
+        """
         Returns data converted from string according to self.iType
         :param inData:
         :return:
-        '''
+        """
         if self.iType in (PAR_LENGTH, PAR_REAL, PAR_ANGLE):
             return float(inData)
         elif self.iType in (PAR_INT, PAR_MATERIAL, PAR_PEN, PAR_LINETYPE, PAR_MATERIAL):
@@ -372,15 +391,14 @@ class Param:
                 flags.tail = '\n' + nTabs * '\t'
                 flags.text = '\n' + 4 * '\t'
                 elem.append(flags)
-
-            flagList = list(self.flags)
-            for f in flagList:
-                if f == PARFLG_HIDDEN:   element = etree.Element("ParFlg_Hidden")
-                elif f == PARFLG_CHILD:    element = etree.Element("ParFlg_Child")
-                elif f == PARFLG_BOLDNAME: element = etree.Element("ParFlg_BoldName")
-                nTabs = 4 if flagList.index(f) < len(flagList) - 1 else 3
-                element.tail = '\n' + nTabs * '\t'
-                flags.append(element)
+                flagList = list(self.flags)
+                for f in flagList:
+                    if f == PARFLG_HIDDEN:   element = etree.Element("ParFlg_Hidden")
+                    elif f == PARFLG_CHILD:    element = etree.Element("ParFlg_Child")
+                    elif f == PARFLG_BOLDNAME: element = etree.Element("ParFlg_BoldName")
+                    nTabs = 4 if flagList.index(f) < len(flagList) - 1 else 3
+                    element.tail = '\n' + nTabs * '\t'
+                    flags.append(element)
 
             if self.value is not None or self.iType == PAR_STRING:
                 value = etree.Element("Value")
@@ -431,6 +449,8 @@ class Param:
         elif inString in ("Title"):
             return PAR_TITLE
 
+# -------------------/parameter classes --------------------------------------------------------------------------------
+
 
 class CreateToolTip:
     def __init__(self, widget, text='widget info'):
@@ -457,13 +477,12 @@ class CreateToolTip:
         self.id = self.widget.after(self.waittime, self.showtip)
 
     def unschedule(self):
-        id = self.id
+        idx = self.id
         self.id = None
-        if id:
-            self.widget.after_cancel(id)
+        if idx:
+            self.widget.after_cancel(idx)
 
     def showtip(self, event=None):
-        x = y = 0
         x, y, cx, cy = self.widget.bbox("insert")
         x += self.widget.winfo_rootx() + 25
         y += self.widget.winfo_rooty() + 20
@@ -484,13 +503,13 @@ class CreateToolTip:
             tw.destroy()
 
 
-class Replacement:
-    def __init__(self, inR, inO):
-        self.replaceString = inR
-
-        # self.replace_with = re.sub(args[1], args[2], inR, flags=re.IGNORECASE)
-        self.orig_uuid = inO
-        self.new_uuid = re.sub(GUID_REGEX, str(uuid.uuid4()).upper(), inO, count=1)
+# class Replacement:
+#     def __init__(self, inR, inO):
+#         self.replaceString = inR
+#
+#         # self.replace_with = re.sub(args[1], args[2], inR, flags=re.IGNORECASE)
+#         self.orig_uuid = inO
+#         self.new_uuid = re.sub(GUID_REGEX, str(uuid.uuid4()).upper(), inO, count=1)
 
 
 class Pict_replacement:
@@ -503,11 +522,10 @@ class Pict_replacement:
 # ------------------- GUI ------------------------------
 # ------------------- GUI ------------------------------
 
-# -------------------data classes---------------------------------------------------------------------------------------
-
+# ------------------- data classes -------------------------------------------------------------------------------------
 
 class GeneralFile(object) :
-    '''
+    """
     fullpath:   C:\...\relPath\fileName.ext  -only for sources; dest stuff can always be modified
     relPath:           relPath\fileName.ext
     dirName            relPath
@@ -532,7 +550,7 @@ class GeneralFile(object) :
         |               +------------- | --------------+
         |               |              |               |
     SourceImage     DestImage       SourceXML       DestXML
-    '''
+    """
     def __init__(self, relPath):
         self.relPath            = relPath
         self.fileNameWithExt    = os.path.basename(relPath)
@@ -606,6 +624,7 @@ class XMLFile(GeneralFile):
 class SourceXML (XMLFile, SourceFile):
 
     def __init__(self, relPath):
+        global all_keywords
         super(SourceXML, self).__init__(relPath)
         self.calledMacros   = {}
         self.parentSubTypes = {}
@@ -650,14 +669,17 @@ class SourceXML (XMLFile, SourceFile):
 
         # for par in self.parameters:
         #     par.isUsed = self.checkParameterUsage(par, set())
+        t = re.sub("\n", ", ", mroot.find("./Keywords").text)
+        self.keywords = [kw.strip() for kw in t.split(",") if kw != ''][1:-1]
+        all_keywords |= set(self.keywords)
 
     def checkParameterUsage(self, inPar, inMacroSet):
-        '''
+        """
         Checking whether a certain Parameter is used in the macro or any of its called macros
         :param inPar:       Parameter
         :param inMacroSet:  set of macros that the parameter was searched in before
         :return:        boolean
-        '''
+        """
         #FIXME check parameter passings: a called macro without PARAMETERS ALL
         for script in self.scripts:
             if inPar.name in script:
@@ -674,11 +696,14 @@ class SourceXML (XMLFile, SourceFile):
 class DestXML (XMLFile, DestFile):
     # tags            = []      #FIXME later; from BO site
 
-    def __init__(self, sourceFile, stringFrom = "", stringTo = "", ):
+    def __init__(self, sourceFile, stringFrom = "", stringTo = "", **kwargs):
         # Renaming
-        self.name     = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
-        if stringTo not in self.name and bAddStr.get():
-            self.name += stringTo
+        if 'newFileName' in kwargs:
+            self.name     = kwargs['newFileName']
+        else:
+            self.name     = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
+            if stringTo not in self.name and bAddStr.get():
+                self.name += stringTo
         if self.name.upper() in dest_dict:
             i = 1
             while self.name.upper() + "_" + str(i) in dest_dict.keys():
@@ -736,17 +761,15 @@ class DestXML (XMLFile, DestFile):
                 id_dict[self.sourceFile.guid.upper()] = self.guid.upper()
 
     def getCalledMacro(self):
-        '''
+        """
         getting called marco scripts
         FIXME to be removed
         :return:
-        '''
+        """
 
-#-----------------gui classes-------------------------------------------------------------------------------------------
+#----------------- gui classes -----------------------------------------------------------------------------------------
 
 class InputDirPlusText():
-    listBox = None
-
     def __init__(self, top, text, target, tooltip=''):
         self.target = target
         self.filename = ''
@@ -891,7 +914,7 @@ class GUIApp(tk.Frame):
         global \
             SourceDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
             AdditionalImageDir, bDebug, ACLocation, bGDL, bXML, dest_dict, replacement_dict, id_dict, \
-            pict_dict, source_pict_dict, bAddStr, bOverWrite
+            pict_dict, source_pict_dict, bAddStr, bOverWrite, all_keywords
 
         SourceDirName       = self.SourceDirName
         TargetXMLDirName    = self.TargetXMLDirName
@@ -913,7 +936,6 @@ class GUIApp(tk.Frame):
         __tooltipIDPT5 = "If set, copy project specific pictures here, too"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
 
-
         for cName, cValue in currentConfig.items('ArchiCAD'):
             try:
                 if   cName == 'bgdl':               self.bGDL.set(cValue)
@@ -932,6 +954,8 @@ class GUIApp(tk.Frame):
                 elif cName == 'gdltargetdirname':   self.TargetGDLDirName.set(cValue)
                 elif cName == 'baddstr':            self.bAddStr.set(cValue)
                 elif cName == 'boverwrite':         self.bOverWrite.set(cValue)
+                elif cName == 'allkeywords':
+                    all_keywords |= set(v.strip() for v in cValue.split(',') if v !='')
             except NoOptionError:
                 print "NoOptionError"
                 continue
@@ -1100,10 +1124,13 @@ class GUIApp(tk.Frame):
         self.resetButton         = tk.Button(self.buttonFrame, {"text": "Reset", "command": self.resetAll })
         self.resetButton.grid({"row": 3, "sticky": tk.W + tk.E})
 
+        self.CSVbutton          = tk.Button(self.buttonFrame, {"text": "CSV", "command": self.getFromCSV, })
+        self.CSVbutton.grid({"row": 4, "sticky": tk.W + tk.E})
+
+        #FIXME
         # self.reconnectButton      = tk.Button(self.buttonFrame, {"text": "Reconnect", "command": self.reconnect })
         # self.reconnectButton.grid({"row": 4, "sticky": tk.W + tk.E})
 
-        #FIXME
         # ----properties------------------------------------------------------------------------------------------------
 
         self.propertyFrame      = tk.Frame(self.top)
@@ -1166,6 +1193,22 @@ class GUIApp(tk.Frame):
         CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
         CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
 
+    def getFromCSV(self):
+        csvFileName = tkFileDialog.askopenfilename(initialdir="/", title="Select folder", filetypes=(("CSV files", "*.csv"), ("all files","*.*")))
+        if csvFileName:
+            with open(csvFileName, "r") as csvFile:
+                firstRow = next(csv.reader(csvFile))
+                for row in csv.reader(csvFile):
+                    destItem = DestXML(replacement_dict[row[0].upper()], newFileName=row[1])
+                    dest_dict[destItem.name.upper()] = destItem
+                    self.refreshDestItem()
+                    if row[2]:
+                        destItem.parameters.BO_update(row[2])
+                    if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
+                        for parName, col in zip(firstRow[3:], row[3:]):
+                            if parName in destItem.parameters:
+                                destItem.parameters[parName] = col
+
     def setACLoc(self):
         ACLoc = tkFileDialog.askdirectory(initialdir="/", title="Select ArchiCAD folder")
         self.ACLocation.set(ACLoc)
@@ -1186,10 +1229,10 @@ class GUIApp(tk.Frame):
             self.XMLDir.idpt.entryDirName.config(state=tk.DISABLED)
         else:   self.XMLDir.idpt.entryDirName.config(state=tk.NORMAL)
 
-    def start(self):
+    @staticmethod
+    def start():
         main2()
-        print "Start"
-        #TODO starting conversion
+        print "Starting conversion"
 
     def addFile(self, fileName=''):
         if not fileName:
@@ -1348,7 +1391,6 @@ class GUIApp(tk.Frame):
     def writeConfigBack(self, ):
         currentConfig = RawConfigParser()
         currentConfig.add_section("ArchiCAD")
-        # currentConfig.set("ArchiCAD", "path", "C:\Program Files\GRAPHISOFT\ArchiCAD SE 2016\LP_XMLConverter.exe")
         currentConfig.set("ArchiCAD", "aclocation",         self.ACLocEntry.get())
         currentConfig.set("ArchiCAD", "additionalimagedir", self.AdditionalImageDirEntry.get())
 
@@ -1367,6 +1409,7 @@ class GUIApp(tk.Frame):
         currentConfig.set("ArchiCAD", "imgstringto",        self.ImgStringTo.get())
         currentConfig.set("ArchiCAD", "baddstr",            self.bAddStr.get())
         currentConfig.set("ArchiCAD", "boverwrite",         self.bOverWrite.get())
+        currentConfig.set("ArchiCAD", "allkeywords",        ', '.join(sorted(list(all_keywords))))
 
         with open(self.appDataDir + r"\TemplateMarker.ini", 'wb') as configFile:
             #FIXME proper config place
@@ -1425,10 +1468,9 @@ def FC1(inFile):
         pass
 
 def main2():
-    '''
-
+    """
     :return:
-    '''
+    """
     if bXML.get():
         tempdir = TargetXMLDirName.get()
     else:
@@ -1442,7 +1484,7 @@ def main2():
         dest        = dest_dict[k]
         src         = dest.sourceFile
         srcPath     = src.fullPath
-        destPath    = tempdir + "\\" + dest.relPath     # + dest.ext
+        destPath    = tempdir + "\\" + dest.relPath
         destDir     = os.path.dirname(destPath)
 
         print "%s -> %s" % (srcPath, destPath,)
@@ -1480,7 +1522,7 @@ def main2():
 
         for sect in ["./Script_2D", "./Script_3D", "./Script_1D", "./Script_PR", "./Script_UI", "./Script_VL", "./Script_FWM", "./Script_BWM", ]:
             section = mdp.find(sect)
-            if section != None:
+            if section is not None:
                 t = section.text
 
                 for dI in dest_dict.keys():
@@ -1516,8 +1558,7 @@ def main2():
 
             mdp.getroot().append(eCopyright)
 
-        # ---------------------BO_update preparations---------------------
-        # parRoot = mdp.find("./ParamSection/Parameters")
+        # ---------------------BO_update---------------------
         parRoot = mdp.find("./ParamSection")
         parPar = parRoot.getparent()
         parPar.remove(parRoot)
@@ -1525,33 +1566,8 @@ def main2():
         destPar = dest.parameters.toEtree()
         parPar.append(destPar)
 
-        #FIXME rewriting this as Parameter instead of xml
-        # for stPar in stRoot.findall("String"):
-        #     if stPar.attrib["Name"] == "BO_prodaturl":
-        #         stRoot.remove(stPar)
-        #     if stPar.attrib["Name"] == "BO_productguid":
-        #         stRoot.remove(stPar)
-        #     if stPar.attrib["Name"] == "BO_edinum":
-        #         stRoot.remove(stPar)
-        #FIXME BO_edinum to -1, removing BO_productguid
-
-        # eProdatUrl= etree.Element("String", Name="BO_prodaturl", )
-        # # destPar = mdp.find("./ParamSection/Parameters")
-        # destPar.append(eProdatUrl)
-        #
-        # eProdatDesc = etree.Element("Description")
-        # eProdatDesc.text = etree.CDATA('"Product data url:"')
-        # eProdatUrl.append(eProdatDesc)
-        #
-        # eParFlags = etree.Element("Flags")
-        # eParFlags.append(etree.Element("ParFlg_Child", ))
-        # eProdatUrl.append(eParFlags)
-        #
-        # eProdatVal = etree.Element("Value", )
-        # eProdatVal.text = etree.CDATA('"' + dest.proDatURL + '"')
-        # eProdatUrl.append(eProdatVal)
-
         #FIXME not clear, check, writes an extra empty mainunid field
+        #FIXME ancestries to be used in param checking
         for m in mdp.findall("./Ancestry/" + ID):
             name = m.text
             if name.upper() in id_dict:
@@ -1567,8 +1583,6 @@ def main2():
         with open(destPath, "w") as file_handle:
             mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
 
-    #try:
-    #FIXME
     _picdir =  AdditionalImageDir.get()
     _picdir2 = SourceImageDirName.get()
 
@@ -1644,3 +1658,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
