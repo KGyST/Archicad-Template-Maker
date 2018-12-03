@@ -1,5 +1,6 @@
 #!C:\Program Files\Python27amd64\python.exe
 # -*- coding: utf-8 -*-
+#TODO <Picture MIME="image/png" SectVersion="19" SectionFlags="0" SubIdent="0" path="prevpicts/KS-Quadro Wall_0.png"> not renamed
 
 import os
 import os.path
