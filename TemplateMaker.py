@@ -287,16 +287,16 @@ class Param:
 
                 __aVals = self.__eTree.find("ArrayValues")
                 if __aVals is not None:
-                    fd = int(__aVals.attrib["FirstDimension"])
-                    sd = int(__aVals.attrib["SecondDimension"])
-                    if sd > 0:
-                        self.aVals = [["" for _ in range(fd)] for _ in range(sd)]
+                    self.__fd = int(__aVals.attrib["FirstDimension"])
+                    self.__sd = int(__aVals.attrib["SecondDimension"])
+                    if self.__sd > 0:
+                        self.aVals = [["" for _ in range(self.__fd)] for _ in range(self.__sd)]
                         for v in __aVals.iter("AVal"):
                             x = int(v.attrib["Column"]) - 1
                             y = int(v.attrib["Row"]) - 1
                             self.aVals[x][y] = self.__toFormat(v.text)
                     else:
-                        self.aVals = [["" for _ in range(fd)]]
+                        self.aVals = [["" for _ in range(self.__fd)]]
                         for v in __aVals.iter("AVal"):
                             y = int(v.attrib["Row"]) - 1
                             self.aVals[0][y] = self.__toFormat(v.text)
@@ -364,7 +364,8 @@ class Param:
 
     def __valueFormat(self, inVal):
         if self.iType in (PAR_STRING, ):
-                return etree.CDATA('"' + inVal + '"') if inVal is not None else etree.CDATA('""')
+                # return etree.CDATA('"' + inVal + '"') if inVal is not None else etree.CDATA('""')
+                return etree.CDATA(inVal) if inVal is not None else etree.CDATA('""')
         elif self.iType in (PAR_BOOL, ):
             return "0" if not inVal else "1"
         elif self.iType in (PAR_SEPARATOR, ):
@@ -381,7 +382,8 @@ class Param:
             elem.text = '\n' + nTabs * '\t'
 
             desc = etree.Element("Description")
-            desc.text = etree.CDATA('"' + self.desc + '"')
+            # desc.text = etree.CDATA('"' + self.desc + '"')
+            desc.text = etree.CDATA(self.desc)
             nTabs = 3 if self.flags or self.value or self.aVals else 2
             desc.tail = '\n' + nTabs * '\t'
             elem.append(desc)
@@ -401,20 +403,27 @@ class Param:
                     element.tail = '\n' + nTabs * '\t'
                     flags.append(element)
 
-            if self.value is not None or self.iType == PAR_STRING:
+            if self.value is not None or (self.iType == PAR_STRING and not self.aVals):
+                #FIXME above line why string?
                 value = etree.Element("Value")
                 value.text = self.__valueFormat(self.value)
                 value.tail = '\n' + 2 * '\t'
                 elem.append(value)
             elif self.aVals is not None:
-                fd = len(self.aVals[0])
-                sd = len(self.aVals)
-                aValue = etree.Element("ArrayValues", FirstDimension=str(fd), SecondDimension=str(sd))
+                # fd = len(self.aVals[0])
+                # sd = len(self.aVals)
+                aValue = etree.Element("ArrayValues", FirstDimension=str(self.__fd), SecondDimension=str(self.__sd))
+                aValue.text = '\n' + 4 * '\t'
                 aValue.tail = '\n' + 2 * '\t'
                 elem.append(aValue)
                 for colIdx, col in enumerate(self.aVals):
                     for rowIdx, cell in enumerate(col):
-                        arrayValue = etree.Element("AVal", Column=str(colIdx + 1), Row=str(rowIdx + 1))
+                        if self.__sd:
+                            arrayValue = etree.Element("AVal", Column=str(colIdx + 1), Row=str(rowIdx + 1))
+                        else:
+                            arrayValue = etree.Element("AVal", Row=str(rowIdx + 1))
+                        nTabs = 3 if rowIdx == len(col) - 1 else 4
+                        arrayValue.tail='\n' + nTabs * '\t'
                         aValue.append(arrayValue)
                         arrayValue.text = self.__valueFormat(cell)
             elem.tail = '\n' + 2 * '\t'
