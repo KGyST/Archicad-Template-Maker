@@ -848,34 +848,37 @@ class InputWithListBox():
 
 
 class ListboxWithRefresh(tk.Listbox):
-    def __init__(self, top, dict_):
-        if "target" in dict_:
-            self.target = dict_["target"]
-            del dict_["target"]
-        if "dict" in dict_:
-            self.dict = dict_["dict"]
-            del dict_["dict"]
-        tk.Listbox.__init__(self, top, dict_)
+    def __init__(self, top, _dict):
+        if "target" in _dict:
+            self.target = _dict["target"]
+            del _dict["target"]
+        if "imgTarget" in _dict:
+            self.imgTarget = _dict["imgTarget"]
+            del _dict["imgTarget"]
+        if "dict" in _dict:
+            self.dict = _dict["dict"]
+            del _dict["dict"]
+        tk.Listbox.__init__(self, top, _dict)
 
     def refresh(self, *_):
-
-            if self.dict == replacement_dict:
-                FC1(self.target.get())
-            self.delete(0, tk.END)
-            bPlaceablesFromHere = True
-            if self.dict in (pict_dict, source_pict_dict):
-                bPlaceablesFromHere = False
-            for f in sorted([self.dict[k] for k in self.dict.keys()]):
-                try:
-                    if not f.bPlaceable and bPlaceablesFromHere:
-                        self.insert(tk.END, LISTBOX_SEPARATOR)
-                        bPlaceablesFromHere = False
-                    if f.warnings:
-                        self.insert(tk.END, "* " + f.name)
-                    else:
+        if self.dict == replacement_dict:
+            FC1(self.target.get(), SourceDirName.get())
+            FC1(self.imgTarget.get(), SourceImageDirName.get())
+        self.delete(0, tk.END)
+        bPlaceablesFromHere = True
+        if self.dict in (pict_dict, source_pict_dict):
+            bPlaceablesFromHere = False
+        for f in sorted([self.dict[k] for k in self.dict.keys()]):
+            try:
+                if not f.bPlaceable and bPlaceablesFromHere:
+                    self.insert(tk.END, LISTBOX_SEPARATOR)
+                    bPlaceablesFromHere = False
+                if f.warnings:
+                    self.insert(tk.END, "* " + f.name)
+                else:
                         self.insert(tk.END, f.name)
-                except AttributeError:
-                    self.insert(tk.END, f.name)
+            except AttributeError:
+                self.insert(tk.END, f.name)
 
 
 class GUIApp(tk.Frame):
@@ -996,7 +999,7 @@ class GUIApp(tk.Frame):
         self.inputFrame.grid_rowconfigure(4, weight=1)
 
         self.InputFrameS = [tk.Frame(self.inputFrame) for _ in range (5)]
-        for f, r, cc in zip(self.InputFrameS, range(5), [0, 1, 0, 1, 0]):
+        for f, r, cc in zip(self.InputFrameS, range(5), [0, 1, 0, 0, 1, ]):
             f.grid({"row": r, "column": 0, "sticky": tk.N + tk.S + tk.E + tk.W, })
             self.InputFrameS[r].grid_columnconfigure(cc, weight=1)
             self.InputFrameS[r].rowconfigure(0, weight=1)
@@ -1015,7 +1018,7 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        self.listBox = ListboxWithRefresh(self.InputFrameS[iF], {"target": self.SourceDirName, "dict": replacement_dict})
+        self.listBox = ListboxWithRefresh(self.InputFrameS[iF], {"target": self.SourceDirName, "imgTarget": self.SourceImageDirName, "dict": replacement_dict})
         self.listBox.grid({"row": 0, "column": 0, "sticky": tk.E + tk.W + tk.N + tk.S})
         self.observerLB1 = self.SourceDirName.trace_variable("w", self.listBox.refresh)
 
@@ -1024,10 +1027,6 @@ class GUIApp(tk.Frame):
 
         self.listBox.config(yscrollcommand=self.ListBoxScrollbar.set)
         self.ListBoxScrollbar.config(command=self.listBox.yview)
-
-        iF += 1
-
-        InputDirPlusText(self.InputFrameS[iF], "Images' source folder",  self.SourceImageDirName, __tooltipIDPT2)
 
         iF += 1
 
@@ -1045,6 +1044,13 @@ class GUIApp(tk.Frame):
         self.listBox2.config(yscrollcommand=self.ListBoxScrollbar2.set)
         self.ListBoxScrollbar2.config(command=self.listBox2.yview)
 
+        iF += 1
+
+        InputDirPlusText(self.InputFrameS[iF], "Images' source folder",  self.SourceImageDirName, __tooltipIDPT2)
+        if SourceDirName:
+            self.listBox.refresh()
+            self.listBox2.refresh()
+
         # ----output side--------------------------------
 
         self.outputFrame = tk.Frame(self.top)
@@ -1054,7 +1060,7 @@ class GUIApp(tk.Frame):
         self.outputFrame.grid_rowconfigure(4, weight=1)
 
         self.outputFrameS = [tk.Frame(self.outputFrame) for _ in range (5)]
-        for f, r, cc in zip(self.outputFrameS, range(5), [1, 1, 0, 1, 0]):
+        for f, r, cc in zip(self.outputFrameS, range(5), [1, 1, 0, 0, 1]):
             f.grid({"row": r, "column": 0, "sticky": tk.SW + tk.NE, })
             self.outputFrameS[r].grid_columnconfigure(cc, weight=1)
             self.outputFrameS[r].rowconfigure(0, weight=1)
@@ -1062,7 +1068,7 @@ class GUIApp(tk.Frame):
 
         self.XMLDir = InputDirPlusBool(self.outputFrameS[0], "XML Destination folder",      self.TargetXMLDirName, self.bXML, __tooltipIDPT3)
         self.GDLDir = InputDirPlusBool(self.outputFrameS[1], "GDL Destination folder",      self.TargetGDLDirName, self.bGDL, __tooltipIDPT4)
-        InputDirPlusText(self.outputFrameS[3], "Images' destination folder",  self.TargetImageDirName, __tooltipIDPT5)
+        InputDirPlusText(self.outputFrameS[4], "Images' destination folder",  self.TargetImageDirName, __tooltipIDPT5)
 
         self.listBox3 = ListboxWithRefresh(self.outputFrameS[2], {'dict': dest_dict})
         self.listBox3.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
@@ -1075,11 +1081,10 @@ class GUIApp(tk.Frame):
 
         self.listBox3.bind("<<ListboxSelect>>", self.listboxselect)
 
-
-        self.listBox4 = ListboxWithRefresh(self.outputFrameS[4], {'dict': pict_dict})
+        self.listBox4 = ListboxWithRefresh(self.outputFrameS[3], {'dict': pict_dict})
         self.listBox4.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
 
-        self.ListBoxScrollbar4 = tk.Scrollbar(self.outputFrameS[4])
+        self.ListBoxScrollbar4 = tk.Scrollbar(self.outputFrameS[3])
         self.ListBoxScrollbar4.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
 
         self.listBox4.config(yscrollcommand=self.ListBoxScrollbar4.set)
@@ -1445,7 +1450,7 @@ class GUIApp(tk.Frame):
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
 
-def FC1(inFile):
+def FC1(inFile, inRootFolder):
     """
     only scanning input dir recursively to set up xml and image files' list
     :param inFile:
@@ -1459,17 +1464,18 @@ def FC1(inFile):
                 # if it's NOT a directory
                 if not os.path.isdir(src):
                     if os.path.splitext(os.path.basename(f))[1].upper() in (".XML", ):
-                        sf = SourceXML(os.path.relpath(src, SourceDirName.get()))
+                        sf = SourceXML(os.path.relpath(src, inRootFolder))
                         replacement_dict[sf.name.upper()] = sf
                         id_dict[sf.guid.upper()] = ""
 
                     elif os.path.splitext(os.path.basename(f))[1].upper() in (".JPG", ".PNG", ".SVG", ):
                         if os.path.splitext(os.path.basename(f))[0].upper() not in source_pict_dict:
                             # set up replacement dict for image names
-                            sI = SourceImage(os.path.relpath(src, SourceDirName.get()))
+                            #FIXME for all other files, too
+                            sI = SourceImage(os.path.relpath(src, inRootFolder))
                             source_pict_dict[sI.fileNameWithExt.upper()] = sI
                 else:
-                    FC1(src)
+                    FC1(src, inRootFolder)
 
             except KeyError:
                 print "KeyError %s" % f
