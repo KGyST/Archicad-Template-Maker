@@ -32,7 +32,401 @@ id_dict = {}
 pict_dict = {}
 source_pict_dict = {}
 
+<<<<<<< Updated upstream
 class CreateToolTip():
+=======
+class ParamSection:
+    """
+    iterable class of all params
+    """
+    def __init__(self, inETree):
+        self.eTree          = inETree
+        self.__header       = inETree.find("ParamSectHeader")
+        self.__paramList    = []
+        self.__paramDict    = {}
+        self.__index        = 0
+        self.usedParamSet   = {}
+        for p in inETree.find("Parameters"):
+            param = Param(p)
+            self.append(param, param.name)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        if self.__index >= len(self.__paramList) - 1:
+            raise StopIteration
+        else:
+            self.__index += 1
+            return self.__paramList[self.__index]
+
+    def __contains__(self, item):
+        return item in self.__paramDict
+
+    def __setitem__(self, key, value):
+        #FIXME currently only existing ones
+        if key in self.__paramDict:
+            self.__paramDict[key].setValue(value)
+
+    def append(self, inEtree, inName):
+        self.__paramList.append(inEtree)
+        if not isinstance(inEtree, etree._Comment):
+            self.__paramDict[inName] = inEtree
+
+    def insertAfter(self, inParName, inEtree):
+        self.__paramList.insert(self.__getIndex(inParName) + 1, inEtree)
+
+    def insertBefore(self, inParName, inEtree):
+        self.__paramList.insert(self.__getIndex(inParName), inEtree)
+
+    def insertUnder(self, inParName, inEtree, inPos):
+        """
+        inserting under a title
+        :param inParName:
+        :param inEtree:
+        :param inPos:      position, 0 is first, -1 is last #FIXME
+        :return:
+        """
+        base = self.__getIndex(inParName)
+        i = 1
+        if self.__paramList[base].iType == PAR_TITLE:
+            nP = self.__paramList[base + i]
+            try:
+                while nP.iType != PAR_TITLE and \
+                    PARFLG_CHILD in nP.flags:
+                    i += 1
+                    nP = self.__paramList[i]
+                self.__paramList.insert(i, inEtree)
+            except IndexError:
+                self.__paramList.append(inEtree)
+
+    def remove_param(self, inParName):
+        obj = self.__paramDict[inParName]
+        while obj in self.__paramList:
+            self.__paramList.remove(obj)
+        del self.__paramDict[inParName]
+
+    def upsert_param(self, inParName):
+        #TODO
+        pass
+
+    def __getIndex(self, inName):
+        return [p.name for p in self.__paramList].index(inName)
+
+    def get(self, inName):
+        '''
+        Get parameter by its name as lxml Element
+        :param inName:
+        :return:
+        '''
+        return self.__paramList[self.__getIndex(inName)]
+
+    def getChildren(self, inETree):
+        """
+        Return children of a Parameter
+        :param inETree:
+        :return:        List of children, as lxml Elements
+        """
+        result = []
+        idx = self.__getIndex(inETree.name)
+        if inETree.iType != PAR_TITLE:    return None
+        for p in self.__paramList[idx:]:
+            if PARFLG_CHILD in p.flags:
+                result.append(p)
+            else:
+                return result
+
+    def toEtree(self):
+        eTree = etree.Element("ParamSection", SectVersion="25", SectionFlags="0", SubIdent="0", )
+        eTree.append(self.__header)
+        eTree.tail = '\n'
+
+        parTree = etree.Element("Parameters")
+        parTree.tail = '\n'
+        eTree.append(parTree)
+        for par in self.__paramList:
+            elem = par.toEtree
+            ix = self.__paramList.index(par)
+            if ix == len(self.__paramList) - 1:
+                elem.tail = '\n\t'
+            else:
+                if self.__paramList[ix + 1].iType == PAR_COMMENT:
+                    elem.tail = '\n\n\t\t'
+            parTree.append(elem)
+        return eTree
+
+    def BO_update(self, prodatURL):
+        #FIXME code for unsuccessful updates, BO_edinum to -1, removing BO_productguid
+        #FIXME new authentication
+        headers = {"Content-type": "application/x-www-form-urlencoded"}
+        _xml = urllib.urlencode({"value": "<?xml version='1.0' encoding='UTF-8'?>"
+                                            "<Bim API='%s'>"
+                                                "<Objects>"
+                                                    "<Object ProductId='%s'/>"
+                                                "</Objects>"
+                                            "</Bim>" % (PERSONAL_ID, prodatURL, )})
+
+        conn = httplib.HTTPSConnection("api.bimobject.com")
+        conn.request("POST", "/GetBimObjectInfoXml2", _xml, headers)
+        response = conn.getresponse()
+        resp = response.read()
+        resTree = etree.fromstring(resp)
+
+        BO_PARAM_TUPLE = ('BO_Title',
+                          'BO_Separator',
+                          'BO_prodinfo',
+                          'BO_prodsku', 'BO_Manufac', 'BO_brandurl', 'BO_prodfam', 'BO_prodgroup',
+                          'BO_mancont', 'BO_designcont', 'BO_publisdat', 'BO_edinum', 'BO_width',
+                          'BO_height', 'BO_depth', 'BO_weight', 'BO_productguid',
+                          'BO_links',
+                          'BO_boqrurl', 'BO_producturl', 'BO_montins', 'BO_prodcert', 'BO_techcert',
+                          'BO_youtube', 'BO_ean',
+                          'BO_real',
+                          'BO_mainmat', 'BO_secmat',
+                          'BO_classific',
+                          'BO_bocat', 'BO_ifcclas', 'BO_unspc', 'BO_uniclass_1_4_code', 'BO_uniclass_1_4_desc',
+                          'BO_uniclass_2_0_code', 'BO_uniclass_2_0_desc', 'BO_uniclass2015_code', 'BO_uniclass2015_desc', 'BO_nbs_ref',
+                          'BO_nbs_desc', 'BO_omniclass_code', 'BO_omniclass_name', 'BO_masterformat2014_code', 'BO_masterformat2014_name',
+                          'BO_uniformat2_code', 'BO_uniformat2_name', 'BO_cobie_type_cat',
+                          'BO_regions',
+                          'BO_europe', 'BO_northamerica', 'BO_southamerica', 'BO_middleeast', 'BO_asia',
+                          'BO_oceania', 'BO_africa', 'BO_antarctica', 'BO_Separator2',)
+        for p in BO_PARAM_TUPLE:
+            self.remove_param(p)
+
+        for p in BO_PARAM_TUPLE:
+            e = next((par for par in resTree.findall("Object/Parameters/Parameter") if par.get('VariableName') == p), '')
+            if isinstance(e, etree._Element):
+                varName = e.get('VariableName')
+                if varName in ('BO_Title', 'BO_prodinfo', 'BO_links', 'BO_real', 'BO_classific', 'BO_regions',):
+                    comment = Param(inName=varName,
+                                    inDesc=e.get('VariableDescription'),
+                                    inType=PAR_COMMENT,)
+                    self.append(comment, 'BO_Title')
+                param = Param(inName=varName,
+                              inDesc=e.get('VariableDescription'),
+                              inValue=e.text,
+                              inTypeStr=e.get('VariableType'),
+                              inAVals=None,
+                              inChild=(e.get('VariableModifier')=='Child'),
+                              inBold=(e.get('VariableStyle')=='Bold'), )
+                self.append(param, varName)
+            self.__paramList[-1].tail = '\n\t'
+
+
+class Param:
+    tagBackList = ["", "Length", "Angle", "RealNum", "Integer", "Boolean", "String", "Material",
+                   "LineType", "FillPattern", "PenColor", "Separator", "Title", "Comment"]
+
+    def __init__(self, inETree = None,
+                 inType = PAR_UNKNOWN,
+                 inName = '',
+                 inDesc = '',
+                 inValue = None,
+                 inAVals = None,
+                 inChild=False,
+                 inTypeStr = '',
+                 inBold=False):
+        self.value      = None
+
+        if inETree is not None:
+            self.text = inETree.text
+            self.tail = inETree.tail
+            if not isinstance(inETree, etree._Comment):
+                self.__eTree = inETree
+                self.flags = set()
+                self.iType = self.getTypeFromString(self.__eTree.tag)
+
+                self.name = self.__eTree.attrib["Name"]
+                self.desc = self.__eTree.find("Description").text
+                self.descTail = self.__eTree.find("Description").tail
+
+                val = self.__eTree.find("Value")
+                if val is not None:
+                    self.value = self.__toFormat(val.text)
+                    self.valTail = val.tail
+                else:
+                    self.value = None
+                    self.valTail = None
+
+                __aVals = self.__eTree.find("ArrayValues")
+                if __aVals is not None:
+                    self.__fd = int(__aVals.attrib["FirstDimension"])
+                    self.__sd = int(__aVals.attrib["SecondDimension"])
+                    if self.__sd > 0:
+                        self.aVals = [["" for _ in range(self.__fd)] for _ in range(self.__sd)]
+                        for v in __aVals.iter("AVal"):
+                            x = int(v.attrib["Column"]) - 1
+                            y = int(v.attrib["Row"]) - 1
+                            self.aVals[x][y] = self.__toFormat(v.text)
+                    else:
+                        self.aVals = [["" for _ in range(self.__fd)]]
+                        for v in __aVals.iter("AVal"):
+                            y = int(v.attrib["Row"]) - 1
+                            self.aVals[0][y] = self.__toFormat(v.text)
+                    self.aValsTail = __aVals.tail
+                else:
+                    self.aVals = None
+
+                if self.__eTree.find("Flags") is not None:
+                    self.flagsTail = self.__eTree.find("Flags").tail
+                    for f in self.__eTree.find("Flags"):
+                        if f.tag == "ParFlg_Hidden":    self.flags |= {PARFLG_HIDDEN}
+                        if f.tag == "ParFlg_Child":     self.flags |= {PARFLG_CHILD}
+                        if f.tag == "ParFlg_BoldName":  self.flags |= {PARFLG_BOLDNAME}
+                        #FIXME unique etc
+            else:       # _Comment
+                self.iType = PAR_COMMENT
+                self.name = inETree.text
+                self.desc = ''
+                self.value = None
+                self.aVals = None
+        else:            # Start from a scratch
+            self.iType  = inType
+            if inTypeStr:
+                self.iType  = self.getTypeFromString(inTypeStr)
+
+            self.name   = inName
+            if inValue is not None:
+                self.value = inValue
+
+            if self.iType not in (PAR_COMMENT, PAR_SEPARATOR):
+                self.desc   = inDesc
+                self.aVals  = inAVals
+                self.flags = set()
+                if inChild:
+                    self.flags |= {PARFLG_CHILD}
+                if inBold:
+                    self.flags |= {PARFLG_BOLDNAME}
+                #FIXME unique etc
+            elif self.iType == PAR_SEPARATOR:
+                self.desc = inDesc
+            elif self.iType == PAR_COMMENT:
+                pass
+        self.isInherited    = False
+        self.isUsed         = True
+
+    def setValue(self, inVal):
+        self.value = self.__toFormat(inVal)
+
+    def __toFormat(self, inData):
+        """
+        Returns data converted from string according to self.iType
+        :param inData:
+        :return:
+        """
+        if self.iType in (PAR_LENGTH, PAR_REAL, PAR_ANGLE):
+            return float(inData)
+        elif self.iType in (PAR_INT, PAR_MATERIAL, PAR_PEN, PAR_LINETYPE, PAR_MATERIAL):
+            return int(inData)
+        elif self.iType in (PAR_BOOL, ):
+            return bool(inData)
+        elif self.iType in (PAR_SEPARATOR, ):
+            return None
+        else:
+            return inData
+
+    def __valueFormat(self, inVal):
+        if self.iType in (PAR_STRING, ):
+                return etree.CDATA(inVal) if inVal is not None else etree.CDATA('""')
+        elif self.iType in (PAR_BOOL, ):
+            return "0" if not inVal else "1"
+        elif self.iType in (PAR_SEPARATOR, ):
+            return None
+        else:
+            return str(inVal)
+
+    @property
+    def toEtree(self):
+        if self.iType < PAR_COMMENT:
+            tagString = self.tagBackList[self.iType]
+            elem = etree.Element(tagString, Name=self.name)
+            nTabs = 3 if self.desc or self.flags or self.value or self.aVals else 2
+            elem.text = '\n' + nTabs * '\t'
+
+            desc = etree.Element("Description")
+            # desc.text = etree.CDATA('"' + self.desc + '"')
+            desc.text = etree.CDATA(self.desc)
+            nTabs = 3 if self.flags or self.value or self.aVals else 2
+            desc.tail = '\n' + nTabs * '\t'
+            elem.append(desc)
+
+            if self.flags:
+                flags = etree.Element("Flags")
+                nTabs = 3 if self.value or self.aVals else 2
+                flags.tail = '\n' + nTabs * '\t'
+                flags.text = '\n' + 4 * '\t'
+                elem.append(flags)
+                flagList = list(self.flags)
+                for f in flagList:
+                    if f == PARFLG_HIDDEN:   element = etree.Element("ParFlg_Hidden")
+                    elif f == PARFLG_CHILD:    element = etree.Element("ParFlg_Child")
+                    elif f == PARFLG_BOLDNAME: element = etree.Element("ParFlg_BoldName")
+                    nTabs = 4 if flagList.index(f) < len(flagList) - 1 else 3
+                    element.tail = '\n' + nTabs * '\t'
+                    flags.append(element)
+
+            if self.value is not None or (self.iType == PAR_STRING and not self.aVals):
+                #FIXME above line why string?
+                value = etree.Element("Value")
+                value.text = self.__valueFormat(self.value)
+                value.tail = '\n' + 2 * '\t'
+                elem.append(value)
+            elif self.aVals is not None:
+                # fd = len(self.aVals[0])
+                # sd = len(self.aVals)
+                aValue = etree.Element("ArrayValues", FirstDimension=str(self.__fd), SecondDimension=str(self.__sd))
+                aValue.text = '\n' + 4 * '\t'
+                aValue.tail = '\n' + 2 * '\t'
+                elem.append(aValue)
+                for colIdx, col in enumerate(self.aVals):
+                    for rowIdx, cell in enumerate(col):
+                        if self.__sd:
+                            arrayValue = etree.Element("AVal", Column=str(colIdx + 1), Row=str(rowIdx + 1))
+                        else:
+                            arrayValue = etree.Element("AVal", Row=str(rowIdx + 1))
+                        nTabs = 3 if rowIdx == len(col) - 1 else 4
+                        arrayValue.tail='\n' + nTabs * '\t'
+                        aValue.append(arrayValue)
+                        arrayValue.text = self.__valueFormat(cell)
+            elem.tail = '\n' + 2 * '\t'
+        else:
+            elem = etree.Comment(" %s: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK " % self.name)
+            elem.tail = 2 * '\n' + 2 * '\t'
+        return elem
+
+    @staticmethod
+    def getTypeFromString(inString):
+        if inString in ("Length"):
+            return PAR_LENGTH
+        elif inString in ("Angle"):
+            return PAR_ANGLE
+        elif inString in ("RealNum", "Real"):
+            return PAR_REAL
+        elif inString in ("Integer"):
+            return PAR_INT
+        elif inString in ("Boolean"):
+            return PAR_BOOL
+        elif inString in ("String"):
+            return PAR_STRING
+        elif inString in ("Material"):
+            return PAR_MATERIAL
+        elif inString in ("LineType"):
+            return PAR_LINETYPE
+        elif inString in ("FillPattern"):
+            return PAR_FILL
+        elif inString in ("PenColor"):
+            return PAR_PEN
+        elif inString in ("Separator"):
+            return PAR_SEPARATOR
+        elif inString in ("Title"):
+            return PAR_TITLE
+
+# -------------------/parameter classes --------------------------------------------------------------------------------
+
+
+class CreateToolTip:
+>>>>>>> Stashed changes
     def __init__(self, widget, text='widget info'):
         self.waittime = 500
         self.wraplength = 180
@@ -335,34 +729,37 @@ class InputWithListBox():
         self.ListBoxScrollbar.config(command=self.listBox.yview)
 
 class ListboxWithRefresh(tk.Listbox):
-    def __init__(self, top, dict_):
-        if "target" in dict_:
-            self.target = dict_["target"]
-            del dict_["target"]
-        if "dict" in dict_:
-            self.dict = dict_["dict"]
-            del dict_["dict"]
-        tk.Listbox.__init__(self, top, dict_)
+    def __init__(self, top, _dict):
+        if "target" in _dict:
+            self.target = _dict["target"]
+            del _dict["target"]
+        if "imgTarget" in _dict:
+            self.imgTarget = _dict["imgTarget"]
+            del _dict["imgTarget"]
+        if "dict" in _dict:
+            self.dict = _dict["dict"]
+            del _dict["dict"]
+        tk.Listbox.__init__(self, top, _dict)
 
     def refresh(self, *_):
-
-            if self.dict == replacement_dict:
-                FC1(self.target.get())
-            self.delete(0, tk.END)
-            bPlaceablesFromHere = True
-            if self.dict in (pict_dict, source_pict_dict):
-                bPlaceablesFromHere = False
-            for f in sorted([self.dict[k] for k in self.dict.keys()]):
-                try:
-                    if not f.bPlaceable and bPlaceablesFromHere:
-                        self.insert(tk.END, LISTBOX_SEPARATOR)
-                        bPlaceablesFromHere = False
-                    if f.warnings:
-                        self.insert(tk.END, "* " + f.name)
-                    else:
-                        self.insert(tk.END, f.name)
-                except AttributeError:
+        if self.dict == replacement_dict:
+            FC1(self.target.get(), SourceDirName.get())
+            FC1(self.imgTarget.get(), SourceImageDirName.get())
+        self.delete(0, tk.END)
+        bPlaceablesFromHere = True
+        if self.dict in (pict_dict, source_pict_dict):
+            bPlaceablesFromHere = False
+        for f in sorted([self.dict[k] for k in self.dict.keys()]):
+            try:
+                if not f.bPlaceable and bPlaceablesFromHere:
+                    self.insert(tk.END, LISTBOX_SEPARATOR)
+                    bPlaceablesFromHere = False
+                if f.warnings:
+                    self.insert(tk.END, "* " + f.name)
+                else:
                     self.insert(tk.END, f.name)
+            except AttributeError:
+                self.insert(tk.END, f.name)
 
 
 
@@ -427,7 +824,7 @@ class GUIApp(tk.Frame):
         __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
         __tooltipIDPT3 = ""
         __tooltipIDPT4 = "Final GDL output dir"
-        __tooltipIDPT5 = "If set, copy project specific pictures here, too"
+        __tooltipIDPT5 = "Folder for in GDLs embedded images"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
 
         try:
@@ -474,7 +871,7 @@ class GUIApp(tk.Frame):
         self.inputFrame.grid_rowconfigure(4, weight=1)
 
         self.InputFrameS = [tk.Frame(self.inputFrame) for _ in range (5)]
-        for f, r, cc in zip(self.InputFrameS, range(5), [0, 1, 0, 1, 0]):
+        for f, r, cc in zip(self.InputFrameS, range(5), [0, 1, 0, 0, 1, ]):
             f.grid({"row": r, "column": 0, "sticky": tk.N + tk.S + tk.E + tk.W, })
             self.InputFrameS[r].grid_columnconfigure(cc, weight=1)
             self.InputFrameS[r].rowconfigure(0, weight=1)
@@ -493,7 +890,7 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        self.listBox = ListboxWithRefresh(self.InputFrameS[iF], {"target": self.SourceDirName, "dict": replacement_dict})
+        self.listBox = ListboxWithRefresh(self.InputFrameS[iF], {"target": self.SourceDirName, "imgTarget": self.SourceImageDirName, "dict": replacement_dict})
         self.listBox.grid({"row": 0, "column": 0, "sticky": tk.E + tk.W + tk.N + tk.S})
         self.observerLB1 = self.SourceDirName.trace_variable("w", self.listBox.refresh)
 
@@ -502,10 +899,6 @@ class GUIApp(tk.Frame):
 
         self.listBox.config(yscrollcommand=self.ListBoxScrollbar.set)
         self.ListBoxScrollbar.config(command=self.listBox.yview)
-
-        iF += 1
-
-        InputDirPlusText(self.InputFrameS[iF], "Images' source folder",  self.SourceImageDirName, __tooltipIDPT2)
 
         iF += 1
 
@@ -519,7 +912,18 @@ class GUIApp(tk.Frame):
         self.listBox2.config(yscrollcommand=self.ListBoxScrollbar2.set)
         self.ListBoxScrollbar2.config(command=self.listBox2.yview)
 
+<<<<<<< Updated upstream
         #----output side--------------------------------
+=======
+        iF += 1
+
+        InputDirPlusText(self.InputFrameS[iF], "Images' source folder",  self.SourceImageDirName, __tooltipIDPT2)
+        if SourceDirName:
+            self.listBox.refresh()
+            self.listBox2.refresh()
+
+        # ----output side--------------------------------
+>>>>>>> Stashed changes
 
         self.outputFrame = tk.Frame(self.top)
         self.outputFrame.grid({"row": 0, "column": 2, "sticky": tk.NE + tk.SW})
@@ -528,7 +932,7 @@ class GUIApp(tk.Frame):
         self.outputFrame.grid_rowconfigure(4, weight=1)
 
         self.outputFrameS = [tk.Frame(self.outputFrame) for _ in range (5)]
-        for f, r, cc in zip(self.outputFrameS, range(5), [1, 1, 0, 1, 0]):
+        for f, r, cc in zip(self.outputFrameS, range(5), [1, 1, 0, 0, 1]):
             f.grid({"row": r, "column": 0, "sticky": tk.SW + tk.NE, })
             self.outputFrameS[r].grid_columnconfigure(cc, weight=1)
             self.outputFrameS[r].rowconfigure(0, weight=1)
@@ -536,7 +940,7 @@ class GUIApp(tk.Frame):
 
         self.XMLDir = InputDirPlusBool(self.outputFrameS[0], "XML Destination folder",      self.TargetXMLDirName, self.bXML, __tooltipIDPT3)
         self.GDLDir = InputDirPlusBool(self.outputFrameS[1], "GDL Destination folder",      self.TargetGDLDirName, self.bGDL, __tooltipIDPT4)
-        InputDirPlusText(self.outputFrameS[3], "Images' destination folder",  self.TargetImageDirName, __tooltipIDPT5)
+        InputDirPlusText(self.outputFrameS[4], "Images' destination folder",  self.TargetImageDirName, __tooltipIDPT5)
 
         self.listBox3 = ListboxWithRefresh(self.outputFrameS[2], {'dict': dest_dict})
         self.listBox3.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
@@ -549,11 +953,10 @@ class GUIApp(tk.Frame):
 
         self.listBox3.bind("<<ListboxSelect>>", self.listboxselect)
 
-
-        self.listBox4 = ListboxWithRefresh(self.outputFrameS[4], {'dict': pict_dict})
+        self.listBox4 = ListboxWithRefresh(self.outputFrameS[3], {'dict': pict_dict})
         self.listBox4.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
 
-        self.ListBoxScrollbar4 = tk.Scrollbar(self.outputFrameS[4])
+        self.ListBoxScrollbar4 = tk.Scrollbar(self.outputFrameS[3])
         self.ListBoxScrollbar4.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
 
         self.listBox4.config(yscrollcommand=self.ListBoxScrollbar4.set)
@@ -879,7 +1282,7 @@ class GUIApp(tk.Frame):
 #-------------------/GUI------------------------------
 #-------------------/GUI------------------------------
 
-def FC1(inFile):
+def FC1(inFile, inRootFolder):
     """
     only scanning input dir recursively to set up xml and image files' list
     :param inFile:
@@ -892,15 +1295,25 @@ def FC1(inFile):
                 src = inFile + "\\" + f
                 # if it's NOT a directory
                 if not os.path.isdir(src):
+<<<<<<< Updated upstream
                     if os.path.splitext(os.path.basename(f))[1].upper() in [".XML", ]:
                         sf = SourceXML(src)
+=======
+                    if os.path.splitext(os.path.basename(f))[1].upper() in (".XML", ):
+                        sf = SourceXML(os.path.relpath(src, inRootFolder))
+>>>>>>> Stashed changes
                         replacement_dict[sf.name.upper()] = sf
                         id_dict[sf.guid.upper()] = ""
 
                     elif os.path.splitext(os.path.basename(f))[1].upper() in (".JPG", ".PNG", ".SVG", ):
                         if os.path.splitext(os.path.basename(f))[0].upper() not in source_pict_dict:
                             # set up replacement dict for image names
+<<<<<<< Updated upstream
                             sI = SourceImage(src)
+=======
+                            #FIXME for all other files, too
+                            sI = SourceImage(os.path.relpath(src, inRootFolder))
+>>>>>>> Stashed changes
                             source_pict_dict[sI.fileNameWithExt.upper()] = sI
                 else:
                     FC1(src)
