@@ -70,7 +70,6 @@ all_keywords = set()
 
 # ------------------- parameter classes --------------------------------------------------------------------------------
 
-
 class ParamSection:
     """
     iterable class of all params
@@ -396,7 +395,7 @@ class Param:
                 elem.append(flags)
                 flagList = list(self.flags)
                 for f in flagList:
-                    if f == PARFLG_HIDDEN:   element = etree.Element("ParFlg_Hidden")
+                    if f == PARFLG_HIDDEN:     element = etree.Element("ParFlg_Hidden")
                     elif f == PARFLG_CHILD:    element = etree.Element("ParFlg_Child")
                     elif f == PARFLG_BOLDNAME: element = etree.Element("ParFlg_BoldName")
                     nTabs = 4 if flagList.index(f) < len(flagList) - 1 else 3
@@ -460,7 +459,6 @@ class Param:
             return PAR_TITLE
 
 # -------------------/parameter classes --------------------------------------------------------------------------------
-
 
 class CreateToolTip:
     def __init__(self, widget, text='widget info'):
@@ -536,6 +534,7 @@ class Pict_replacement:
 
 class GeneralFile(object) :
     """
+    ###basePath:   C:\...\
     fullpath:   C:\...\relPath\fileName.ext  -only for sources; dest stuff can always be modified
     relPath:           relPath\fileName.ext
     dirName            relPath
@@ -561,12 +560,15 @@ class GeneralFile(object) :
         |               |              |               |
     SourceImage     DestImage       SourceXML       DestXML
     """
-    def __init__(self, relPath):
+    def __init__(self, relPath, **kwargs):
         self.relPath            = relPath
         self.fileNameWithExt    = os.path.basename(relPath)
         self.fileNameWithOutExt = os.path.splitext(self.fileNameWithExt)[0]
         self.ext                = os.path.splitext(self.fileNameWithExt)[1]
         self.dirName            = os.path.dirname(relPath)
+        if 'root' in kwargs:
+            self.fullpath = kwargs['root'] + "\\" + self.relPath
+
 
     def refreshFileNames(self):
         self.fileNameWithExt    = self.name + self.ext
@@ -578,8 +580,8 @@ class GeneralFile(object) :
 
 
 class SourceFile(GeneralFile):
-    def __init__(self, relPath):
-        super(SourceFile, self).__init__(relPath)
+    def __init__(self, relPath, **kwargs):
+        super(SourceFile, self).__init__(relPath, **kwargs)
         self.fullPath = SourceDirName.get() + "\\" + relPath
 
 
@@ -587,49 +589,68 @@ class DestFile(GeneralFile):
     def __init__(self, fileName, **kwargs):
         super(DestFile, self).__init__(fileName)
         self.sourceFile         = kwargs['sourceFile']
+        #FIXME sourcefile multiple times defined in Dest* classes
         self.ext                = self.sourceFile.ext
 
 
 class SourceImage(SourceFile):
-    def __init__(self, sourceFile):
-        super(SourceImage, self).__init__(sourceFile)
+    def __init__(self, sourceFile, **kwargs):
+        super(SourceImage, self).__init__(sourceFile, **kwargs)
         self.name = self.fileNameWithExt
+        self.isEncodedImage = False
 
 
 class DestImage(DestFile):
-    #TODO TargetImageDirName is ok for images?
 
     def __init__(self, sourceFile, stringFrom, stringTo):
-        self.name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
+        self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
         self.sourceFile         = sourceFile
         self.relPath            = sourceFile.relPath
         super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
-        self.path               = TargetImageDirName.get() + "\\" + self.relPath
+        # self.path               = TargetImageDirName.get() + "\\" + self.relPath
         self.ext                = self.sourceFile.ext
 
-        if stringTo not in self.name and bAddStr.get():
+        if stringTo not in self._name and bAddStr.get():
             self.fileNameWithOutExt += stringTo
-            self.name           = self.fileNameWithOutExt + self.ext
-        self.fileNameWithExt = self.name
+            self._name           = self.fileNameWithOutExt + self.ext
+        self.fileNameWithExt = self._name
+
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, inName):
+        self._name      = inName
+        self.relPath    = self.dirName + "\\" + self._name
 
     def refreshFileNames(self):
         pass
 
+    #FIXME self.name as @property
 
 class XMLFile(GeneralFile):
     def __init__(self, relPath, **kwargs):
         super(XMLFile, self).__init__(relPath, **kwargs)
-        self.name       = self.fileNameWithOutExt
+        self._name       = self.fileNameWithOutExt
         self.bPlaceable = False
-
 
     def __lt__(self, other):
         if self.bPlaceable and not other.bPlaceable:
             return True
         if not self.bPlaceable and other.bPlaceable:
             return False
-        return self.name < other.name
+        return self._name < other.name
 
+    @property
+    def name(self):
+        return self._name
+
+    @name.setter
+    def name(self, inName):
+        self._name   = inName
+        # self.relPath = self.dirName + "\\" + self._name
+        # self.fileNameWithExt = self._name + self.ext
 
 class SourceXML (XMLFile, SourceFile):
 
@@ -1377,6 +1398,7 @@ class GUIApp(tk.Frame):
         self.destItem.fileNameWithExt = self.fileName.get()
         self.destItem.name = self.destItem.fileNameWithExt
         pict_dict[self.destItem.fileNameWithExt.upper()] = self.destItem
+
         del pict_dict[self.selectedName.upper()]
         self.selectedName = self.destItem.fileNameWithExt
 
@@ -1465,14 +1487,17 @@ def FC1(inFile, inRootFolder):
                 if not os.path.isdir(src):
                     if os.path.splitext(os.path.basename(f))[1].upper() in (".XML", ):
                         sf = SourceXML(os.path.relpath(src, inRootFolder))
-                        replacement_dict[sf.name.upper()] = sf
+                        replacement_dict[sf._name.upper()] = sf
                         id_dict[sf.guid.upper()] = ""
 
-                    elif os.path.splitext(os.path.basename(f))[1].upper() in (".JPG", ".PNG", ".SVG", ):
+                    # elif os.path.splitext(os.path.basename(f))[1].upper() in (".JPG", ".PNG", ".SVG", ):
+                    else:
                         if os.path.splitext(os.path.basename(f))[0].upper() not in source_pict_dict:
                             # set up replacement dict for image names
                             #FIXME for all other files, too
-                            sI = SourceImage(os.path.relpath(src, inRootFolder))
+                            sI = SourceImage(os.path.relpath(src, inRootFolder), root=inRootFolder)
+                            if inRootFolder == SourceImageDirName.get():
+                                sI.isEncodedImage = True
                             source_pict_dict[sI.fileNameWithExt.upper()] = sI
                 else:
                     FC1(src, inRootFolder)
@@ -1492,7 +1517,8 @@ def main2():
     else:
         tempdir = tempfile.mkdtemp()
 
-    tempPicDir = tempfile.mkdtemp()
+    # tempPicDir = tempfile.mkdtemp()
+    tempPicDir = TargetImageDirName.get()
     print "tempdir: %s" % tempdir
     print "tempPicDir: %s" % tempPicDir
 
@@ -1550,7 +1576,19 @@ def main2():
 
                 section.text = etree.CDATA(t)
 
+        # ---------------------Prevpict-------------------------------------------------------
+
+        if dest.bPlaceable:
+            section = mdp.find('Picture')
+            if isinstance(section, etree._Element):
+                path = os.path.basename(section.attrib['path']).upper()
+                if path:
+                    n = next((pict_dict[p].relPath for p in pict_dict.keys() if
+                              os.path.basename(pict_dict[p].sourceFile.relPath).upper() == path), None)
+                    section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n)
+
         # ---------------------AC18 and over: adding licensing statically---------------------
+
         if dest.iVersion >= AC_18:
             for cr in mdp.getroot().findall("Copyright"):
                 mdp.getroot().remove(cr)
@@ -1595,7 +1633,6 @@ def main2():
             os.makedirs(destDir)
         except WindowsError:
             pass
-        # print destPath, "w"
         with open(destPath, "w") as file_handle:
             mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
 
@@ -1607,31 +1644,31 @@ def main2():
         for f in listdir(_picdir):
             shutil.copytree(_picdir + "\\" + f, tempPicDir + "\\" + f)
 
-    if _picdir2:
-        for f in listdir(_picdir2):
-            shutil.copytree(_picdir2 + "\\" + f, tempPicDir + "\\" + f)
+    # if _picdir2:
+    #     for f in listdir(_picdir2):
+    #         shutil.copytree(_picdir2 + "\\" + f, tempPicDir + "\\" + f)
 
     for f in pict_dict.keys():
-        if TargetImageDirName.get():
+        if pict_dict[f].sourceFile.isEncodedImage:
             try:
-                shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetImageDirName.get() + "\\" + pict_dict[f].relPath)
+                shutil.copyfile(SourceImageDirName.get() + "\\" + pict_dict[f].sourceFile.relPath, TargetImageDirName.get() + "\\" + pict_dict[f].relPath)
             except IOError:
                 os.makedirs(TargetImageDirName.get() + "\\" + pict_dict[f].dirName)
-                shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetImageDirName.get() + "\\" + pict_dict[f].relPath)
+                shutil.copyfile(SourceImageDirName.get() + "\\" + pict_dict[f].sourceFile.relPath, TargetImageDirName.get() + "\\" + pict_dict[f].relPath)
+        else:
+            if TargetGDLDirName.get():
+                try:
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetGDLDirName.get() + "\\" + pict_dict[f].relPath)
+                except IOError:
+                    os.makedirs(TargetGDLDirName.get() + "\\" + pict_dict[f].dirName)
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetGDLDirName.get() + "\\" + pict_dict[f].relPath)
 
-        if TargetGDLDirName.get():
-            try:
-                shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetGDLDirName.get() + "\\" + pict_dict[f].relPath)
-            except IOError:
-                os.makedirs(TargetGDLDirName.get() + "\\" + pict_dict[f].dirName)
-                shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetGDLDirName.get() + "\\" + pict_dict[f].relPath)
-
-        if TargetXMLDirName.get():
-            try:
-                shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetXMLDirName.get() + "\\" + pict_dict[f].relPath)
-            except IOError:
-                os.makedirs(TargetXMLDirName.get() + "\\" + pict_dict[f].dirName)
-                shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetXMLDirName.get() + "\\" + pict_dict[f].relPath)
+            if TargetXMLDirName.get():
+                try:
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetXMLDirName.get() + "\\" + pict_dict[f].relPath)
+                except IOError:
+                    os.makedirs(TargetXMLDirName.get() + "\\" + pict_dict[f].dirName)
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetXMLDirName.get() + "\\" + pict_dict[f].relPath)
 
     print "x2l Command being executed..."
     x2lCommand = '"%s\LP_XMLConverter.exe" x2l -img "%s" "%s" "%s"' % (ACLocation.get(), tempPicDir, tempdir, TargetGDLDirName.get())
@@ -1656,7 +1693,7 @@ def main2():
 
     # cleanup ops
     if not bDebug.get():
-        shutil.rmtree(tempPicDir)
+        # shutil.rmtree(tempPicDir)
         if not bXML:
             shutil.rmtree(tempdir)
     else:
