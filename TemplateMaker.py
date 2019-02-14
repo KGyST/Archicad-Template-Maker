@@ -26,6 +26,7 @@ PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"
 # GUID_REGEX = "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}"
 #FIXME to check this:
 # GUID_REGEX = r"([0-9A-Fa-f]){8}-\1{4}-\1{4}-\1{4}-\1{12}"
+#FIXME checking old product name in whole xml
 
 ID = ''
 LISTBOX_SEPARATOR = '--------'
@@ -604,7 +605,9 @@ class DestImage(DestFile):
     def __init__(self, sourceFile, stringFrom, stringTo):
         self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
         self.sourceFile         = sourceFile
-        self.relPath            = sourceFile.relPath
+        # self.relPath            = sourceFile.relPath
+        self.dirName            = os.path.dirname(sourceFile.relPath)
+        self.relPath            = self.dirName + "\\" + self._name
         super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
         # self.path               = TargetImageDirName.get() + "\\" + self.relPath
         self.ext                = self.sourceFile.ext
@@ -699,9 +702,10 @@ class SourceXML (XMLFile, SourceFile):
 
         # for par in self.parameters:
         #     par.isUsed = self.checkParameterUsage(par, set())
-        t = re.sub("\n", ", ", mroot.find("./Keywords").text)
-        self.keywords = [kw.strip() for kw in t.split(",") if kw != ''][1:-1]
-        all_keywords |= set(self.keywords)
+        if mroot.find("./Keywords") is not None:
+            t = re.sub("\n", ", ", mroot.find("./Keywords").text)
+            self.keywords = [kw.strip() for kw in t.split(",") if kw != ''][1:-1]
+            all_keywords |= set(self.keywords)
 
     def checkParameterUsage(self, inPar, inMacroSet):
         """
@@ -1578,7 +1582,8 @@ def main2():
 
         if dest.bPlaceable:
             section = mdp.find('Picture')
-            if isinstance(section, etree._Element):
+            if isinstance(section, etree._Element)and 'path' in section.attrib:
+                #FIXME
                 path = os.path.basename(section.attrib['path']).upper()
                 if path:
                     n = next((pict_dict[p].relPath for p in pict_dict.keys() if
