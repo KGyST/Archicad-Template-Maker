@@ -4,7 +4,6 @@
 import os
 import os.path
 from os import listdir
-# import sys
 import uuid
 import re
 import tempfile
@@ -19,13 +18,13 @@ import tkFileDialog
 import urllib, httplib
 import copy
 
-from ConfigParser import *
+from ConfigParser import *  #FIXME not *
 import csv
 
-PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"
-# GUID_REGEX = "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}"
-#FIXME to check this:
-# GUID_REGEX = r"([0-9A-Fa-f]){8}-\1{4}-\1{4}-\1{4}-\1{12}"
+import httplib, urllib, json, webbrowser, urlparse, os, hashlib, base64
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+
+PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"    #FIXME to be deleted after BO API v1 is removed
 
 ID = ''
 LISTBOX_SEPARATOR = '--------'
@@ -54,9 +53,10 @@ PAR_SEPARATOR   = 11
 PAR_TITLE       = 12
 PAR_COMMENT     = 13
 
-PARFLG_HIDDEN   = 1
-PARFLG_CHILD    = 2
-PARFLG_BOLDNAME = 3
+PARFLG_CHILD    = 1
+PARFLG_UNIQUE   = 2
+PARFLG_HIDDEN   = 3
+PARFLG_BOLDNAME = 4
 
 app = None
 
@@ -135,13 +135,14 @@ class ParamSection:
                 self.__paramList.append(inEtree)
 
     def remove_param(self, inParName):
-        obj = self.__paramDict[inParName]
-        while obj in self.__paramList:
-            self.__paramList.remove(obj)
-        del self.__paramDict[inParName]
+        if inParName in self.__paramDict:
+            obj = self.__paramDict[inParName]
+            while obj in self.__paramList:
+                self.__paramList.remove(obj)
+            del self.__paramDict[inParName]
 
     def upsert_param(self, inParName):
-        #TODO
+        #FIXME
         pass
 
     def __getIndex(self, inName):
@@ -179,7 +180,7 @@ class ParamSection:
         parTree.tail = '\n'
         eTree.append(parTree)
         for par in self.__paramList:
-            elem = par.toEtree
+            elem = par.eTree
             ix = self.__paramList.index(par)
             if ix == len(self.__paramList) - 1:
                 elem.tail = '\n\t'
@@ -247,8 +248,48 @@ class ParamSection:
                 self.append(param, varName)
             self.__paramList[-1].tail = '\n\t'
 
+    def BO_update2(self, prodatURL, currentConfig, bo):
+        '''
+        FIXME
+        BO_update with API v2
+        :param prodatURL:
+        :return:
+        '''
+        _brandName = prodatURL.split('/')[3].encode()
+        _productGUID = prodatURL.split('/')[5].encode()
+        try:
+            brandGUID = bo.brands[_brandName]
+        except KeyError:
+            bo.refreshBrandDict()
+            brandGUID = bo.brands[_brandName]
 
-class Param:
+        _data = bo.getProductData(brandGUID, _productGUID)
+
+        BO_PARAM_TUPLE = (('BO_Title', ''),
+                          ('BO_Separator', ''),
+                          ('BO_prodinfo', ''),
+                          ('BO_prodsku', 'data//'), ('BO_Manufac'), ('BO_brandurl'), ('BO_prodfam'), ('BO_prodgroup'),
+                          # ('BO_mancont'), ('BO_designcont'), ('BO_publisdat'), ('BO_edinum'), ('BO_width'),
+                          # ('BO_height'), ('BO_depth'), ('BO_weight'), ('BO_productguid'),
+                          # ('BO_links'),
+                          # ('BO_boqrurl'), ('BO_producturl'), ('BO_montins'), ('BO_prodcert'), ('BO_techcert'),
+                          # ('BO_youtube'), ('BO_ean'),
+                          # ('BO_real'),
+                          # ('BO_mainmat', 'BO_secmat'),
+                          # ('BO_classific'),
+                          # ('BO_bocat'), ('BO_ifcclas'), ('BO_unspc'), ('BO_uniclass_1_4_code'), ('BO_uniclass_1_4_desc'),
+                          # ('BO_uniclass_2_0_code'), ('BO_uniclass_2_0_desc'), ('BO_uniclass2015_code'), ('BO_uniclass2015_desc'), ('BO_nbs_ref'),
+                          # ('BO_nbs_desc'), ('BO_omniclass_code'), ('BO_omniclass_name'), ('BO_masterformat2014_code'), ('BO_masterformat2014_name'),
+                          # ('BO_uniformat2_code'), ('BO_uniformat2_name'), ('BO_cobie_type_cat'),
+                          # ('BO_regions'),
+                          # ('BO_europe'), ('BO_northamerica'), ('BO_southamerica'), ('BO_middleeast'), ('BO_asia'),
+                          # ('BO_oceania'), ('BO_africa'), ('BO_antarctica'), ('BO_Separator2',)
+                          )
+        for p in BO_PARAM_TUPLE:
+            self.remove_param(p[0])
+
+
+class Param(object):
     tagBackList = ["", "Length", "Angle", "RealNum", "Integer", "Boolean", "String", "Material",
                    "LineType", "FillPattern", "PenColor", "Separator", "Title", "Comment"]
 
@@ -258,63 +299,15 @@ class Param:
                  inDesc = '',
                  inValue = None,
                  inAVals = None,
+                 inTypeStr='',
                  inChild=False,
-                 inTypeStr = '',
+                 inUnique=False,
+                 inHidden=False,
                  inBold=False):
         self.value      = None
 
         if inETree is not None:
-            self.text = inETree.text
-            self.tail = inETree.tail
-            if not isinstance(inETree, etree._Comment):
-                self.__eTree = inETree
-                self.flags = set()
-                self.iType = self.getTypeFromString(self.__eTree.tag)
-
-                self.name = self.__eTree.attrib["Name"]
-                self.desc = self.__eTree.find("Description").text
-                self.descTail = self.__eTree.find("Description").tail
-
-                val = self.__eTree.find("Value")
-                if val is not None:
-                    self.value = self.__toFormat(val.text)
-                    self.valTail = val.tail
-                else:
-                    self.value = None
-                    self.valTail = None
-
-                __aVals = self.__eTree.find("ArrayValues")
-                if __aVals is not None:
-                    self.__fd = int(__aVals.attrib["FirstDimension"])
-                    self.__sd = int(__aVals.attrib["SecondDimension"])
-                    if self.__sd > 0:
-                        self.aVals = [["" for _ in range(self.__fd)] for _ in range(self.__sd)]
-                        for v in __aVals.iter("AVal"):
-                            x = int(v.attrib["Column"]) - 1
-                            y = int(v.attrib["Row"]) - 1
-                            self.aVals[x][y] = self.__toFormat(v.text)
-                    else:
-                        self.aVals = [["" for _ in range(self.__fd)]]
-                        for v in __aVals.iter("AVal"):
-                            y = int(v.attrib["Row"]) - 1
-                            self.aVals[0][y] = self.__toFormat(v.text)
-                    self.aValsTail = __aVals.tail
-                else:
-                    self.aVals = None
-
-                if self.__eTree.find("Flags") is not None:
-                    self.flagsTail = self.__eTree.find("Flags").tail
-                    for f in self.__eTree.find("Flags"):
-                        if f.tag == "ParFlg_Hidden":    self.flags |= {PARFLG_HIDDEN}
-                        if f.tag == "ParFlg_Child":     self.flags |= {PARFLG_CHILD}
-                        if f.tag == "ParFlg_BoldName":  self.flags |= {PARFLG_BOLDNAME}
-                        #FIXME unique etc
-            else:       # _Comment
-                self.iType = PAR_COMMENT
-                self.name = inETree.text
-                self.desc = ''
-                self.value = None
-                self.aVals = None
+            self.eTree = inETree
         else:            # Start from a scratch
             self.iType  = inType
             if inTypeStr:
@@ -324,46 +317,69 @@ class Param:
             if inValue is not None:
                 self.value = inValue
 
-            if self.iType not in (PAR_COMMENT, PAR_SEPARATOR):
-                self.desc   = inDesc
-                self.aVals  = inAVals
+            if self.iType != PAR_COMMENT:
                 self.flags = set()
                 if inChild:
                     self.flags |= {PARFLG_CHILD}
+                if inUnique:
+                    self.flags |= {PARFLG_UNIQUE}
+                if inHidden:
+                    self.flags |= {PARFLG_HIDDEN}
                 if inBold:
                     self.flags |= {PARFLG_BOLDNAME}
-                #FIXME
+
+            if self.iType not in (PAR_COMMENT, PAR_SEPARATOR):
+                self.desc   = inDesc
+                self.aVals  = inAVals
             elif self.iType == PAR_SEPARATOR:
                 self.desc = inDesc
+                self._aVals = None
             elif self.iType == PAR_COMMENT:
                 pass
         self.isInherited    = False
         self.isUsed         = True
 
     def setValue(self, inVal):
+        #FIXME to be removed?
         self.value = self.__toFormat(inVal)
-
     def __toFormat(self, inData):
+
         """
         Returns data converted from string according to self.iType
         :param inData:
         :return:
         """
         if self.iType in (PAR_LENGTH, PAR_REAL, PAR_ANGLE):
+            # self.digits = 2
             return float(inData)
         elif self.iType in (PAR_INT, PAR_MATERIAL, PAR_PEN, PAR_LINETYPE, PAR_MATERIAL):
             return int(inData)
         elif self.iType in (PAR_BOOL, ):
-            return bool(inData)
+            return bool(int(inData))
         elif self.iType in (PAR_SEPARATOR, ):
             return None
         else:
             return inData
 
-    def __valueFormat(self, inVal):
+    def _valueToString(self, inVal):
         if self.iType in (PAR_STRING, ):
-                # return etree.CDATA('"' + inVal + '"') if inVal is not None else etree.CDATA('""')
                 return etree.CDATA(inVal) if inVal is not None else etree.CDATA('""')
+        elif self.iType in (PAR_REAL, PAR_LENGTH, PAR_ANGLE):
+            nDigits = 0
+            eps = 1E-7
+            maxN = 1E12
+            # if maxN < abs(inVal) or eps > abs(inVal) > 0:
+            #     return "%E" % inVal
+            #FIXME 1E-012 and co
+            # if -eps < inVal < eps:
+            #     return 0
+            s = '%.' + str(nDigits) + 'f'
+            while nDigits < 8:
+                if (inVal - eps < float(s % inVal) < inVal + eps):
+                    break
+                nDigits += 1
+                s = '%.' + str(nDigits) + 'f'
+            return s % inVal
         elif self.iType in (PAR_BOOL, ):
             return "0" if not inVal else "1"
         elif self.iType in (PAR_SEPARATOR, ):
@@ -372,63 +388,128 @@ class Param:
             return str(inVal)
 
     @property
-    def toEtree(self):
+    def eTree(self):
         if self.iType < PAR_COMMENT:
             tagString = self.tagBackList[self.iType]
             elem = etree.Element(tagString, Name=self.name)
-            nTabs = 3 if self.desc or self.flags or self.value or self.aVals else 2
+            nTabs = 3 if self.desc or self.flags is not None or self.value is not None or self.aVals is not None else 2
             elem.text = '\n' + nTabs * '\t'
 
             desc = etree.Element("Description")
-            # desc.text = etree.CDATA('"' + self.desc + '"')
             desc.text = etree.CDATA(self.desc)
-            nTabs = 3 if self.flags or self.value or self.aVals else 2
+            nTabs = 3 if self.flags is not None or self.value is not None or self.aVals is not None else 2
             desc.tail = '\n' + nTabs * '\t'
             elem.append(desc)
 
             if self.flags:
                 flags = etree.Element("Flags")
-                nTabs = 3 if self.value or self.aVals else 2
+                nTabs = 3 if self.value is not None or self.aVals is not None else 2
                 flags.tail = '\n' + nTabs * '\t'
                 flags.text = '\n' + 4 * '\t'
                 elem.append(flags)
                 flagList = list(self.flags)
                 for f in flagList:
-                    if f == PARFLG_HIDDEN:     element = etree.Element("ParFlg_Hidden")
-                    elif f == PARFLG_CHILD:    element = etree.Element("ParFlg_Child")
+                    if   f == PARFLG_CHILD:    element = etree.Element("ParFlg_Child")
+                    elif f == PARFLG_UNIQUE:   element = etree.Element("ParFlg_Unique")
+                    elif f == PARFLG_HIDDEN:   element = etree.Element("ParFlg_Hidden")
                     elif f == PARFLG_BOLDNAME: element = etree.Element("ParFlg_BoldName")
                     nTabs = 4 if flagList.index(f) < len(flagList) - 1 else 3
                     element.tail = '\n' + nTabs * '\t'
                     flags.append(element)
 
-            if self.value is not None or (self.iType == PAR_STRING and not self.aVals):
+            if self.value is not None or (self.iType == PAR_STRING and self.aVals is None):
                 #FIXME above line why string?
                 value = etree.Element("Value")
-                value.text = self.__valueFormat(self.value)
+                value.text = self._valueToString(self.value)
                 value.tail = '\n' + 2 * '\t'
                 elem.append(value)
             elif self.aVals is not None:
-                # fd = len(self.aVals[0])
-                # sd = len(self.aVals)
-                aValue = etree.Element("ArrayValues", FirstDimension=str(self.__fd), SecondDimension=str(self.__sd))
-                aValue.text = '\n' + 4 * '\t'
-                aValue.tail = '\n' + 2 * '\t'
-                elem.append(aValue)
-                for colIdx, col in enumerate(self.aVals):
-                    for rowIdx, cell in enumerate(col):
-                        if self.__sd:
-                            arrayValue = etree.Element("AVal", Column=str(colIdx + 1), Row=str(rowIdx + 1))
-                        else:
-                            arrayValue = etree.Element("AVal", Row=str(rowIdx + 1))
-                        nTabs = 3 if rowIdx == len(col) - 1 else 4
-                        arrayValue.tail='\n' + nTabs * '\t'
-                        aValue.append(arrayValue)
-                        arrayValue.text = self.__valueFormat(cell)
+                elem.append(self.aVals)
             elem.tail = '\n' + 2 * '\t'
         else:
             elem = etree.Comment(" %s: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK " % self.name)
             elem.tail = 2 * '\n' + 2 * '\t'
         return elem
+
+    @eTree.setter
+    def eTree(self, inETree):
+        self.text = inETree.text
+        self.tail = inETree.tail
+        if not isinstance(inETree, etree._Comment):
+            self.__eTree = inETree
+            self.flags = set()
+            self.iType = self.getTypeFromString(self.__eTree.tag)
+
+            self.name       = self.__eTree.attrib["Name"]
+            self.desc       = self.__eTree.find("Description").text
+            self.descTail   = self.__eTree.find("Description").tail
+
+            val = self.__eTree.find("Value")
+            if val is not None:
+                self.value = self.__toFormat(val.text)
+                self.valTail = val.tail
+            else:
+                self.value = None
+                self.valTail = None
+
+            self.aVals = self.__eTree.find("ArrayValues")
+
+            if self.__eTree.find("Flags") is not None:
+                self.flagsTail = self.__eTree.find("Flags").tail
+                for f in self.__eTree.find("Flags"):
+                    if f.tag == "ParFlg_Child":     self.flags |= {PARFLG_CHILD}
+                    if f.tag == "ParFlg_Unique":    self.flags |= {PARFLG_UNIQUE}
+                    if f.tag == "ParFlg_Hidden":    self.flags |= {PARFLG_HIDDEN}
+                    if f.tag == "ParFlg_BoldName":  self.flags |= {PARFLG_BOLDNAME}
+
+        else:  # _Comment
+            self.iType = PAR_COMMENT
+            self.name = inETree.text
+            self.desc = ''
+            self.value = None
+            self.aVals = None
+
+    @property
+    def aVals(self):
+        if self._aVals is not None:
+            aValue = etree.Element("ArrayValues", FirstDimension=str(self.__fd), SecondDimension=str(self.__sd))
+        else:
+            return None
+        aValue.text = '\n' + 4 * '\t'
+        aValue.tail = '\n' + 2 * '\t'
+
+        for rowIdx, row in enumerate(self._aVals):
+            for colIdx, cell in enumerate(row):
+                if self.__sd:
+                    arrayValue = etree.Element("AVal", Column=str(colIdx + 1), Row=str(rowIdx + 1))
+                    nTabs = 3 if colIdx == len(row) - 1 and rowIdx == len(self._aVals) - 1 else 4
+                else:
+                    arrayValue = etree.Element("AVal", Row=str(rowIdx + 1))
+                    nTabs = 3 if rowIdx == len(self._aVals) - 1 else 4
+                arrayValue.tail = '\n' + nTabs * '\t'
+                aValue.append(arrayValue)
+                arrayValue.text = self._valueToString(cell)
+        return aValue
+
+    @aVals.setter
+    def aVals(self, inETree):
+        if inETree is not None:
+            self.__fd = int(inETree.attrib["FirstDimension"])
+            self.__sd = int(inETree.attrib["SecondDimension"])
+            if self.__sd > 0:
+                self._aVals = [["" for _ in range(self.__sd)] for _ in range(self.__fd)]
+                for v in inETree.iter("AVal"):
+                    x = int(v.attrib["Column"]) - 1
+                    y = int(v.attrib["Row"]) - 1
+                    self._aVals[y][x] = self.__toFormat(v.text)
+            else:
+                self._aVals = [[""] for _ in range(self.__fd)]
+                for v in inETree.iter("AVal"):
+                    y = int(v.attrib["Row"]) - 1
+                    self._aVals[y][0] = self.__toFormat(v.text)
+            self.aValsTail = inETree.tail
+        else:
+            self._aVals = None
 
     @staticmethod
     def getTypeFromString(inString):
@@ -459,70 +540,179 @@ class Param:
 
 # -------------------/parameter classes --------------------------------------------------------------------------------
 
-class CreateToolTip:
-    def __init__(self, widget, text='widget info'):
-        self.waittime = 500
-        self.wraplength = 180
-        self.widget = widget
-        self.text = text
+# ------------------- API2 connectivity --------------------------------------------------------------------------------
 
-        self.widget.bind("<Enter>", self.enter)
-        self.widget.bind("<Leave>", self.leave)
-        self.widget.bind("<ButtonPress>", self.leave)
-        self.id = None
-        self.tw = None
+class BOAPIv2(object):
+    BROWSER_CLOSE_WINDOW = '''<!DOCTYPE html> 
+                            <html> 
+                                    <script type="text/javascript"> 
+                                        function close_window() { close(); }
+                                    </script>
+                                <body onload="close_window()"/>
+                            </html>'''
+    CLIENT_ID = "NL8IZo82T84ZCOruAZom4LlmrzkQFXPW"
+    CLIENT_SECRET = "5RNNKjqAAA1szIImP0CO2IFNC6Z8OoBMQeiMKwwoxST7ntSFJhIQKVG1s1DEbLOV"
+    REDIRECT_URI = "http://localhost"
+    PORT_NUMBER = 80
+    MAX_PAGE_NUMBER = 10
+    PAGE_MAX_SIZE = 1000
+    code = None
+    server = None
+    brands = {}  # brand permalink-guid
 
-    def enter(self, event=None):
-        self.schedule()
+    class myHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            global data
+            self.wfile.write(BOAPIv2.BROWSER_CLOSE_WINDOW)
+            data = urlparse.parse_qs(urlparse.urlparse(self.path).query)
+            data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
+            BOAPIv2.code = data['code']
 
-    def leave(self, event=None):
-        self.unschedule()
-        self.hidetip()
-
-    def schedule(self):
-        self.unschedule()
-        self.id = self.widget.after(self.waittime, self.showtip)
-
-    def unschedule(self):
-        idx = self.id
-        self.id = None
-        if idx:
-            self.widget.after_cancel(idx)
-
-    def showtip(self, event=None):
-        x, y, cx, cy = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
-        # creates a toplevel window
-        self.tw = tk.Toplevel(self.widget)
-        # Leaves only the label and removes the app window
-        self.tw.wm_overrideredirect(True)
-        self.tw.wm_geometry("+%d+%d" % (x, y))
-        label = tk.Label(self.tw, text=self.text, justify='left',
-                       background="#ffffff", relief='solid', borderwidth=1,
-                       wraplength = self.wraplength)
-        label.pack(ipadx=1)
-
-    def hidetip(self):
-        tw = self.tw
-        self.tw = None
-        if tw:
-            tw.destroy()
+            BOAPIv2.server.server_close()
 
 
-# class Replacement:
-#     def __init__(self, inR, inO):
-#         self.replaceString = inR
-#
-#         # self.replace_with = re.sub(args[1], args[2], inR, flags=re.IGNORECASE)
-#         self.orig_uuid = inO
-#         self.new_uuid = re.sub(GUID_REGEX, str(uuid.uuid4()).upper(), inO, count=1)
+    def __init__(self, inCurrentConfig):
+        self.token_type = ""
+        self.refresh_token = ""
+        self.access_token = ""
 
+        try:
+            if  inCurrentConfig.has_option("BOAPIv2", "token_type") and \
+                inCurrentConfig.has_option("BOAPIv2", "refresh_token"):
+                self.token_type = inCurrentConfig.get("BOAPIv2", "token_type")
+                self.refresh_token = inCurrentConfig.get("BOAPIv2", "refresh_token")
+                self.get_access_token_from_refresh_token()
 
-class Pict_replacement:
-    def __init__(self, inOriginalName, inTargetName):
-        self.originalName = inOriginalName
-        self.targetName = inTargetName
+            if inCurrentConfig.has_option("BOAPIv2", "brands"):
+                b = inCurrentConfig.get("BOAPIv2", "brands").split(', ')
+                self.brands = {k: v for k, v in zip(b[::2], b[1::2])}
+        except (NoSectionError, NoOptionError):
+            pass
+
+    def refreshBrandDict(self):
+        page = 1
+        while page < BOAPIv2.MAX_PAGE_NUMBER:
+            res = self.get_data_with_access_token("/admin/v1/brands",
+                                            {"fields": "permalink, id",
+                                             "page": page,
+                                             "pageSize": BOAPIv2.PAGE_MAX_SIZE})
+            rjson = json.load(res)
+            if res.status == httplib.OK:
+                for brand in rjson['data'] :
+                    self.brands[brand['permalink']] = brand['id']
+                if rjson['meta']['hasNextPage']:
+                    page += 1
+                else:
+                    break
+            else:
+                break
+
+    def getProductData(self, inBrandGUID, inProductPermalink):
+        products = self.get_data_with_access_token("/admin/v1/brands/%s/products" % (inBrandGUID, ), {"pageSize": BOAPIv2.PAGE_MAX_SIZE})
+        jProd = json.load(products)
+        foundData = next((prod for prod in jProd['data'] if prod['permalink'].lower() == inProductPermalink.lower()), None)
+        iPage = 1
+
+        while jProd['meta']['hasNextPage'] and not foundData:
+            iPage += 1
+            products = self.get_data_with_access_token("/admin/v1/brands/%s/products" % (inBrandGUID, ), {'page': iPage,
+                                                                                                          "pageSize": BOAPIv2.PAGE_MAX_SIZE})
+            jProd = json.load(products)
+            foundData = next((prod for prod in jProd['data'] if prod['permalink'].lower() == inProductPermalink.lower()), None)
+
+        productGUID = foundData['id'] if foundData else None
+
+        res = json.load(self.get_data_with_access_token("/admin/v1/brands/%s/products/%s" % (inBrandGUID, productGUID, ), {}))
+        return res
+
+        # 1. Logging in with access token
+
+    def get_data_with_access_token(self, inPath, inUrlDict):
+        response = self._get_data_with_access_token(inPath, inUrlDict)
+
+        if response.status != httplib.OK:
+            self.log_in()
+            response = self._get_data_with_access_token(inPath, inUrlDict)
+        return response
+
+    def _get_data_with_access_token(self, inPath, inUrlDict):
+        conn = httplib.HTTPSConnection("api.bimobject.com")
+        headers = {"Content-type": "application/x-www-form-urlencoded",
+                   "Authorization": self.token_type + " " + self.access_token}
+        urlDict = urllib.urlencode(inUrlDict)
+        conn.request("GET", inPath + "?" +  urlDict, '', headers)
+        return conn.getresponse()
+
+    # 2. If access token doesn't work, try refresh_token
+    def get_access_token_from_refresh_token(self):
+        conn = httplib.HTTPSConnection("api.bimobject.com")
+        urlDict = urllib.urlencode({"client_id": BOAPIv2.CLIENT_ID,
+                                    "client_secret": BOAPIv2.CLIENT_SECRET,
+                                    "grant_type": "refresh_token",
+                                    "refresh_token": self.refresh_token, })
+        headers = {"Content-type": "application/x-www-form-urlencoded", }
+        conn.request("POST", "/oauth2/token", urlDict, headers)
+        response = conn.getresponse()
+        if response.status != httplib.OK:
+            self.log_in()
+        else:
+            rjson = json.load(response)
+            self.access_token = rjson['access_token']
+
+    # 3. Logging in explicitely
+    def log_in(self):
+        code_verifier = base64.urlsafe_b64encode(os.urandom(64))
+        code_challenge = base64.urlsafe_b64encode(hashlib.sha256(code_verifier).digest()).rstrip(b'=')
+        # code_challenge = base64.b64encode(hashlib.sha256(code_verifier).digest())
+
+        authorizePath = '/identity/connect/authorize'
+        urlDict = urllib.urlencode({"client_id": BOAPIv2.CLIENT_ID,
+                                    "response_type": "code",
+                                    "redirect_uri": BOAPIv2.REDIRECT_URI,
+                                    "scope": "admin admin.brand admin.product offline_access",
+                                    # "scope"                 : "search_api search_api_downloadbinary",
+                                    "code_challenge": code_challenge,
+                                    "code_challenge_method": "S256",
+                                    "state": "1",
+                                    })
+
+        ue = urlparse.urlunparse(('https',
+                                  'accounts.bimobject.com',
+                                  authorizePath,
+                                  '',
+                                  urlDict,
+                                  '',))
+        webbrowser.open(ue)
+        BOAPIv2.server = HTTPServer(('', BOAPIv2.PORT_NUMBER), BOAPIv2.myHandler)
+
+        try:
+            BOAPIv2.server.serve_forever()
+        except IOError:
+            pass
+
+        urlDict2 = urllib.urlencode({"client_id": BOAPIv2.CLIENT_ID,
+                                     "client_secret": BOAPIv2.CLIENT_SECRET,
+                                     "grant_type": "authorization_code",
+                                     # "grant_type"       : "client_credentials_for_admin",
+                                     "code": BOAPIv2.code,
+                                     "code_verifier": code_verifier,
+                                     "redirect_uri": BOAPIv2.REDIRECT_URI, })
+
+        # print urlDict2
+
+        headers = {"Content-type": "application/x-www-form-urlencoded", }
+        conn = httplib.HTTPSConnection("accounts.bimobject.com")
+        conn.request("POST", "/identity/connect/token", urlDict2, headers)
+        # conn.request("GET", "/identity/connect/authorize", urlDict2, headers)
+        response = conn.getresponse().read()
+        print "response: " + response
+
+        try:
+            self.access_token  = json.loads(response)['access_token']
+            self.refresh_token = json.loads(response)['refresh_token']
+            self.token_type    = json.loads(response)['token_type']
+        except KeyError:
+            pass
 
 
 # ------------------- GUI ------------------------------
@@ -628,6 +818,7 @@ class DestImage(DestFile):
 
     #FIXME self.name as @property
 
+
 class XMLFile(GeneralFile):
     def __init__(self, relPath, **kwargs):
         super(XMLFile, self).__init__(relPath, **kwargs)
@@ -650,6 +841,7 @@ class XMLFile(GeneralFile):
         self._name   = inName
         # self.relPath = self.dirName + "\\" + self._name
         # self.fileNameWithExt = self._name + self.ext
+
 
 class SourceXML (XMLFile, SourceFile):
 
@@ -799,6 +991,57 @@ class DestXML (XMLFile, DestFile):
 
 #----------------- gui classes -----------------------------------------------------------------------------------------
 
+class CreateToolTip:
+    def __init__(self, widget, text='widget info'):
+        self.waittime = 500
+        self.wraplength = 180
+        self.widget = widget
+        self.text = text
+
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.widget.bind("<ButtonPress>", self.leave)
+        self.id = None
+        self.tw = None
+
+    def enter(self, event=None):
+        self.schedule()
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(self.waittime, self.showtip)
+
+    def unschedule(self):
+        idx = self.id
+        self.id = None
+        if idx:
+            self.widget.after_cancel(idx)
+
+    def showtip(self, event=None):
+        x, y, cx, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+        # creates a toplevel window
+        self.tw = tk.Toplevel(self.widget)
+        # Leaves only the label and removes the app window
+        self.tw.wm_overrideredirect(True)
+        self.tw.wm_geometry("+%d+%d" % (x, y))
+        label = tk.Label(self.tw, text=self.text, justify='left',
+                       background="#ffffff", relief='solid', borderwidth=1,
+                       wraplength = self.wraplength)
+        label.pack(ipadx=1)
+
+    def hidetip(self):
+        tw = self.tw
+        self.tw = None
+        if tw:
+            tw.destroy()
+
+
 class InputDirPlusText():
     def __init__(self, top, text, target, tooltip=''):
         self.target = target
@@ -900,17 +1143,18 @@ class ListboxWithRefresh(tk.Listbox):
             except AttributeError:
                 self.insert(tk.END, f.name)
 
+
 class GUIApp(tk.Frame):
     def __init__(self):
         tk.Frame.__init__(self)
         self.top = self.winfo_toplevel()
 
-        currentConfig = ConfigParser()
+        self.currentConfig = ConfigParser()
         self.appDataDir  = os.getenv('APPDATA')
         if os.path.isfile(self.appDataDir  + r"\TemplateMarker.ini"):
-            currentConfig.read(self.appDataDir  + r"\TemplateMarker.ini")
+            self.currentConfig.read(self.appDataDir  + r"\TemplateMarker.ini")
         else:
-            currentConfig.read("TemplateMarker.ini")    #TODO into a different class or stg
+            self.currentConfig.read("TemplateMarker.ini")    #TODO into a different class or stg
 
         self.SourceDirName      = tk.StringVar()
         self.TargetXMLDirName   = tk.StringVar()
@@ -943,6 +1187,8 @@ class GUIApp(tk.Frame):
 
         self.warnings = []
 
+        self.bo = None
+
         global \
             SourceDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
             AdditionalImageDir, bDebug, ACLocation, bGDL, bXML, dest_dict, replacement_dict, id_dict, \
@@ -968,7 +1214,7 @@ class GUIApp(tk.Frame):
         __tooltipIDPT5 = "If set, copy project specific pictures here, too"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
 
-        for cName, cValue in currentConfig.items('ArchiCAD'):
+        for cName, cValue in self.currentConfig.items('ArchiCAD'):
             try:
                 if   cName == 'bgdl':               self.bGDL.set(cValue)
                 elif cName == 'bxml':               self.bXML.set(cValue)
@@ -1405,8 +1651,23 @@ class GUIApp(tk.Frame):
 
     def modifyDestItemdata(self, *_):
         self.destItem.proDatURL = self.proDatURL.get()
-        self.destItem.parameters.BO_update(self.destItem.proDatURL)
-        print 1
+        # self.destItem.parameters.BO_update(self.destItem.proDatURL)
+        # print "BOupdate ready"
+
+        if not self.bo:
+            self.bo = BOAPIv2(self.currentConfig)
+
+        self.destItem.parameters.BO_update2(self.destItem.proDatURL, self.currentConfig, self.bo)
+        _brandName = self.destItem.proDatURL.split('/')[3].encode()
+        _productGUID = self.destItem.proDatURL.split('/')[5].encode()
+        try:
+            self.brandGUID = self.bo.brands[_brandName]
+        except KeyError:
+            self.bo.refreshBrandDict()
+            self.brandGUID = self.bo.brands[_brandName]
+
+        print self.bo.getProductData(self.brandGUID, _productGUID)
+
 
     def modifyDestItem(self, *_):
         fN = self.fileName.get().upper()
@@ -1446,7 +1707,14 @@ class GUIApp(tk.Frame):
         currentConfig.set("ArchiCAD", "boverwrite",         self.bOverWrite.get())
         currentConfig.set("ArchiCAD", "allkeywords",        ', '.join(sorted(list(all_keywords))))
 
-        with open(self.appDataDir + r"\TemplateMarker.ini", 'wb') as configFile:
+        if self.bo:
+            currentConfig.add_section("BOAPIv2")
+            currentConfig.set("BOAPIv2", "token_type",          self.bo.token_type)
+            currentConfig.set("BOAPIv2", "refresh_token",       self.bo.refresh_token)
+            if self.bo.brands:
+                currentConfig.set("BOAPIv2", "brands", ', '.join(list(reduce(lambda x, y: x+y, self.bo.brands.iteritems()))))
+
+        with open(self.appDataDir + "\\TemplateMarker.ini", 'wb') as configFile:
             #FIXME proper config place
             currentConfig.write(configFile)
         self.top.destroy()
@@ -1487,12 +1755,9 @@ def FC1(inFile, inRootFolder):
                         sf = SourceXML(os.path.relpath(src, inRootFolder))
                         replacement_dict[sf._name.upper()] = sf
                         id_dict[sf.guid.upper()] = ""
-
-                    # elif os.path.splitext(os.path.basename(f))[1].upper() in (".JPG", ".PNG", ".SVG", ):
                     else:
+                        # set up replacement dict for other files
                         if os.path.splitext(os.path.basename(f))[0].upper() not in source_pict_dict:
-                            # set up replacement dict for image names
-                            #FIXME for all other files, too
                             sI = SourceImage(os.path.relpath(src, inRootFolder), root=inRootFolder)
                             if inRootFolder == SourceImageDirName.get():
                                 sI.isEncodedImage = True
@@ -1529,7 +1794,6 @@ def main2():
 
         print "%s -> %s" % (srcPath, destPath,)
 
-        # try:
         #FIXME multithreading, map-reduce
         mdp = etree.parse(srcPath, etree.XMLParser(strip_cdata=False))
         mdp.getroot().attrib[ID] = dest.guid
@@ -1615,7 +1879,7 @@ def main2():
         parPar = parRoot.getparent()
         parPar.remove(parRoot)
 
-        destPar = dest.parameters.toEtree()
+        destPar = dest.parameters.eTree()
         parPar.append(destPar)
 
         #FIXME not clear, check, writes an extra empty mainunid field
@@ -1635,7 +1899,7 @@ def main2():
             mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
 
     _picdir =  AdditionalImageDir.get()
-    _picdir2 = SourceImageDirName.get()
+    # _picdir2 = SourceImageDirName.get()
 
     # shutil.copytree(_picdir, tempPicDir + "\\IMAGES_GENERIC")
     if _picdir:
