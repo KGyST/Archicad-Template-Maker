@@ -342,6 +342,7 @@ class Param(object):
     def setValue(self, inVal):
         #FIXME to be removed?
         self.value = self.__toFormat(inVal)
+
     def __toFormat(self, inData):
 
         """
@@ -794,7 +795,7 @@ class DestImage(DestFile):
     def __init__(self, sourceFile, stringFrom, stringTo):
         self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
         self.sourceFile         = sourceFile
-        self.relPath            = sourceFile.relPath
+        self.relPath            = sourceFile.dirName + "\\" + self._name
         super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
         # self.path               = TargetImageDirName.get() + "\\" + self.relPath
         self.ext                = self.sourceFile.ext
@@ -891,9 +892,13 @@ class SourceXML (XMLFile, SourceFile):
 
         # for par in self.parameters:
         #     par.isUsed = self.checkParameterUsage(par, set())
-        t = re.sub("\n", ", ", mroot.find("./Keywords").text)
-        self.keywords = [kw.strip() for kw in t.split(",") if kw != ''][1:-1]
-        all_keywords |= set(self.keywords)
+        k = mroot.find("./Keywords")
+        if k:
+            t = re.sub("\n", ", ", k.text)
+            self.keywords = [kw.strip() for kw in t.split(",") if kw != ''][1:-1]
+            all_keywords |= set(self.keywords)
+        else:
+            self.keywords = None
 
     def checkParameterUsage(self, inPar, inMacroSet):
         """
@@ -1842,7 +1847,7 @@ def main2():
 
         if dest.bPlaceable:
             section = mdp.find('Picture')
-            if isinstance(section, etree._Element):
+            if isinstance(section, etree._Element) and 'path' in section.attrib:
                 path = os.path.basename(section.attrib['path']).upper()
                 if path:
                     n = next((pict_dict[p].relPath for p in pict_dict.keys() if
@@ -1879,7 +1884,7 @@ def main2():
         parPar = parRoot.getparent()
         parPar.remove(parRoot)
 
-        destPar = dest.parameters.eTree()
+        destPar = dest.parameters.toEtree()
         parPar.append(destPar)
 
         #FIXME not clear, check, writes an extra empty mainunid field
