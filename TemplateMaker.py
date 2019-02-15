@@ -4,7 +4,6 @@
 import os
 import os.path
 from os import listdir
-# import sys
 import uuid
 import re
 import tempfile
@@ -19,14 +18,13 @@ import tkFileDialog
 import urllib, httplib
 import copy
 
-from ConfigParser import *
+from ConfigParser import *  #FIXME not *
 import csv
 
-PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"
-# GUID_REGEX = "[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}"
-#FIXME to check this:
-# GUID_REGEX = r"([0-9A-Fa-f]){8}-\1{4}-\1{4}-\1{4}-\1{12}"
-#FIXME checking old product name in whole xml
+import httplib, urllib, json, webbrowser, urlparse, os, hashlib, base64
+from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+
+PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"    #FIXME to be deleted after BO API v1 is removed
 
 ID = ''
 LISTBOX_SEPARATOR = '--------'
@@ -55,9 +53,10 @@ PAR_SEPARATOR   = 11
 PAR_TITLE       = 12
 PAR_COMMENT     = 13
 
-PARFLG_HIDDEN   = 1
-PARFLG_CHILD    = 2
-PARFLG_BOLDNAME = 3
+PARFLG_CHILD    = 1
+PARFLG_UNIQUE   = 2
+PARFLG_HIDDEN   = 3
+PARFLG_BOLDNAME = 4
 
 app = None
 
@@ -136,13 +135,14 @@ class ParamSection:
                 self.__paramList.append(inEtree)
 
     def remove_param(self, inParName):
-        obj = self.__paramDict[inParName]
-        while obj in self.__paramList:
-            self.__paramList.remove(obj)
-        del self.__paramDict[inParName]
+        if inParName in self.__paramDict:
+            obj = self.__paramDict[inParName]
+            while obj in self.__paramList:
+                self.__paramList.remove(obj)
+            del self.__paramDict[inParName]
 
     def upsert_param(self, inParName):
-        #TODO
+        #FIXME
         pass
 
     def __getIndex(self, inName):
@@ -180,7 +180,7 @@ class ParamSection:
         parTree.tail = '\n'
         eTree.append(parTree)
         for par in self.__paramList:
-            elem = par.toEtree
+            elem = par.eTree
             ix = self.__paramList.index(par)
             if ix == len(self.__paramList) - 1:
                 elem.tail = '\n\t'
@@ -249,7 +249,7 @@ class ParamSection:
             self.__paramList[-1].tail = '\n\t'
 
 
-class Param:
+class Param(object):
     tagBackList = ["", "Length", "Angle", "RealNum", "Integer", "Boolean", "String", "Material",
                    "LineType", "FillPattern", "PenColor", "Separator", "Title", "Comment"]
 
@@ -259,63 +259,15 @@ class Param:
                  inDesc = '',
                  inValue = None,
                  inAVals = None,
+                 inTypeStr='',
                  inChild=False,
-                 inTypeStr = '',
+                 inUnique=False,
+                 inHidden=False,
                  inBold=False):
         self.value      = None
 
         if inETree is not None:
-            self.text = inETree.text
-            self.tail = inETree.tail
-            if not isinstance(inETree, etree._Comment):
-                self.__eTree = inETree
-                self.flags = set()
-                self.iType = self.getTypeFromString(self.__eTree.tag)
-
-                self.name = self.__eTree.attrib["Name"]
-                self.desc = self.__eTree.find("Description").text
-                self.descTail = self.__eTree.find("Description").tail
-
-                val = self.__eTree.find("Value")
-                if val is not None:
-                    self.value = self.__toFormat(val.text)
-                    self.valTail = val.tail
-                else:
-                    self.value = None
-                    self.valTail = None
-
-                __aVals = self.__eTree.find("ArrayValues")
-                if __aVals is not None:
-                    self.__fd = int(__aVals.attrib["FirstDimension"])
-                    self.__sd = int(__aVals.attrib["SecondDimension"])
-                    if self.__sd > 0:
-                        self.aVals = [["" for _ in range(self.__fd)] for _ in range(self.__sd)]
-                        for v in __aVals.iter("AVal"):
-                            x = int(v.attrib["Column"]) - 1
-                            y = int(v.attrib["Row"]) - 1
-                            self.aVals[x][y] = self.__toFormat(v.text)
-                    else:
-                        self.aVals = [["" for _ in range(self.__fd)]]
-                        for v in __aVals.iter("AVal"):
-                            y = int(v.attrib["Row"]) - 1
-                            self.aVals[0][y] = self.__toFormat(v.text)
-                    self.aValsTail = __aVals.tail
-                else:
-                    self.aVals = None
-
-                if self.__eTree.find("Flags") is not None:
-                    self.flagsTail = self.__eTree.find("Flags").tail
-                    for f in self.__eTree.find("Flags"):
-                        if f.tag == "ParFlg_Hidden":    self.flags |= {PARFLG_HIDDEN}
-                        if f.tag == "ParFlg_Child":     self.flags |= {PARFLG_CHILD}
-                        if f.tag == "ParFlg_BoldName":  self.flags |= {PARFLG_BOLDNAME}
-                        #FIXME unique etc
-            else:       # _Comment
-                self.iType = PAR_COMMENT
-                self.name = inETree.text
-                self.desc = ''
-                self.value = None
-                self.aVals = None
+            self.eTree = inETree
         else:            # Start from a scratch
             self.iType  = inType
             if inTypeStr:
@@ -325,23 +277,30 @@ class Param:
             if inValue is not None:
                 self.value = inValue
 
-            if self.iType not in (PAR_COMMENT, PAR_SEPARATOR):
-                self.desc   = inDesc
-                self.aVals  = inAVals
+            if self.iType != PAR_COMMENT:
                 self.flags = set()
                 if inChild:
                     self.flags |= {PARFLG_CHILD}
+                if inUnique:
+                    self.flags |= {PARFLG_UNIQUE}
+                if inHidden:
+                    self.flags |= {PARFLG_HIDDEN}
                 if inBold:
                     self.flags |= {PARFLG_BOLDNAME}
-                #FIXME
+
+            if self.iType not in (PAR_COMMENT, PAR_SEPARATOR):
+                self.desc   = inDesc
+                self.aVals  = inAVals
             elif self.iType == PAR_SEPARATOR:
                 self.desc = inDesc
+                self._aVals = None
             elif self.iType == PAR_COMMENT:
                 pass
         self.isInherited    = False
         self.isUsed         = True
 
     def setValue(self, inVal):
+        #FIXME to be removed?
         self.value = self.__toFormat(inVal)
 
     def __toFormat(self, inData):
@@ -355,16 +314,31 @@ class Param:
         elif self.iType in (PAR_INT, PAR_MATERIAL, PAR_PEN, PAR_LINETYPE, PAR_MATERIAL):
             return int(inData)
         elif self.iType in (PAR_BOOL, ):
-            return bool(inData)
+            return bool(int(inData))
         elif self.iType in (PAR_SEPARATOR, ):
             return None
         else:
             return inData
 
-    def __valueFormat(self, inVal):
+    def _valueToString(self, inVal):
         if self.iType in (PAR_STRING, ):
-                # return etree.CDATA('"' + inVal + '"') if inVal is not None else etree.CDATA('""')
                 return etree.CDATA(inVal) if inVal is not None else etree.CDATA('""')
+        elif self.iType in (PAR_REAL, PAR_LENGTH, PAR_ANGLE):
+            nDigits = 0
+            eps = 1E-7
+            maxN = 1E12
+            # if maxN < abs(inVal) or eps > abs(inVal) > 0:
+            #     return "%E" % inVal
+            #FIXME 1E-012 and co
+            # if -eps < inVal < eps:
+            #     return 0
+            s = '%.' + str(nDigits) + 'f'
+            while nDigits < 8:
+                if (inVal - eps < float(s % inVal) < inVal + eps):
+                    break
+                nDigits += 1
+                s = '%.' + str(nDigits) + 'f'
+            return s % inVal
         elif self.iType in (PAR_BOOL, ):
             return "0" if not inVal else "1"
         elif self.iType in (PAR_SEPARATOR, ):
@@ -373,63 +347,128 @@ class Param:
             return str(inVal)
 
     @property
-    def toEtree(self):
+    def eTree(self):
         if self.iType < PAR_COMMENT:
             tagString = self.tagBackList[self.iType]
             elem = etree.Element(tagString, Name=self.name)
-            nTabs = 3 if self.desc or self.flags or self.value or self.aVals else 2
+            nTabs = 3 if self.desc or self.flags is not None or self.value is not None or self.aVals is not None else 2
             elem.text = '\n' + nTabs * '\t'
 
             desc = etree.Element("Description")
-            # desc.text = etree.CDATA('"' + self.desc + '"')
             desc.text = etree.CDATA(self.desc)
-            nTabs = 3 if self.flags or self.value or self.aVals else 2
+            nTabs = 3 if self.flags is not None or self.value is not None or self.aVals is not None else 2
             desc.tail = '\n' + nTabs * '\t'
             elem.append(desc)
 
             if self.flags:
                 flags = etree.Element("Flags")
-                nTabs = 3 if self.value or self.aVals else 2
+                nTabs = 3 if self.value is not None or self.aVals is not None else 2
                 flags.tail = '\n' + nTabs * '\t'
                 flags.text = '\n' + 4 * '\t'
                 elem.append(flags)
                 flagList = list(self.flags)
                 for f in flagList:
-                    if f == PARFLG_HIDDEN:     element = etree.Element("ParFlg_Hidden")
-                    elif f == PARFLG_CHILD:    element = etree.Element("ParFlg_Child")
+                    if   f == PARFLG_CHILD:    element = etree.Element("ParFlg_Child")
+                    elif f == PARFLG_UNIQUE:   element = etree.Element("ParFlg_Unique")
+                    elif f == PARFLG_HIDDEN:   element = etree.Element("ParFlg_Hidden")
                     elif f == PARFLG_BOLDNAME: element = etree.Element("ParFlg_BoldName")
                     nTabs = 4 if flagList.index(f) < len(flagList) - 1 else 3
                     element.tail = '\n' + nTabs * '\t'
                     flags.append(element)
 
-            if self.value is not None or (self.iType == PAR_STRING and not self.aVals):
+            if self.value is not None or (self.iType == PAR_STRING and self.aVals is None):
                 #FIXME above line why string?
                 value = etree.Element("Value")
-                value.text = self.__valueFormat(self.value)
+                value.text = self._valueToString(self.value)
                 value.tail = '\n' + 2 * '\t'
                 elem.append(value)
             elif self.aVals is not None:
-                # fd = len(self.aVals[0])
-                # sd = len(self.aVals)
-                aValue = etree.Element("ArrayValues", FirstDimension=str(self.__fd), SecondDimension=str(self.__sd))
-                aValue.text = '\n' + 4 * '\t'
-                aValue.tail = '\n' + 2 * '\t'
-                elem.append(aValue)
-                for colIdx, col in enumerate(self.aVals):
-                    for rowIdx, cell in enumerate(col):
-                        if self.__sd:
-                            arrayValue = etree.Element("AVal", Column=str(colIdx + 1), Row=str(rowIdx + 1))
-                        else:
-                            arrayValue = etree.Element("AVal", Row=str(rowIdx + 1))
-                        nTabs = 3 if rowIdx == len(col) - 1 else 4
-                        arrayValue.tail='\n' + nTabs * '\t'
-                        aValue.append(arrayValue)
-                        arrayValue.text = self.__valueFormat(cell)
+                elem.append(self.aVals)
             elem.tail = '\n' + 2 * '\t'
         else:
             elem = etree.Comment(" %s: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK " % self.name)
             elem.tail = 2 * '\n' + 2 * '\t'
         return elem
+
+    @eTree.setter
+    def eTree(self, inETree):
+        self.text = inETree.text
+        self.tail = inETree.tail
+        if not isinstance(inETree, etree._Comment):
+            self.__eTree = inETree
+            self.flags = set()
+            self.iType = self.getTypeFromString(self.__eTree.tag)
+
+            self.name       = self.__eTree.attrib["Name"]
+            self.desc       = self.__eTree.find("Description").text
+            self.descTail   = self.__eTree.find("Description").tail
+
+            val = self.__eTree.find("Value")
+            if val is not None:
+                self.value = self.__toFormat(val.text)
+                self.valTail = val.tail
+            else:
+                self.value = None
+                self.valTail = None
+
+            self.aVals = self.__eTree.find("ArrayValues")
+
+            if self.__eTree.find("Flags") is not None:
+                self.flagsTail = self.__eTree.find("Flags").tail
+                for f in self.__eTree.find("Flags"):
+                    if f.tag == "ParFlg_Child":     self.flags |= {PARFLG_CHILD}
+                    if f.tag == "ParFlg_Unique":    self.flags |= {PARFLG_UNIQUE}
+                    if f.tag == "ParFlg_Hidden":    self.flags |= {PARFLG_HIDDEN}
+                    if f.tag == "ParFlg_BoldName":  self.flags |= {PARFLG_BOLDNAME}
+
+        else:  # _Comment
+            self.iType = PAR_COMMENT
+            self.name = inETree.text
+            self.desc = ''
+            self.value = None
+            self.aVals = None
+
+    @property
+    def aVals(self):
+        if self._aVals is not None:
+            aValue = etree.Element("ArrayValues", FirstDimension=str(self.__fd), SecondDimension=str(self.__sd))
+        else:
+            return None
+        aValue.text = '\n' + 4 * '\t'
+        aValue.tail = '\n' + 2 * '\t'
+
+        for rowIdx, row in enumerate(self._aVals):
+            for colIdx, cell in enumerate(row):
+                if self.__sd:
+                    arrayValue = etree.Element("AVal", Column=str(colIdx + 1), Row=str(rowIdx + 1))
+                    nTabs = 3 if colIdx == len(row) - 1 and rowIdx == len(self._aVals) - 1 else 4
+                else:
+                    arrayValue = etree.Element("AVal", Row=str(rowIdx + 1))
+                    nTabs = 3 if rowIdx == len(self._aVals) - 1 else 4
+                arrayValue.tail = '\n' + nTabs * '\t'
+                aValue.append(arrayValue)
+                arrayValue.text = self._valueToString(cell)
+        return aValue
+
+    @aVals.setter
+    def aVals(self, inETree):
+        if inETree is not None:
+            self.__fd = int(inETree.attrib["FirstDimension"])
+            self.__sd = int(inETree.attrib["SecondDimension"])
+            if self.__sd > 0:
+                self._aVals = [["" for _ in range(self.__sd)] for _ in range(self.__fd)]
+                for v in inETree.iter("AVal"):
+                    x = int(v.attrib["Column"]) - 1
+                    y = int(v.attrib["Row"]) - 1
+                    self._aVals[y][x] = self.__toFormat(v.text)
+            else:
+                self._aVals = [[""] for _ in range(self.__fd)]
+                for v in inETree.iter("AVal"):
+                    y = int(v.attrib["Row"]) - 1
+                    self._aVals[y][0] = self.__toFormat(v.text)
+            self.aValsTail = inETree.tail
+        else:
+            self._aVals = None
 
     @staticmethod
     def getTypeFromString(inString):
@@ -460,70 +499,10 @@ class Param:
 
 # -------------------/parameter classes --------------------------------------------------------------------------------
 
-class CreateToolTip:
-    def __init__(self, widget, text='widget info'):
-        self.waittime = 500
-        self.wraplength = 180
-        self.widget = widget
-        self.text = text
-
-        self.widget.bind("<Enter>", self.enter)
-        self.widget.bind("<Leave>", self.leave)
-        self.widget.bind("<ButtonPress>", self.leave)
-        self.id = None
-        self.tw = None
-
-    def enter(self, event=None):
-        self.schedule()
-
-    def leave(self, event=None):
-        self.unschedule()
-        self.hidetip()
-
-    def schedule(self):
-        self.unschedule()
-        self.id = self.widget.after(self.waittime, self.showtip)
-
-    def unschedule(self):
-        idx = self.id
-        self.id = None
-        if idx:
-            self.widget.after_cancel(idx)
-
-    def showtip(self, event=None):
-        x, y, cx, cy = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
-        # creates a toplevel window
-        self.tw = tk.Toplevel(self.widget)
-        # Leaves only the label and removes the app window
-        self.tw.wm_overrideredirect(True)
-        self.tw.wm_geometry("+%d+%d" % (x, y))
-        label = tk.Label(self.tw, text=self.text, justify='left',
-                       background="#ffffff", relief='solid', borderwidth=1,
-                       wraplength = self.wraplength)
-        label.pack(ipadx=1)
-
-    def hidetip(self):
-        tw = self.tw
-        self.tw = None
-        if tw:
-            tw.destroy()
-
-
-# class Replacement:
-#     def __init__(self, inR, inO):
-#         self.replaceString = inR
-#
-#         # self.replace_with = re.sub(args[1], args[2], inR, flags=re.IGNORECASE)
-#         self.orig_uuid = inO
-#         self.new_uuid = re.sub(GUID_REGEX, str(uuid.uuid4()).upper(), inO, count=1)
-
-
-class Pict_replacement:
-    def __init__(self, inOriginalName, inTargetName):
-        self.originalName = inOriginalName
-        self.targetName = inTargetName
+# class Pict_replacement:
+#     def __init__(self, inOriginalName, inTargetName):
+#         self.originalName = inOriginalName
+#         self.targetName = inTargetName
 
 
 # ------------------- GUI ------------------------------
@@ -605,9 +584,7 @@ class DestImage(DestFile):
     def __init__(self, sourceFile, stringFrom, stringTo):
         self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
         self.sourceFile         = sourceFile
-        # self.relPath            = sourceFile.relPath
-        self.dirName            = os.path.dirname(sourceFile.relPath)
-        self.relPath            = self.dirName + "\\" + self._name
+        self.relPath            = sourceFile.dirName + "\\" + self._name
         super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
         # self.path               = TargetImageDirName.get() + "\\" + self.relPath
         self.ext                = self.sourceFile.ext
@@ -631,6 +608,7 @@ class DestImage(DestFile):
 
     #FIXME self.name as @property
 
+
 class XMLFile(GeneralFile):
     def __init__(self, relPath, **kwargs):
         super(XMLFile, self).__init__(relPath, **kwargs)
@@ -653,6 +631,7 @@ class XMLFile(GeneralFile):
         self._name   = inName
         # self.relPath = self.dirName + "\\" + self._name
         # self.fileNameWithExt = self._name + self.ext
+
 
 class SourceXML (XMLFile, SourceFile):
 
@@ -702,10 +681,13 @@ class SourceXML (XMLFile, SourceFile):
 
         # for par in self.parameters:
         #     par.isUsed = self.checkParameterUsage(par, set())
-        if mroot.find("./Keywords") is not None:
-            t = re.sub("\n", ", ", mroot.find("./Keywords").text)
+        k = mroot.find("./Keywords")
+        if k:
+            t = re.sub("\n", ", ", k.text)
             self.keywords = [kw.strip() for kw in t.split(",") if kw != ''][1:-1]
             all_keywords |= set(self.keywords)
+        else:
+            self.keywords = None
 
     def checkParameterUsage(self, inPar, inMacroSet):
         """
@@ -802,6 +784,57 @@ class DestXML (XMLFile, DestFile):
         """
 
 #----------------- gui classes -----------------------------------------------------------------------------------------
+
+class CreateToolTip:
+    def __init__(self, widget, text='widget info'):
+        self.waittime = 500
+        self.wraplength = 180
+        self.widget = widget
+        self.text = text
+
+        self.widget.bind("<Enter>", self.enter)
+        self.widget.bind("<Leave>", self.leave)
+        self.widget.bind("<ButtonPress>", self.leave)
+        self.id = None
+        self.tw = None
+
+    def enter(self, event=None):
+        self.schedule()
+
+    def leave(self, event=None):
+        self.unschedule()
+        self.hidetip()
+
+    def schedule(self):
+        self.unschedule()
+        self.id = self.widget.after(self.waittime, self.showtip)
+
+    def unschedule(self):
+        idx = self.id
+        self.id = None
+        if idx:
+            self.widget.after_cancel(idx)
+
+    def showtip(self, event=None):
+        x, y, cx, cy = self.widget.bbox("insert")
+        x += self.widget.winfo_rootx() + 25
+        y += self.widget.winfo_rooty() + 20
+        # creates a toplevel window
+        self.tw = tk.Toplevel(self.widget)
+        # Leaves only the label and removes the app window
+        self.tw.wm_overrideredirect(True)
+        self.tw.wm_geometry("+%d+%d" % (x, y))
+        label = tk.Label(self.tw, text=self.text, justify='left',
+                       background="#ffffff", relief='solid', borderwidth=1,
+                       wraplength = self.wraplength)
+        label.pack(ipadx=1)
+
+    def hidetip(self):
+        tw = self.tw
+        self.tw = None
+        if tw:
+            tw.destroy()
+
 
 class InputDirPlusText():
     def __init__(self, top, text, target, tooltip=''):
@@ -904,17 +937,18 @@ class ListboxWithRefresh(tk.Listbox):
             except AttributeError:
                 self.insert(tk.END, f.name)
 
+
 class GUIApp(tk.Frame):
     def __init__(self):
         tk.Frame.__init__(self)
         self.top = self.winfo_toplevel()
 
-        currentConfig = ConfigParser()
+        self.currentConfig = ConfigParser()
         self.appDataDir  = os.getenv('APPDATA')
         if os.path.isfile(self.appDataDir  + r"\TemplateMarker.ini"):
-            currentConfig.read(self.appDataDir  + r"\TemplateMarker.ini")
+            self.currentConfig.read(self.appDataDir  + r"\TemplateMarker.ini")
         else:
-            currentConfig.read("TemplateMarker.ini")    #TODO into a different class or stg
+            self.currentConfig.read("TemplateMarker.ini")    #TODO into a different class or stg
 
         self.SourceDirName      = tk.StringVar()
         self.TargetXMLDirName   = tk.StringVar()
@@ -947,6 +981,8 @@ class GUIApp(tk.Frame):
 
         self.warnings = []
 
+        self.bo = None
+
         global \
             SourceDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
             AdditionalImageDir, bDebug, ACLocation, bGDL, bXML, dest_dict, replacement_dict, id_dict, \
@@ -972,7 +1008,7 @@ class GUIApp(tk.Frame):
         __tooltipIDPT5 = "If set, copy project specific pictures here, too"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
 
-        for cName, cValue in currentConfig.items('ArchiCAD'):
+        for cName, cValue in self.currentConfig.items('ArchiCAD'):
             try:
                 if   cName == 'bgdl':               self.bGDL.set(cValue)
                 elif cName == 'bxml':               self.bXML.set(cValue)
@@ -1410,7 +1446,6 @@ class GUIApp(tk.Frame):
     def modifyDestItemdata(self, *_):
         self.destItem.proDatURL = self.proDatURL.get()
         self.destItem.parameters.BO_update(self.destItem.proDatURL)
-        print 1
 
     def modifyDestItem(self, *_):
         fN = self.fileName.get().upper()
@@ -1491,12 +1526,9 @@ def FC1(inFile, inRootFolder):
                         sf = SourceXML(os.path.relpath(src, inRootFolder))
                         replacement_dict[sf._name.upper()] = sf
                         id_dict[sf.guid.upper()] = ""
-
-                    # elif os.path.splitext(os.path.basename(f))[1].upper() in (".JPG", ".PNG", ".SVG", ):
                     else:
+                        # set up replacement dict for other files
                         if os.path.splitext(os.path.basename(f))[0].upper() not in source_pict_dict:
-                            # set up replacement dict for image names
-                            #FIXME for all other files, too
                             sI = SourceImage(os.path.relpath(src, inRootFolder), root=inRootFolder)
                             if inRootFolder == SourceImageDirName.get():
                                 sI.isEncodedImage = True
@@ -1533,7 +1565,6 @@ def main2():
 
         print "%s -> %s" % (srcPath, destPath,)
 
-        # try:
         #FIXME multithreading, map-reduce
         mdp = etree.parse(srcPath, etree.XMLParser(strip_cdata=False))
         mdp.getroot().attrib[ID] = dest.guid
@@ -1582,8 +1613,7 @@ def main2():
 
         if dest.bPlaceable:
             section = mdp.find('Picture')
-            if isinstance(section, etree._Element)and 'path' in section.attrib:
-                #FIXME
+            if isinstance(section, etree._Element) and 'path' in section.attrib:
                 path = os.path.basename(section.attrib['path']).upper()
                 if path:
                     n = next((pict_dict[p].relPath for p in pict_dict.keys() if
@@ -1640,7 +1670,7 @@ def main2():
             mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
 
     _picdir =  AdditionalImageDir.get()
-    _picdir2 = SourceImageDirName.get()
+    # _picdir2 = SourceImageDirName.get()
 
     # shutil.copytree(_picdir, tempPicDir + "\\IMAGES_GENERIC")
     if _picdir:
