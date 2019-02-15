@@ -1492,7 +1492,12 @@ class GUIApp(tk.Frame):
                     if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
                         for parName, col in zip(firstRow[3:], row[3:]):
                             if parName in destItem.parameters:
+                                #FIXME prev pict options
                                 destItem.parameters[parName] = col
+                                #FIXME match parameter types
+                            else:
+                                pass
+                                #FIXME to put new parameter generation
 
     def setACLoc(self):
         ACLoc = tkFileDialog.askdirectory(initialdir="/", title="Select ArchiCAD folder")
@@ -1960,7 +1965,7 @@ def main2():
 
     # cleanup ops
     if not bDebug.get():
-        # shutil.rmtree(tempPicDir)
+        # shutil.rmtree(tempPicDir) #FIXME
         if not bXML:
             shutil.rmtree(tempdir)
     else:
