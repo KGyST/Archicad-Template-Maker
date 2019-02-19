@@ -20,29 +20,29 @@ PAR_TITLE       = 12
 PAR_COMMENT     = 13
 
 PARFLG_CHILD    = 1
-PARFLG_UNIQUE   = 2
-PARFLG_HIDDEN   = 3
-PARFLG_BOLDNAME = 4
+PARFLG_BOLDNAME = 2
+PARFLG_UNIQUE   = 3
+PARFLG_HIDDEN   = 4
 
 class TestSuiteParam(unittest.TestSuite):
     def __init__(self):
         self._tests = []
         dir_prefix = 'test_param'
         dirName = dir_prefix + "_items"
-        for f in os.listdir(dirName):
-            if os.path.isfile(dirName  + "\\" + f) and f[0] != '_':
-                print f
-                tp = TestParam(f, dir_prefix)
+        for testFileName in os.listdir(dirName):
+            if os.path.isfile(dirName + "\\" + testFileName) and testFileName[0] != '_':
+                print testFileName
+                tp = TestParam(testFileName, dir_prefix)
                 self.addTest(tp)
-            elif os.path.isfile(dirName + "\\" + f) and f[0] == '_':
+            elif os.path.isfile(dirName + "\\" + testFileName) and testFileName[0] == '_':
                 #FIXME expected failures to be here
                 pass
         super(TestSuiteParam, self).__init__(self._tests)
 
 
 class TestParam(unittest.TestCase):
-    def __init__(self, inFile, inDir):
-        func = self.ParamTestCaseFactory(inFile, inDir)
+    def __init__(self, inFile, inDirPreFix):
+        func = self.ParamTestCaseFactory(inFile, inDirPreFix)
         setattr(TestParam, func.__name__, func)
         super(TestParam, self).__init__(func.__name__)
 

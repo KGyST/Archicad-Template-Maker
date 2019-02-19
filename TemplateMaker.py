@@ -17,6 +17,7 @@ import Tkinter as tk
 import tkFileDialog
 import urllib, httplib
 import copy
+import argparse
 
 from ConfigParser import *  #FIXME not *
 import csv
@@ -54,9 +55,9 @@ PAR_TITLE       = 12
 PAR_COMMENT     = 13
 
 PARFLG_CHILD    = 1
-PARFLG_UNIQUE   = 2
-PARFLG_HIDDEN   = 3
-PARFLG_BOLDNAME = 4
+PARFLG_BOLDNAME = 2
+PARFLG_UNIQUE   = 3
+PARFLG_HIDDEN   = 4
 
 app = None
 
@@ -69,6 +70,15 @@ all_keywords = set()
 
 # ------------------- parameter classes --------------------------------------------------------------------------------
 
+class ArgParse(argparse.ArgumentParser):
+    # Overriding exit method that stops whole program in case of bad parametrization
+    def exit(self, *_):
+        try:
+            pass
+        except TypeError:
+            pass
+
+
 class ParamSection:
     """
     iterable class of all params
@@ -80,6 +90,13 @@ class ParamSection:
         self.__paramDict    = {}
         self.__index        = 0
         self.usedParamSet   = {}
+
+        for attr in ["SectVersion", "SectionFlags", "SubIdent", ]:
+            if attr in self.eTree.attrib:
+                setattr(self, attr, self.eTree.attrib[attr])
+            else:
+                setattr(self, attr, None)
+
         for p in inETree.find("Parameters"):
             param = Param(p)
             self.append(param, param.name)
@@ -113,26 +130,27 @@ class ParamSection:
     def insertBefore(self, inParName, inEtree):
         self.__paramList.insert(self.__getIndex(inParName), inEtree)
 
-    def insertUnder(self, inParName, inEtree, inPos):
+    def insertAsChild(self, inParentParName, inEtree):
         """
         inserting under a title
-        :param inParName:
+        :param inParentParName:
         :param inEtree:
         :param inPos:      position, 0 is first, -1 is last #FIXME
         :return:
         """
-        base = self.__getIndex(inParName)
+        base = self.__getIndex(inParentParName)
         i = 1
         if self.__paramList[base].iType == PAR_TITLE:
             nP = self.__paramList[base + i]
             try:
                 while nP.iType != PAR_TITLE and \
-                    PARFLG_CHILD in nP.flags:
+                        PARFLG_CHILD in nP.flags:
                     i += 1
-                    nP = self.__paramList[i]
-                self.__paramList.insert(i, inEtree)
+                    nP = self.__paramList[base + i]
             except IndexError:
-                self.__paramList.append(inEtree)
+                pass
+            self.__paramList.insert(base + i, inEtree)
+            self.__paramDict[inEtree.name] = inEtree
 
     def remove_param(self, inParName):
         if inParName in self.__paramDict:
@@ -172,11 +190,13 @@ class ParamSection:
                 return result
 
     def toEtree(self):
-        eTree = etree.Element("ParamSection", SectVersion="25", SectionFlags="0", SubIdent="0", )
+        eTree = etree.Element("ParamSection", SectVersion=self.SectVersion, SectionFlags=self.SectionFlags, SubIdent=self.SubIdent, )
+        eTree.text = '\n\t'
         eTree.append(self.__header)
         eTree.tail = '\n'
 
         parTree = etree.Element("Parameters")
+        parTree.text = '\n\t\t'
         parTree.tail = '\n'
         eTree.append(parTree)
         for par in self.__paramList:
@@ -288,6 +308,118 @@ class ParamSection:
         for p in BO_PARAM_TUPLE:
             self.remove_param(p[0])
 
+    def createParamfromCSV(self, inParName, inCol):
+        splitPars = inParName.split(" ")
+        parName = splitPars[0]
+        ap = ArgParse(add_help=False)
+        ap.add_argument("-d", "--desc" , "--description", nargs="+")        # action=ConcatStringAction,
+        ap.add_argument("-t", "--type")
+        ap.add_argument("-f", "--frontof" )
+        ap.add_argument("-a", "--after" )
+        ap.add_argument("-c", "--child")
+        ap.add_argument("-h", "--hidden", action='store_true')
+        ap.add_argument("-b", "--bold", action='store_true')
+        ap.add_argument("-u", "--unique", action='store_true')
+        # ap.add_argument("-o", "--overwrite", action='store_true')
+        ap.add_argument("-i", "--inherit", action='store_true', help='Inherit properties form the other parameter')
+
+        parsedArgs = ap.parse_known_args(splitPars)[0]
+
+        parType = PAR_UNKNOWN
+        if parsedArgs.type:
+            if parsedArgs.type in ("Length", ):
+                parType = PAR_LENGTH
+                inCol = float(inCol)
+            elif parsedArgs.type in ("Angle", ):
+                parType = PAR_ANGLE
+                inCol = float(inCol)
+            elif parsedArgs.type in ("RealNum", ):
+                parType = PAR_REAL
+                inCol = float(inCol)
+            elif parsedArgs.type in ("Integer", ):
+                parType = PAR_INT
+                inCol = int(inCol)
+            elif parsedArgs.type in ("Boolean", ):
+                parType = PAR_BOOL
+                inCol = bool(int(inCol))
+            elif parsedArgs.type in ("String", ):
+                parType = PAR_STRING
+            elif parsedArgs.type in ("Material", ):
+                parType = PAR_MATERIAL
+                inCol = int(inCol)
+            elif parsedArgs.type in ("LineType", ):
+                parType = PAR_LINETYPE
+                inCol = int(inCol)
+            elif parsedArgs.type in ("FillPattern", ):
+                parType = PAR_FILL
+                inCol = int(inCol)
+            elif parsedArgs.type in ("PenColor", ):
+                parType = PAR_PEN
+                inCol = int(inCol)
+            elif parsedArgs.type in ("Separator", ):
+                parType = PAR_SEPARATOR
+            elif parsedArgs.type in ("Title", ):
+                parType = PAR_TITLE
+                inCol = None
+            elif parsedArgs.type in ("Comment", ):
+                parType = PAR_COMMENT
+                parName = " " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK "
+        else:
+            if re.match(r'\bis[A-Z]', splitPars[0]) or re.match(r'\bb[A-Z]', splitPars[0]):
+                parType = PAR_BOOL
+            elif re.match(r'\bi[A-Z]', splitPars[0]) or re.match(r'\bn[A-Z]', splitPars[0]):
+                parType = PAR_INT
+            elif re.match(r'\bs[A-Z]', splitPars[0]) or re.match(r'\bst[A-Z]', splitPars[0]) or re.match(r'\bmp_', splitPars[0]):
+                parType = PAR_STRING
+            elif re.match(r'\bx[A-Z]', splitPars[0]) or re.match(r'\by[A-Z]', splitPars[0]) or re.match(r'\bz[A-Z]', splitPars[0]):
+                parType = PAR_LENGTH
+            elif re.match(r'\bx[A-Z]', splitPars[0]):
+                parType = PAR_ANGLE
+
+        if parsedArgs.inherit:
+            if parsedArgs.child:
+                paramToInherit = self.__paramDict[parsedArgs.child]
+            elif parsedArgs.after:
+                paramToInherit = self.__paramDict[parsedArgs.after]
+            elif parsedArgs.frontof:
+                paramToInherit = self.__paramDict[parsedArgs.frontof]
+
+            isChild  =  PARFLG_CHILD in paramToInherit.flags
+            isBold = PARFLG_BOLDNAME in paramToInherit.flags
+            isUnique = PARFLG_UNIQUE in paramToInherit.flags
+            isHidden = PARFLG_HIDDEN in paramToInherit.flags
+        else:
+            isChild = "child" in dir(parsedArgs)
+            isBold = parsedArgs.bold
+            isUnique = parsedArgs.unique
+            isHidden = parsedArgs.hidden
+
+        if parsedArgs.desc is not None:
+            desc = '"' + " ".join(parsedArgs.desc) + '"'
+        else:
+            desc ='""'
+
+        param = Param(inType=parType,
+                      inName=parName,
+                      inDesc=desc,
+                      inValue=inCol,
+                      inChild=isChild,
+                      inBold=isBold,
+                      inHidden=isHidden,
+                      inUnique=isUnique,)
+
+        if parsedArgs.child:
+            self.insertAsChild(parsedArgs.child, param)
+        elif parsedArgs.after:
+            self.insertAfter(parsedArgs.after, param)
+        elif parsedArgs.frontof:
+            self.insertBefore(parsedArgs.frontof, param)
+
+        if parType == PAR_TITLE:
+            paramComment = Param(inType=PAR_COMMENT,
+                inName=" " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ", )
+            self.insertBefore(param.name, paramComment)
+
 
 class Param(object):
     tagBackList = ["", "Length", "Angle", "RealNum", "Integer", "Boolean", "String", "Material",
@@ -328,12 +460,13 @@ class Param(object):
                 if inBold:
                     self.flags |= {PARFLG_BOLDNAME}
 
-            if self.iType not in (PAR_COMMENT, PAR_SEPARATOR):
+            if self.iType not in (PAR_COMMENT, PAR_SEPARATOR, ):
                 self.desc   = inDesc
                 self.aVals  = inAVals
             elif self.iType == PAR_SEPARATOR:
-                self.desc = inDesc
+                self.desc   = inDesc
                 self._aVals = None
+                self.value  = None
             elif self.iType == PAR_COMMENT:
                 pass
         self.isInherited    = False
@@ -357,7 +490,7 @@ class Param(object):
             return int(inData)
         elif self.iType in (PAR_BOOL, ):
             return bool(int(inData))
-        elif self.iType in (PAR_SEPARATOR, ):
+        elif self.iType in (PAR_SEPARATOR, PAR_TITLE,):
             return None
         else:
             return inData
@@ -398,7 +531,7 @@ class Param(object):
 
             desc = etree.Element("Description")
             desc.text = etree.CDATA(self.desc)
-            nTabs = 3 if self.flags is not None or self.value is not None or self.aVals is not None else 2
+            nTabs = 3 if len(self.flags) or self.value is not None or self.aVals is not None else 2
             desc.tail = '\n' + nTabs * '\t'
             elem.append(desc)
 
@@ -428,7 +561,7 @@ class Param(object):
                 elem.append(self.aVals)
             elem.tail = '\n' + 2 * '\t'
         else:
-            elem = etree.Comment(" %s: PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK " % self.name)
+            elem = etree.Comment(self.name)
             elem.tail = 2 * '\n' + 2 * '\t'
         return elem
 
@@ -1493,7 +1626,8 @@ class GUIApp(tk.Frame):
                         for parName, col in zip(firstRow[3:], row[3:]):
                             if parName in destItem.parameters:
                                 #FIXME prev pict options
-                                destItem.parameters[parName] = col
+                                # destItem.parameters[parName] = col
+                                destItem.parameters.createParamfromCSV(parName, col)
                                 #FIXME match parameter types
                             else:
                                 pass
@@ -1677,7 +1811,6 @@ class GUIApp(tk.Frame):
             self.brandGUID = self.bo.brands[_brandName]
 
         print self.bo.getProductData(self.brandGUID, _productGUID)
-
 
     def modifyDestItem(self, *_):
         fN = self.fileName.get().upper()
