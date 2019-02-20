@@ -1,6 +1,7 @@
 #!C:\Program Files\Python27amd64\python.exe
 # -*- coding: utf-8 -*-
 #HOTFIXREQ if image dest folder is retained, remove common images from it
+#FIXME append param to the end when argument for position
 
 import os
 import os.path
