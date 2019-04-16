@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 #HOTFIXREQ if image dest folder is retained, remove common images from it
 #FIXME append param to the end when argument for position
+#TODO renaming errors and param csv parameter overwriting
 
 import os
 import os.path
@@ -326,112 +327,122 @@ class ParamSection:
         ap.add_argument("-h", "--hidden", action='store_true')
         ap.add_argument("-b", "--bold", action='store_true')
         ap.add_argument("-u", "--unique", action='store_true')
+        # FIXME overwrite
         # ap.add_argument("-o", "--overwrite", action='store_true')
         ap.add_argument("-i", "--inherit", action='store_true', help='Inherit properties form the other parameter')
 
         parsedArgs = ap.parse_known_args(splitPars)[0]
 
-        parType = PAR_UNKNOWN
-        if parsedArgs.type:
-            if parsedArgs.type in ("Length", ):
-                parType = PAR_LENGTH
-                inCol = float(inCol)
-            elif parsedArgs.type in ("Angle", ):
-                parType = PAR_ANGLE
-                inCol = float(inCol)
-            elif parsedArgs.type in ("RealNum", ):
-                parType = PAR_REAL
-                inCol = float(inCol)
-            elif parsedArgs.type in ("Integer", ):
-                parType = PAR_INT
-                inCol = int(inCol)
-            elif parsedArgs.type in ("Boolean", ):
-                parType = PAR_BOOL
-                inCol = bool(int(inCol))
-            elif parsedArgs.type in ("String", ):
-                parType = PAR_STRING
-            elif parsedArgs.type in ("Material", ):
-                parType = PAR_MATERIAL
-                inCol = int(inCol)
-            elif parsedArgs.type in ("LineType", ):
-                parType = PAR_LINETYPE
-                inCol = int(inCol)
-            elif parsedArgs.type in ("FillPattern", ):
-                parType = PAR_FILL
-                inCol = int(inCol)
-            elif parsedArgs.type in ("PenColor", ):
-                parType = PAR_PEN
-                inCol = int(inCol)
-            elif parsedArgs.type in ("Separator", ):
-                parType = PAR_SEPARATOR
-            elif parsedArgs.type in ("Title", ):
-                parType = PAR_TITLE
-                inCol = None
-            elif parsedArgs.type in ("Comment", ):
-                parType = PAR_COMMENT
-                parName = " " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK "
-        else:
-            if re.match(r'\bis[A-Z]', splitPars[0]) or re.match(r'\bb[A-Z]', splitPars[0]):
-                parType = PAR_BOOL
-            elif re.match(r'\bi[A-Z]', splitPars[0]) or re.match(r'\bn[A-Z]', splitPars[0]):
-                parType = PAR_INT
-            elif re.match(r'\bs[A-Z]', splitPars[0]) or re.match(r'\bst[A-Z]', splitPars[0]) or re.match(r'\bmp_', splitPars[0]):
-                parType = PAR_STRING
-            elif re.match(r'\bx[A-Z]', splitPars[0]) or re.match(r'\by[A-Z]', splitPars[0]) or re.match(r'\bz[A-Z]', splitPars[0]):
-                parType = PAR_LENGTH
-            elif re.match(r'\bx[A-Z]', splitPars[0]):
-                parType = PAR_ANGLE
-            else:
-                parType = PAR_STRING
-
-        if parsedArgs.inherit:
-            if parsedArgs.child:
-                paramToInherit = self.__paramDict[parsedArgs.child]
-            elif parsedArgs.after:
-                paramToInherit = self.__paramDict[parsedArgs.after]
-            elif parsedArgs.frontof:
-                paramToInherit = self.__paramDict[parsedArgs.frontof]
-
-            isChild  =  PARFLG_CHILD in paramToInherit.flags
-            isBold = PARFLG_BOLDNAME in paramToInherit.flags
-            isUnique = PARFLG_UNIQUE in paramToInherit.flags
-            isHidden = PARFLG_HIDDEN in paramToInherit.flags
-        else:
-            isChild = "child" in dir(parsedArgs)
-            isBold = parsedArgs.bold
-            isUnique = parsedArgs.unique
-            isHidden = parsedArgs.hidden
-
         if parsedArgs.desc is not None:
             desc = '"' + " ".join(parsedArgs.desc) + '"'
         else:
-            desc ='""'
+            desc = '""'
 
-        if inCol[0] != '"':
-            inCol = '"' + inCol
-        if inCol[-1] != '"':
-            inCol = inCol + '"'
+        if inCol:
+            if inCol[0] != '"':
+                inCol = '"' + inCol
+            if inCol[-1] != '"':
+                inCol = inCol + '"'
+        else:
+            inCol = '""'
 
-        param = Param(inType=parType,
-                      inName=parName,
-                      inDesc=desc,
-                      inValue=inCol,
-                      inChild=isChild,
-                      inBold=isBold,
-                      inHidden=isHidden,
-                      inUnique=isUnique,)
+        if parName not in self:
+            parType = PAR_UNKNOWN
+            if parsedArgs.type:
+                if parsedArgs.type in ("Length", ):
+                    parType = PAR_LENGTH
+                    inCol = float(inCol)
+                elif parsedArgs.type in ("Angle", ):
+                    parType = PAR_ANGLE
+                    inCol = float(inCol)
+                elif parsedArgs.type in ("RealNum", ):
+                    parType = PAR_REAL
+                    inCol = float(inCol)
+                elif parsedArgs.type in ("Integer", ):
+                    parType = PAR_INT
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("Boolean", ):
+                    parType = PAR_BOOL
+                    inCol = bool(int(inCol))
+                elif parsedArgs.type in ("String", ):
+                    parType = PAR_STRING
+                elif parsedArgs.type in ("Material", ):
+                    parType = PAR_MATERIAL
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("LineType", ):
+                    parType = PAR_LINETYPE
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("FillPattern", ):
+                    parType = PAR_FILL
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("PenColor", ):
+                    parType = PAR_PEN
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("Separator", ):
+                    parType = PAR_SEPARATOR
+                elif parsedArgs.type in ("Title", ):
+                    parType = PAR_TITLE
+                    inCol = None
+                elif parsedArgs.type in ("Comment", ):
+                    parType = PAR_COMMENT
+                    parName = " " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK "
+            else:
+                if re.match(r'\bis[A-Z]', splitPars[0]) or re.match(r'\bb[A-Z]', splitPars[0]):
+                    parType = PAR_BOOL
+                elif re.match(r'\bi[A-Z]', splitPars[0]) or re.match(r'\bn[A-Z]', splitPars[0]):
+                    parType = PAR_INT
+                elif re.match(r'\bs[A-Z]', splitPars[0]) or re.match(r'\bst[A-Z]', splitPars[0]) or re.match(r'\bmp_', splitPars[0]):
+                    parType = PAR_STRING
+                elif re.match(r'\bx[A-Z]', splitPars[0]) or re.match(r'\by[A-Z]', splitPars[0]) or re.match(r'\bz[A-Z]', splitPars[0]):
+                    parType = PAR_LENGTH
+                elif re.match(r'\bx[A-Z]', splitPars[0]):
+                    parType = PAR_ANGLE
+                else:
+                    parType = PAR_STRING
 
-        if parsedArgs.child:
-            self.insertAsChild(parsedArgs.child, param)
-        elif parsedArgs.after:
-            self.insertAfter(parsedArgs.after, param)
-        elif parsedArgs.frontof:
-            self.insertBefore(parsedArgs.frontof, param)
+            if parsedArgs.inherit:
+                if parsedArgs.child:
+                    paramToInherit = self.__paramDict[parsedArgs.child]
+                elif parsedArgs.after:
+                    paramToInherit = self.__paramDict[parsedArgs.after]
+                elif parsedArgs.frontof:
+                    paramToInherit = self.__paramDict[parsedArgs.frontof]
 
-        if parType == PAR_TITLE:
-            paramComment = Param(inType=PAR_COMMENT,
-                inName=" " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ", )
-            self.insertBefore(param.name, paramComment)
+                isChild  =  PARFLG_CHILD in paramToInherit.flags
+                isBold = PARFLG_BOLDNAME in paramToInherit.flags
+                isUnique = PARFLG_UNIQUE in paramToInherit.flags
+                isHidden = PARFLG_HIDDEN in paramToInherit.flags
+            else:
+                isChild = "child" in dir(parsedArgs)
+                isBold = parsedArgs.bold
+                isUnique = parsedArgs.unique
+                isHidden = parsedArgs.hidden
+
+            param = Param(inType=parType,
+                          inName=parName,
+                          inDesc=desc,
+                          inValue=inCol,
+                          inChild=isChild,
+                          inBold=isBold,
+                          inHidden=isHidden,
+                          inUnique=isUnique,)
+
+            if parsedArgs.child:
+                self.insertAsChild(parsedArgs.child, param)
+            elif parsedArgs.after:
+                self.insertAfter(parsedArgs.after, param)
+            elif parsedArgs.frontof:
+                self.insertBefore(parsedArgs.frontof, param)
+
+            if parType == PAR_TITLE:
+                paramComment = Param(inType=PAR_COMMENT,
+                                     inName=" " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ", )
+                self.insertBefore(param.name, paramComment)
+        else:
+            #FIXME Pickin around an existing param, to be thought through
+            self[parName] = inCol
+            if desc:
+                self.__paramDict[parName].desc = desc
 
 
 class Param(object):
@@ -1057,7 +1068,8 @@ class SourceXML (XMLFile, SourceFile):
 
         pic = mroot.find("./Picture")
         if pic is not None:
-            self.prevPict = pic.attrib["path"]
+            if "path" in pic.attrib:
+                self.prevPict = pic.attrib["path"]
 
     def checkParameterUsage(self, inPar, inMacroSet):
         """
