@@ -3,6 +3,7 @@
 #HOTFIXREQ if image dest folder is retained, remove common images from it
 #FIXME append param to the end when argument for position
 #TODO renaming errors and param csv parameter overwriting
+#FIXME substring issues
 
 import os
 import os.path
@@ -949,19 +950,19 @@ class SourceImage(SourceFile):
 
 
 class DestImage(DestFile):
-
     def __init__(self, sourceFile, stringFrom, stringTo):
         self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
         self.sourceFile         = sourceFile
-        self.relPath            = sourceFile.dirName + "//" + self._name
-        super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
-        # self.path               = TargetImageDirName.get() + "/" + self.relPath
         self.ext                = self.sourceFile.ext
 
         if stringTo not in self._name and bAddStr.get():
-            self.fileNameWithOutExt += stringTo
+            self.fileNameWithOutExt = os.path.splitext(self._name)[0] + stringTo
             self._name           = self.fileNameWithOutExt + self.ext
         self.fileNameWithExt = self._name
+
+        self.relPath            = sourceFile.dirName + "//" + self._name
+        super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
+        # self.path               = TargetImageDirName.get() + "/" + self.relPath
 
     @property
     def name(self):
@@ -1370,7 +1371,7 @@ class GUIApp(tk.Frame):
         global \
             SourceXMLDirName, SourceGDLDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
             AdditionalImageDir, bDebug, bCheckParams, ACLocation, bGDL, bXML, dest_dict, dest_guids, replacement_dict, id_dict, \
-            pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords
+            pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo
 
         SourceXMLDirName    = self.SourceXMLDirName
         SourceGDLDirName    = self.SourceXMLDirName
@@ -1386,6 +1387,7 @@ class GUIApp(tk.Frame):
         ACLocation          = self.ACLocation
         bAddStr             = self.bAddStr
         bOverWrite          = self.bOverWrite
+        StringTo            = self.StringTo
 
         __tooltipIDPT1 = "Something like E:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
         __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
@@ -1721,7 +1723,7 @@ class GUIApp(tk.Frame):
     @staticmethod
     def start():
         main2()
-        print "Starting conversion"
+        # print "Starting conversion"
 
     def addFile(self, sourceFileName='', targetFileName=''):
         if not sourceFileName:
@@ -2093,7 +2095,7 @@ def main2():
 
                 for pr in pict_dict.keys():
                     #Replacing images
-                    t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt, pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
+                    t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo.get() + ')', pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
 
                 section.text = etree.CDATA(t)
 
