@@ -4,6 +4,7 @@
 #FIXME append param to the end when argument for position
 #TODO renaming errors and param csv parameter overwriting
 #FIXME substring issues
+#FIXME library_images copy always as temporary folder
 
 import os
 import os.path
@@ -943,10 +944,10 @@ class DestFile(GeneralFile):
 
 
 class SourceImage(SourceFile):
-    def __init__(self, sourceFile, **kwargs):
+    def __init__(self, sourceFile, bRename = False, **kwargs):
         super(SourceImage, self).__init__(sourceFile, **kwargs)
         self.name = self.fileNameWithExt
-        self.isEncodedImage = False
+        self.isEncodedImage = not bRename
 
 
 class DestImage(DestFile):
@@ -955,7 +956,7 @@ class DestImage(DestFile):
         self.sourceFile         = sourceFile
         self.ext                = self.sourceFile.ext
 
-        if stringTo not in self._name and bAddStr.get():
+        if stringTo not in self._name and bAddStr.get() and not self.sourceFile.isEncodedImage:
             self.fileNameWithOutExt = os.path.splitext(self._name)[0] + stringTo
             self._name           = self.fileNameWithOutExt + self.ext
         self.fileNameWithExt = self._name
@@ -1302,8 +1303,8 @@ class ListboxWithRefresh(tk.Listbox):
 
     def refresh(self, *_):
         if self.dict == replacement_dict:
-            FC1(self.target.get(), SourceXMLDirName.get())
-            FC1(self.imgTarget.get(), SourceImageDirName.get())
+            FC1(self.target.get(), SourceXMLDirName.get(), bRename=True)
+            FC1(self.imgTarget.get(), SourceImageDirName.get(), bRename=False)
         self.delete(0, tk.END)
         bPlaceablesFromHere = True
         if self.dict in (pict_dict, source_pict_dict):
@@ -1998,7 +1999,7 @@ class GUIApp(tk.Frame):
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
 
-def FC1(inFile, inRootFolder):
+def FC1(inFile, inRootFolder, bRename = False):
     """
     only scanning input dir recursively to set up xml and image files' list
     :param inFile:
@@ -2018,13 +2019,10 @@ def FC1(inFile, inRootFolder):
                     else:
                         # set up replacement dict for other files
                         if os.path.splitext(os.path.basename(f))[0].upper() not in source_pict_dict:
-                            sI = SourceImage(os.path.relpath(src, inRootFolder), root=inRootFolder)
-                            SIDN = SourceImageDirName.get()
-                            if SIDN in sI.fullDirName:
-                                sI.isEncodedImage = True
+                            sI = SourceImage(os.path.relpath(src, inRootFolder), root=inRootFolder, bRename=bRename)
                             source_pict_dict[sI.fileNameWithExt.upper()] = sI
                 else:
-                    FC1(src, inRootFolder)
+                    FC1(src, inRootFolder, bRename=bRename)
 
             except KeyError:
                 print "KeyError %s" % f
