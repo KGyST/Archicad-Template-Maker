@@ -1237,16 +1237,16 @@ class InputDirPlusText():
         self.target = target
         self.filename = ''
 
-        top.columnconfigure(1, weight=1)
+        self._frame.columnconfigure(1, weight=1)
 
-        self.buttonDirName = tk.Button(top, {"text": text, "command": self.inputDirName, })
+        self.buttonDirName = tk.Button(self._frame, {"text": text, "command": self.inputDirName, })
         self.buttonDirName.grid({"sticky": tk.W + tk.E, "row": 0, "column": 0, })
 
-        self.entryDirName = tk.Entry(top, {"width": 30, "textvariable": target})
+        self.entryDirName = tk.Entry(self._frame, {"width": 30, "textvariable": target})
         self.entryDirName.grid({"row": 0, "column": 1, "sticky": tk.E + tk.W, })
 
         if tooltip:
-            CreateToolTip(self.entryDirName, tooltip)
+            CreateToolTip(self._frame, tooltip)
 
     def inputDirName(self):
         self.filename = tkFileDialog.askdirectory(initialdir="/", title="Select folder")
