@@ -324,7 +324,7 @@ class ParamSection:
         ap.add_argument("-h", "--hidden", action='store_true')
         ap.add_argument("-b", "--bold", action='store_true')
         ap.add_argument("-u", "--unique", action='store_true')
-        # ap.add_argument("-o", "--overwrite", action='store_true')
+        ap.add_argument("-o", "--overwrite", action='store_true')
         ap.add_argument("-i", "--inherit", action='store_true', help='Inherit properties form the other parameter')
 
         parsedArgs = ap.parse_known_args(splitPars)[0]
@@ -371,14 +371,18 @@ class ParamSection:
         else:
             if re.match(r'\bis[A-Z]', splitPars[0]) or re.match(r'\bb[A-Z]', splitPars[0]):
                 parType = PAR_BOOL
+                inCol = bool(int(inCol))
             elif re.match(r'\bi[A-Z]', splitPars[0]) or re.match(r'\bn[A-Z]', splitPars[0]):
                 parType = PAR_INT
+                inCol = int(inCol)
             elif re.match(r'\bs[A-Z]', splitPars[0]) or re.match(r'\bst[A-Z]', splitPars[0]) or re.match(r'\bmp_', splitPars[0]):
                 parType = PAR_STRING
             elif re.match(r'\bx[A-Z]', splitPars[0]) or re.match(r'\by[A-Z]', splitPars[0]) or re.match(r'\bz[A-Z]', splitPars[0]):
                 parType = PAR_LENGTH
+                inCol = float(inCol)
             elif re.match(r'\bx[A-Z]', splitPars[0]):
                 parType = PAR_ANGLE
+                inCol = float(inCol)
             else:
                 parType = PAR_STRING
 
@@ -405,10 +409,11 @@ class ParamSection:
         else:
             desc ='""'
 
-        if inCol[0] != '"':
-            inCol = '"' + inCol
-        if inCol[-1] != '"':
-            inCol = inCol + '"'
+        if isinstance(inCol, str):
+            if inCol[0] != '"':
+                inCol = '"' + inCol
+            if inCol[-1] != '"':
+                inCol = inCol + '"'
 
         param = Param(inType=parType,
                       inName=parName,
@@ -1206,19 +1211,21 @@ class CreateToolTip:
 
 class InputDirPlusText():
     def __init__(self, top, text, target, tooltip=''):
+        self._frame = tk.Frame(top)
+        self._frame.grid()
         self.target = target
         self.filename = ''
 
-        top.columnconfigure(1, weight=1)
+        self._frame.columnconfigure(1, weight=1)
 
-        self.buttonDirName = tk.Button(top, {"text": text, "command": self.inputDirName, })
+        self.buttonDirName = tk.Button(self._frame, {"text": text, "command": self.inputDirName, })
         self.buttonDirName.grid({"sticky": tk.W + tk.E, "row": 0, "column": 0, })
 
-        self.entryDirName = tk.Entry(top, {"width": 30, "textvariable": target})
+        self.entryDirName = tk.Entry(self._frame, {"width": 30, "textvariable": target})
         self.entryDirName.grid({"row": 0, "column": 1, "sticky": tk.E + tk.W, })
 
         if tooltip:
-            CreateToolTip(self.entryDirName, tooltip)
+            CreateToolTip(self._frame, tooltip)
 
     def inputDirName(self):
         self.filename = tkFileDialog.askdirectory(initialdir="/", title="Select folder")
@@ -1375,7 +1382,7 @@ class GUIApp(tk.Frame):
 
         __tooltipIDPT1 = "Something like E:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
         __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
-        __tooltipIDPT3 = ""
+        __tooltipIDPT3 = "Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library"
         __tooltipIDPT4 = "Final GDL output dir"
         __tooltipIDPT5 = "If set, copy project specific pictures here, too"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
@@ -1443,11 +1450,11 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "XML ource folder", self.SourceXMLDirName, __tooltipIDPT1)
+        InputDirPlusText(self.InputFrameS[iF], "XML source folder", self.SourceXMLDirName, __tooltipIDPT1)
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "GDL ource folder", self.SourceGDLDirName, __tooltipIDPT7)
+        InputDirPlusText(self.InputFrameS[iF], "GDL source folder", self.SourceGDLDirName, __tooltipIDPT7)
 
         iF += 1
 
