@@ -328,7 +328,6 @@ class ParamSection:
         ap.add_argument("-h", "--hidden", action='store_true')
         ap.add_argument("-b", "--bold", action='store_true')
         ap.add_argument("-u", "--unique", action='store_true')
-        # FIXME overwrite
         # ap.add_argument("-o", "--overwrite", action='store_true')
         ap.add_argument("-i", "--inherit", action='store_true', help='Inherit properties form the other parameter')
 
@@ -953,6 +952,9 @@ class DestImage(DestFile):
     def __init__(self, sourceFile, stringFrom, stringTo):
         self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
         self.sourceFile         = sourceFile
+        self.relPath            = sourceFile.dirName + "//" + self._name
+        super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
+        # self.path               = TargetImageDirName.get() + "/" + self.relPath
         self.ext                = self.sourceFile.ext
 
         if stringTo not in self._name and bAddStr.get():
