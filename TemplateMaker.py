@@ -335,19 +335,19 @@ class ParamSection:
         parsedArgs = ap.parse_known_args(splitPars)[0]
 
         if parsedArgs.desc is not None:
-            desc = " ".join(parsedArgs.desc)
+            desc = '"' + " ".join(parsedArgs.desc) + '"'
         else:
-            desc = ''
+            desc = '""'
+
+        if inCol:
+            if inCol[0] != '"':
+                inCol = '"' + inCol
+            if inCol[-1] != '"':
+                inCol = inCol + '"'
+        else:
+            inCol = '""'
 
         if parName not in self:
-            # if inCol:
-            #     if inCol[0] != '"':
-            #         inCol = '"' + inCol
-            #     if inCol[-1] != '"':
-            #         inCol = inCol + '"'
-            # else:
-            #     inCol = '""'
-
             parType = PAR_UNKNOWN
             if parsedArgs.type:
                 if parsedArgs.type in ("Length", ):
@@ -443,7 +443,7 @@ class ParamSection:
             #FIXME Pickin around an existing param, to be thought through
             self[parName] = inCol
             if desc:
-                self.__paramDict[parName].desc = " ".join(parsedArgs.desc)
+                self.__paramDict[parName].desc = desc
 
 
 class Param(object):
@@ -515,21 +515,14 @@ class Param(object):
             return int(inData)
         elif self.iType in (PAR_BOOL, ):
             return bool(int(inData))
-        elif self.iType in (PAR_SEPARATOR, PAR_TITLE, ):
+        elif self.iType in (PAR_SEPARATOR, PAR_TITLE,):
             return None
         else:
             return inData
 
     def _valueToString(self, inVal):
         if self.iType in (PAR_STRING, ):
-            if inVal is not None:
-                if not inVal.startswith('"'):
-                    inVal = '"' + inVal
-                if not inVal.endswith('"') or len(inVal) == 1:
-                    inVal += '"'
-                return etree.CDATA(inVal)
-            else:
-                return etree.CDATA('""')
+                return etree.CDATA(inVal) if inVal is not None else etree.CDATA('""')
         elif self.iType in (PAR_REAL, PAR_LENGTH, PAR_ANGLE):
             nDigits = 0
             eps = 1E-7
@@ -562,10 +555,6 @@ class Param(object):
             elem.text = '\n' + nTabs * '\t'
 
             desc = etree.Element("Description")
-            if not self.desc.startswith('"'):
-                self.desc = '"' + self.desc
-            if not self.desc.endswith('"') or self.desc == '"':
-                self.desc += '"'
             desc.text = etree.CDATA(self.desc)
             nTabs = 3 if len(self.flags) or self.value is not None or self.aVals is not None else 2
             desc.tail = '\n' + nTabs * '\t'
