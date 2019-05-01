@@ -400,6 +400,62 @@ class ParamSection:
                     parType = PAR_ANGLE
                 else:
                     parType = PAR_STRING
+        parType = PAR_UNKNOWN
+        if parsedArgs.type:
+            if parsedArgs.type in ("Length", ):
+                parType = PAR_LENGTH
+                inCol = float(inCol)
+            elif parsedArgs.type in ("Angle", ):
+                parType = PAR_ANGLE
+                inCol = float(inCol)
+            elif parsedArgs.type in ("RealNum", ):
+                parType = PAR_REAL
+                inCol = float(inCol)
+            elif parsedArgs.type in ("Integer", ):
+                parType = PAR_INT
+                inCol = int(inCol)
+            elif parsedArgs.type in ("Boolean", ):
+                parType = PAR_BOOL
+                inCol = bool(int(inCol))
+            elif parsedArgs.type in ("String", ):
+                parType = PAR_STRING
+            elif parsedArgs.type in ("Material", ):
+                parType = PAR_MATERIAL
+                inCol = int(inCol)
+            elif parsedArgs.type in ("LineType", ):
+                parType = PAR_LINETYPE
+                inCol = int(inCol)
+            elif parsedArgs.type in ("FillPattern", ):
+                parType = PAR_FILL
+                inCol = int(inCol)
+            elif parsedArgs.type in ("PenColor", ):
+                parType = PAR_PEN
+                inCol = int(inCol)
+            elif parsedArgs.type in ("Separator", ):
+                parType = PAR_SEPARATOR
+            elif parsedArgs.type in ("Title", ):
+                parType = PAR_TITLE
+                inCol = None
+            elif parsedArgs.type in ("Comment", ):
+                parType = PAR_COMMENT
+                parName = " " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK "
+        else:
+            if re.match(r'\bis[A-Z]', splitPars[0]) or re.match(r'\bb[A-Z]', splitPars[0]):
+                parType = PAR_BOOL
+                inCol = bool(int(inCol))
+            elif re.match(r'\bi[A-Z]', splitPars[0]) or re.match(r'\bn[A-Z]', splitPars[0]):
+                parType = PAR_INT
+                inCol = int(inCol)
+            elif re.match(r'\bs[A-Z]', splitPars[0]) or re.match(r'\bst[A-Z]', splitPars[0]) or re.match(r'\bmp_', splitPars[0]):
+                parType = PAR_STRING
+            elif re.match(r'\bx[A-Z]', splitPars[0]) or re.match(r'\by[A-Z]', splitPars[0]) or re.match(r'\bz[A-Z]', splitPars[0]):
+                parType = PAR_LENGTH
+                inCol = float(inCol)
+            elif re.match(r'\bx[A-Z]', splitPars[0]):
+                parType = PAR_ANGLE
+                inCol = float(inCol)
+            else:
+                parType = PAR_STRING
 
             if parsedArgs.inherit:
                 if parsedArgs.child:
@@ -427,6 +483,25 @@ class ParamSection:
                           inBold=isBold,
                           inHidden=isHidden,
                           inUnique=isUnique,)
+        if parsedArgs.desc is not None:
+            desc = '"' + " ".join(parsedArgs.desc) + '"'
+        else:
+            desc ='""'
+
+        if isinstance(inCol, str):
+            if inCol[0] != '"':
+                inCol = '"' + inCol
+            if inCol[-1] != '"':
+                inCol = inCol + '"'
+
+        param = Param(inType=parType,
+                      inName=parName,
+                      inDesc=desc,
+                      inValue=inCol,
+                      inChild=isChild,
+                      inBold=isBold,
+                      inHidden=isHidden,
+                      inUnique=isUnique,)
 
             if parsedArgs.child:
                 self.insertAsChild(parsedArgs.child, param)
@@ -1235,6 +1310,8 @@ class CreateToolTip:
 
 class InputDirPlusText():
     def __init__(self, top, text, target, tooltip=''):
+        self._frame = tk.Frame(top)
+        self._frame.grid()
         self.target = target
         self.filename = ''
         self._frame = tk.Frame(top)
@@ -1407,7 +1484,7 @@ class GUIApp(tk.Frame):
 
         __tooltipIDPT1 = "Something like E:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
         __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
-        __tooltipIDPT3 = ""
+        __tooltipIDPT3 = "Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library"
         __tooltipIDPT4 = "Final GDL output dir"
         __tooltipIDPT5 = "If set, copy project specific pictures here, too"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
