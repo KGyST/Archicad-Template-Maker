@@ -1236,6 +1236,8 @@ class InputDirPlusText():
     def __init__(self, top, text, target, tooltip=''):
         self.target = target
         self.filename = ''
+        self._frame = tk.Frame(top)
+        self._frame.grid()
 
         self._frame.columnconfigure(1, weight=1)
 
@@ -1255,7 +1257,7 @@ class InputDirPlusText():
         self.entryDirName.insert(0, self.filename)
 
 
-class InputDirPlusBool(InputDirPlusText):
+class InputDirPlusBool():
     def __init__(self, top, text, target, var, tooltip=''):
         top.columnconfigure(1, weight=1)
 
@@ -1460,7 +1462,7 @@ class GUIApp(tk.Frame):
         self.inputFrame.grid_rowconfigure(4, weight=1)
 
         self.InputFrameS = [tk.Frame(self.inputFrame) for _ in range (6)]
-        for f, r, cc in zip(self.InputFrameS, range(6), [0, 0, 1, 0, 0, 1, ]):
+        for f, r, cc in zip(self.InputFrameS, range(6), [0, 1, 1, 0, 0, 1, ]):
             f.grid({"row": r, "column": 0, "sticky": tk.N + tk.S + tk.E + tk.W, })
             self.InputFrameS[r].grid_columnconfigure(cc, weight=1)
             self.InputFrameS[r].rowconfigure(0, weight=1)
@@ -1472,11 +1474,11 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "XML ource folder", self.SourceXMLDirName, __tooltipIDPT1)
+        InputDirPlusText(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, __tooltipIDPT1)
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "GDL ource folder", self.SourceGDLDirName, __tooltipIDPT7)
+        InputDirPlusText(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, __tooltipIDPT7)
 
         iF += 1
 
@@ -2054,8 +2056,11 @@ def main2():
     else:
         tempdir = tempfile.mkdtemp()
 
-    # tempPicDir = tempfile.mkdtemp()
-    tempPicDir = TargetImageDirName.get()
+    # tempPicDir = TargetImageDirName.get()
+    targPicDir = TargetImageDirName.get()
+    # if not tempPicDir:
+    tempPicDir = tempfile.mkdtemp()
+
     print "tempdir: %s" % tempdir
     print "tempPicDir: %s" % tempPicDir
 
@@ -2189,10 +2194,16 @@ def main2():
     for f in pict_dict.keys():
         if pict_dict[f].sourceFile.isEncodedImage:
             try:
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, TargetImageDirName.get() + "/" + pict_dict[f].relPath)
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
             except IOError:
-                os.makedirs(TargetImageDirName.get() + "/" + pict_dict[f].dirName)
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, TargetImageDirName.get() + "/" + pict_dict[f].relPath)
+                os.makedirs(targPicDir + "/" + pict_dict[f].dirName)
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
+
+            try:
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
+            except IOError:
+                os.makedirs(tempPicDir + "/" + pict_dict[f].dirName)
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
         else:
             if TargetGDLDirName.get():
                 try:
@@ -2231,7 +2242,7 @@ def main2():
 
     # cleanup ops
     if not bDebug.get():
-        # shutil.rmtree(tempPicDir) #FIXME
+        shutil.rmtree(tempPicDir) #FIXME
         if not bXML:
             shutil.rmtree(tempdir)
     else:
