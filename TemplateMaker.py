@@ -334,112 +334,116 @@ class ParamSection:
 
         parsedArgs = ap.parse_known_args(splitPars)[0]
 
-        parType = PAR_UNKNOWN
-        if parsedArgs.type:
-            if parsedArgs.type in ("Length", ):
-                parType = PAR_LENGTH
-                inCol = float(inCol)
-            elif parsedArgs.type in ("Angle", ):
-                parType = PAR_ANGLE
-                inCol = float(inCol)
-            elif parsedArgs.type in ("RealNum", ):
-                parType = PAR_REAL
-                inCol = float(inCol)
-            elif parsedArgs.type in ("Integer", ):
-                parType = PAR_INT
-                inCol = int(inCol)
-            elif parsedArgs.type in ("Boolean", ):
-                parType = PAR_BOOL
-                inCol = bool(int(inCol))
-            elif parsedArgs.type in ("String", ):
-                parType = PAR_STRING
-            elif parsedArgs.type in ("Material", ):
-                parType = PAR_MATERIAL
-                inCol = int(inCol)
-            elif parsedArgs.type in ("LineType", ):
-                parType = PAR_LINETYPE
-                inCol = int(inCol)
-            elif parsedArgs.type in ("FillPattern", ):
-                parType = PAR_FILL
-                inCol = int(inCol)
-            elif parsedArgs.type in ("PenColor", ):
-                parType = PAR_PEN
-                inCol = int(inCol)
-            elif parsedArgs.type in ("Separator", ):
-                parType = PAR_SEPARATOR
-            elif parsedArgs.type in ("Title", ):
-                parType = PAR_TITLE
-                inCol = None
-            elif parsedArgs.type in ("Comment", ):
-                parType = PAR_COMMENT
-                parName = " " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK "
-        else:
-            if re.match(r'\bis[A-Z]', splitPars[0]) or re.match(r'\bb[A-Z]', splitPars[0]):
-                parType = PAR_BOOL
-                inCol = bool(int(inCol))
-            elif re.match(r'\bi[A-Z]', splitPars[0]) or re.match(r'\bn[A-Z]', splitPars[0]):
-                parType = PAR_INT
-                inCol = int(inCol)
-            elif re.match(r'\bs[A-Z]', splitPars[0]) or re.match(r'\bst[A-Z]', splitPars[0]) or re.match(r'\bmp_', splitPars[0]):
-                parType = PAR_STRING
-            elif re.match(r'\bx[A-Z]', splitPars[0]) or re.match(r'\by[A-Z]', splitPars[0]) or re.match(r'\bz[A-Z]', splitPars[0]):
-                parType = PAR_LENGTH
-                inCol = float(inCol)
-            elif re.match(r'\bx[A-Z]', splitPars[0]):
-                parType = PAR_ANGLE
-                inCol = float(inCol)
-            else:
-                parType = PAR_STRING
-
-        if parsedArgs.inherit:
-            if parsedArgs.child:
-                paramToInherit = self.__paramDict[parsedArgs.child]
-            elif parsedArgs.after:
-                paramToInherit = self.__paramDict[parsedArgs.after]
-            elif parsedArgs.frontof:
-                paramToInherit = self.__paramDict[parsedArgs.frontof]
-
-            isChild  =  PARFLG_CHILD in paramToInherit.flags
-            isBold = PARFLG_BOLDNAME in paramToInherit.flags
-            isUnique = PARFLG_UNIQUE in paramToInherit.flags
-            isHidden = PARFLG_HIDDEN in paramToInherit.flags
-        else:
-            isChild = "child" in dir(parsedArgs)
-            isBold = parsedArgs.bold
-            isUnique = parsedArgs.unique
-            isHidden = parsedArgs.hidden
-
         if parsedArgs.desc is not None:
-            desc = '"' + " ".join(parsedArgs.desc) + '"'
+            desc = " ".join(parsedArgs.desc)
         else:
-            desc ='""'
+            desc = ''
 
-        if isinstance(inCol, str):
-            if inCol[0] != '"':
-                inCol = '"' + inCol
-            if inCol[-1] != '"':
-                inCol = inCol + '"'
+        if parName not in self:
+            # if inCol:
+            #     if inCol[0] != '"':
+            #         inCol = '"' + inCol
+            #     if inCol[-1] != '"':
+            #         inCol = inCol + '"'
+            # else:
+            #     inCol = '""'
 
-        param = Param(inType=parType,
-                      inName=parName,
-                      inDesc=desc,
-                      inValue=inCol,
-                      inChild=isChild,
-                      inBold=isBold,
-                      inHidden=isHidden,
-                      inUnique=isUnique,)
+            parType = PAR_UNKNOWN
+            if parsedArgs.type:
+                if parsedArgs.type in ("Length", ):
+                    parType = PAR_LENGTH
+                    inCol = float(inCol)
+                elif parsedArgs.type in ("Angle", ):
+                    parType = PAR_ANGLE
+                    inCol = float(inCol)
+                elif parsedArgs.type in ("RealNum", ):
+                    parType = PAR_REAL
+                    inCol = float(inCol)
+                elif parsedArgs.type in ("Integer", ):
+                    parType = PAR_INT
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("Boolean", ):
+                    parType = PAR_BOOL
+                    inCol = bool(int(inCol))
+                elif parsedArgs.type in ("String", ):
+                    parType = PAR_STRING
+                elif parsedArgs.type in ("Material", ):
+                    parType = PAR_MATERIAL
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("LineType", ):
+                    parType = PAR_LINETYPE
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("FillPattern", ):
+                    parType = PAR_FILL
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("PenColor", ):
+                    parType = PAR_PEN
+                    inCol = int(inCol)
+                elif parsedArgs.type in ("Separator", ):
+                    parType = PAR_SEPARATOR
+                elif parsedArgs.type in ("Title", ):
+                    parType = PAR_TITLE
+                    inCol = None
+                elif parsedArgs.type in ("Comment", ):
+                    parType = PAR_COMMENT
+                    parName = " " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK "
+            else:
+                if re.match(r'\bis[A-Z]', splitPars[0]) or re.match(r'\bb[A-Z]', splitPars[0]):
+                    parType = PAR_BOOL
+                elif re.match(r'\bi[A-Z]', splitPars[0]) or re.match(r'\bn[A-Z]', splitPars[0]):
+                    parType = PAR_INT
+                elif re.match(r'\bs[A-Z]', splitPars[0]) or re.match(r'\bst[A-Z]', splitPars[0]) or re.match(r'\bmp_', splitPars[0]):
+                    parType = PAR_STRING
+                elif re.match(r'\bx[A-Z]', splitPars[0]) or re.match(r'\by[A-Z]', splitPars[0]) or re.match(r'\bz[A-Z]', splitPars[0]):
+                    parType = PAR_LENGTH
+                elif re.match(r'\bx[A-Z]', splitPars[0]):
+                    parType = PAR_ANGLE
+                else:
+                    parType = PAR_STRING
 
-        if parsedArgs.child:
-            self.insertAsChild(parsedArgs.child, param)
-        elif parsedArgs.after:
-            self.insertAfter(parsedArgs.after, param)
-        elif parsedArgs.frontof:
-            self.insertBefore(parsedArgs.frontof, param)
+            if parsedArgs.inherit:
+                if parsedArgs.child:
+                    paramToInherit = self.__paramDict[parsedArgs.child]
+                elif parsedArgs.after:
+                    paramToInherit = self.__paramDict[parsedArgs.after]
+                elif parsedArgs.frontof:
+                    paramToInherit = self.__paramDict[parsedArgs.frontof]
 
-        if parType == PAR_TITLE:
-            paramComment = Param(inType=PAR_COMMENT,
-                inName=" " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ", )
-            self.insertBefore(param.name, paramComment)
+                isChild  =  PARFLG_CHILD in paramToInherit.flags
+                isBold = PARFLG_BOLDNAME in paramToInherit.flags
+                isUnique = PARFLG_UNIQUE in paramToInherit.flags
+                isHidden = PARFLG_HIDDEN in paramToInherit.flags
+            else:
+                isChild = "child" in dir(parsedArgs)
+                isBold = parsedArgs.bold
+                isUnique = parsedArgs.unique
+                isHidden = parsedArgs.hidden
+
+            param = Param(inType=parType,
+                          inName=parName,
+                          inDesc=desc,
+                          inValue=inCol,
+                          inChild=isChild,
+                          inBold=isBold,
+                          inHidden=isHidden,
+                          inUnique=isUnique,)
+
+            if parsedArgs.child:
+                self.insertAsChild(parsedArgs.child, param)
+            elif parsedArgs.after:
+                self.insertAfter(parsedArgs.after, param)
+            elif parsedArgs.frontof:
+                self.insertBefore(parsedArgs.frontof, param)
+
+            if parType == PAR_TITLE:
+                paramComment = Param(inType=PAR_COMMENT,
+                                     inName=" " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ", )
+                self.insertBefore(param.name, paramComment)
+        else:
+            #FIXME Pickin around an existing param, to be thought through
+            self[parName] = inCol
+            if desc:
+                self.__paramDict[parName].desc = " ".join(parsedArgs.desc)
 
 
 class Param(object):
@@ -511,14 +515,21 @@ class Param(object):
             return int(inData)
         elif self.iType in (PAR_BOOL, ):
             return bool(int(inData))
-        elif self.iType in (PAR_SEPARATOR, PAR_TITLE,):
+        elif self.iType in (PAR_SEPARATOR, PAR_TITLE, ):
             return None
         else:
             return inData
 
     def _valueToString(self, inVal):
         if self.iType in (PAR_STRING, ):
-                return etree.CDATA(inVal) if inVal is not None else etree.CDATA('""')
+            if inVal is not None:
+                if not inVal.startswith('"'):
+                    inVal = '"' + inVal
+                if not inVal.endswith('"') or len(inVal) == 1:
+                    inVal += '"'
+                return etree.CDATA(inVal)
+            else:
+                return etree.CDATA('""')
         elif self.iType in (PAR_REAL, PAR_LENGTH, PAR_ANGLE):
             nDigits = 0
             eps = 1E-7
@@ -551,6 +562,10 @@ class Param(object):
             elem.text = '\n' + nTabs * '\t'
 
             desc = etree.Element("Description")
+            if not self.desc.startswith('"'):
+                self.desc = '"' + self.desc
+            if not self.desc.endswith('"') or self.desc == '"':
+                self.desc += '"'
             desc.text = etree.CDATA(self.desc)
             nTabs = 3 if len(self.flags) or self.value is not None or self.aVals is not None else 2
             desc.tail = '\n' + nTabs * '\t'
@@ -955,9 +970,13 @@ class DestImage(DestFile):
         self.ext                = self.sourceFile.ext
 
         if stringTo not in self._name and bAddStr.get():
-            self.fileNameWithOutExt += stringTo
+            self.fileNameWithOutExt = os.path.splitext(self._name)[0] + stringTo
             self._name           = self.fileNameWithOutExt + self.ext
         self.fileNameWithExt = self._name
+
+        self.relPath            = sourceFile.dirName + "//" + self._name
+        super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
+        # self.path               = TargetImageDirName.get() + "/" + self.relPath
 
     @property
     def name(self):
@@ -1064,7 +1083,8 @@ class SourceXML (XMLFile, SourceFile):
 
         pic = mroot.find("./Picture")
         if pic is not None:
-            self.prevPict = pic.attrib["path"]
+            if "path" in pic.attrib:
+                self.prevPict = pic.attrib["path"]
 
     def checkParameterUsage(self, inPar, inMacroSet):
         """
@@ -1215,10 +1235,10 @@ class CreateToolTip:
 
 class InputDirPlusText():
     def __init__(self, top, text, target, tooltip=''):
-        self._frame = tk.Frame(top)
-        self._frame.grid()
         self.target = target
         self.filename = ''
+        self._frame = tk.Frame(top)
+        self._frame.grid()
 
         self._frame.columnconfigure(1, weight=1)
 
@@ -1238,7 +1258,7 @@ class InputDirPlusText():
         self.entryDirName.insert(0, self.filename)
 
 
-class InputDirPlusBool(InputDirPlusText):
+class InputDirPlusBool():
     def __init__(self, top, text, target, var, tooltip=''):
         top.columnconfigure(1, weight=1)
 
@@ -1367,7 +1387,7 @@ class GUIApp(tk.Frame):
         global \
             SourceXMLDirName, SourceGDLDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
             AdditionalImageDir, bDebug, bCheckParams, ACLocation, bGDL, bXML, dest_dict, dest_guids, replacement_dict, id_dict, \
-            pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords
+            pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo
 
         SourceXMLDirName    = self.SourceXMLDirName
         SourceGDLDirName    = self.SourceXMLDirName
@@ -1383,10 +1403,11 @@ class GUIApp(tk.Frame):
         ACLocation          = self.ACLocation
         bAddStr             = self.bAddStr
         bOverWrite          = self.bOverWrite
+        StringTo            = self.StringTo
 
         __tooltipIDPT1 = "Something like E:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
         __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
-        __tooltipIDPT3 = "Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library"
+        __tooltipIDPT3 = ""
         __tooltipIDPT4 = "Final GDL output dir"
         __tooltipIDPT5 = "If set, copy project specific pictures here, too"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
@@ -1442,7 +1463,7 @@ class GUIApp(tk.Frame):
         self.inputFrame.grid_rowconfigure(4, weight=1)
 
         self.InputFrameS = [tk.Frame(self.inputFrame) for _ in range (6)]
-        for f, r, cc in zip(self.InputFrameS, range(6), [0, 0, 1, 0, 0, 1, ]):
+        for f, r, cc in zip(self.InputFrameS, range(6), [0, 1, 1, 0, 0, 1, ]):
             f.grid({"row": r, "column": 0, "sticky": tk.N + tk.S + tk.E + tk.W, })
             self.InputFrameS[r].grid_columnconfigure(cc, weight=1)
             self.InputFrameS[r].rowconfigure(0, weight=1)
@@ -1454,11 +1475,11 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "XML source folder", self.SourceXMLDirName, __tooltipIDPT1)
+        InputDirPlusText(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, __tooltipIDPT1)
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "GDL source folder", self.SourceGDLDirName, __tooltipIDPT7)
+        InputDirPlusText(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, __tooltipIDPT7)
 
         iF += 1
 
@@ -1718,7 +1739,7 @@ class GUIApp(tk.Frame):
     @staticmethod
     def start():
         main2()
-        print "Starting conversion"
+        # print "Starting conversion"
 
     def addFile(self, sourceFileName='', targetFileName=''):
         if not sourceFileName:
@@ -2036,8 +2057,11 @@ def main2():
     else:
         tempdir = tempfile.mkdtemp()
 
-    # tempPicDir = tempfile.mkdtemp()
-    tempPicDir = TargetImageDirName.get()
+    # tempPicDir = TargetImageDirName.get()
+    targPicDir = TargetImageDirName.get()
+    # if not tempPicDir:
+    tempPicDir = tempfile.mkdtemp()
+
     print "tempdir: %s" % tempdir
     print "tempPicDir: %s" % tempPicDir
 
@@ -2090,7 +2114,7 @@ def main2():
 
                 for pr in pict_dict.keys():
                     #Replacing images
-                    t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt, pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
+                    t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo.get() + ')', pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
 
                 section.text = etree.CDATA(t)
 
@@ -2171,10 +2195,16 @@ def main2():
     for f in pict_dict.keys():
         if pict_dict[f].sourceFile.isEncodedImage:
             try:
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, TargetImageDirName.get() + "/" + pict_dict[f].relPath)
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
             except IOError:
-                os.makedirs(TargetImageDirName.get() + "/" + pict_dict[f].dirName)
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, TargetImageDirName.get() + "/" + pict_dict[f].relPath)
+                os.makedirs(targPicDir + "/" + pict_dict[f].dirName)
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
+
+            try:
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
+            except IOError:
+                os.makedirs(tempPicDir + "/" + pict_dict[f].dirName)
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
         else:
             if TargetGDLDirName.get():
                 try:
@@ -2213,7 +2243,7 @@ def main2():
 
     # cleanup ops
     if not bDebug.get():
-        # shutil.rmtree(tempPicDir) #FIXME
+        shutil.rmtree(tempPicDir) #FIXME
         if not bXML:
             shutil.rmtree(tempdir)
     else:
