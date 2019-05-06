@@ -1053,8 +1053,8 @@ class SourceXML (XMLFile, SourceFile):
             ID = "UNID"
 
         for a in mroot.findall("./Ancestry"):
-            ancestryID = a.find(ID).text
-            self.parentSubTypes += [ancestryID]
+            for ancestryID in a.findall(ID):
+                self.parentSubTypes += [ancestryID.text]
 
         for m in mroot.findall("./CalledMacros/Macro"):
             calledMacroID = m.find(ID).text
@@ -2163,6 +2163,8 @@ def main2():
         destPar = dest.parameters.toEtree()
         parPar.append(destPar)
 
+        # ---------------------Ancestries--------------------
+
         #FIXME not clear, check, writes an extra empty mainunid field
         #FIXME ancestries to be used in param checking
         #FIXME this is unclear what id does
@@ -2170,9 +2172,13 @@ def main2():
             guid = m.text
             if guid.upper() in id_dict:
                 print "ANCESTRY: %s" % guid
-                m.text = id_dict[guid]
                 par = m.getparent()
                 par.remove(m)
+
+                element = etree.Element(ID)
+                element.text = id_dict[guid]
+                element.tail = '\n'
+                par.append(element)
         try:
             os.makedirs(destDir)
         except WindowsError:
