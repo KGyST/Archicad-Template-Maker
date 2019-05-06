@@ -329,26 +329,25 @@ class ParamSection:
         ap.add_argument("-h", "--hidden", action='store_true')
         ap.add_argument("-b", "--bold", action='store_true')
         ap.add_argument("-u", "--unique", action='store_true')
-        # FIXME overwrite
-        # ap.add_argument("-o", "--overwrite", action='store_true')
+        ap.add_argument("-o", "--overwrite", action='store_true')
         ap.add_argument("-i", "--inherit", action='store_true', help='Inherit properties form the other parameter')
 
         parsedArgs = ap.parse_known_args(splitPars)[0]
 
         if parsedArgs.desc is not None:
-            desc = '"' + " ".join(parsedArgs.desc) + '"'
+            desc = " ".join(parsedArgs.desc)
         else:
-            desc = '""'
-
-        if inCol:
-            if inCol[0] != '"':
-                inCol = '"' + inCol
-            if inCol[-1] != '"':
-                inCol = inCol + '"'
-        else:
-            inCol = '""'
+            desc = ''
 
         if parName not in self:
+            # if inCol:
+            #     if inCol[0] != '"':
+            #         inCol = '"' + inCol
+            #     if inCol[-1] != '"':
+            #         inCol = inCol + '"'
+            # else:
+            #     inCol = '""'
+
             parType = PAR_UNKNOWN
             if parsedArgs.type:
                 if parsedArgs.type in ("Length", ):
@@ -444,7 +443,7 @@ class ParamSection:
             #FIXME Pickin around an existing param, to be thought through
             self[parName] = inCol
             if desc:
-                self.__paramDict[parName].desc = desc
+                self.__paramDict[parName].desc = " ".join(parsedArgs.desc)
 
 
 class Param(object):
@@ -516,14 +515,21 @@ class Param(object):
             return int(inData)
         elif self.iType in (PAR_BOOL, ):
             return bool(int(inData))
-        elif self.iType in (PAR_SEPARATOR, PAR_TITLE,):
+        elif self.iType in (PAR_SEPARATOR, PAR_TITLE, ):
             return None
         else:
             return inData
 
     def _valueToString(self, inVal):
         if self.iType in (PAR_STRING, ):
-                return etree.CDATA(inVal) if inVal is not None else etree.CDATA('""')
+            if inVal is not None:
+                if not inVal.startswith('"'):
+                    inVal = '"' + inVal
+                if not inVal.endswith('"') or len(inVal) == 1:
+                    inVal += '"'
+                return etree.CDATA(inVal)
+            else:
+                return etree.CDATA('""')
         elif self.iType in (PAR_REAL, PAR_LENGTH, PAR_ANGLE):
             nDigits = 0
             eps = 1E-7
@@ -556,6 +562,10 @@ class Param(object):
             elem.text = '\n' + nTabs * '\t'
 
             desc = etree.Element("Description")
+            if not self.desc.startswith('"'):
+                self.desc = '"' + self.desc
+            if not self.desc.endswith('"') or self.desc == '"':
+                self.desc += '"'
             desc.text = etree.CDATA(self.desc)
             nTabs = 3 if len(self.flags) or self.value is not None or self.aVals is not None else 2
             desc.tail = '\n' + nTabs * '\t'
@@ -944,19 +954,22 @@ class DestFile(GeneralFile):
 
 
 class SourceImage(SourceFile):
-    def __init__(self, sourceFile, bRename = False, **kwargs):
+    def __init__(self, sourceFile, **kwargs):
         super(SourceImage, self).__init__(sourceFile, **kwargs)
         self.name = self.fileNameWithExt
-        self.isEncodedImage = not bRename
+        self.isEncodedImage = False
 
 
 class DestImage(DestFile):
     def __init__(self, sourceFile, stringFrom, stringTo):
         self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
         self.sourceFile         = sourceFile
+        self.relPath            = sourceFile.dirName + "//" + self._name
+        super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
+        # self.path               = TargetImageDirName.get() + "/" + self.relPath
         self.ext                = self.sourceFile.ext
 
-        if stringTo not in self._name and bAddStr.get() and not self.sourceFile.isEncodedImage:
+        if stringTo not in self._name and bAddStr.get():
             self.fileNameWithOutExt = os.path.splitext(self._name)[0] + stringTo
             self._name           = self.fileNameWithOutExt + self.ext
         self.fileNameWithExt = self._name
@@ -1224,17 +1237,19 @@ class InputDirPlusText():
     def __init__(self, top, text, target, tooltip=''):
         self.target = target
         self.filename = ''
+        self._frame = tk.Frame(top)
+        self._frame.grid()
 
-        top.columnconfigure(1, weight=1)
+        self._frame.columnconfigure(1, weight=1)
 
-        self.buttonDirName = tk.Button(top, {"text": text, "command": self.inputDirName, })
+        self.buttonDirName = tk.Button(self._frame, {"text": text, "command": self.inputDirName, })
         self.buttonDirName.grid({"sticky": tk.W + tk.E, "row": 0, "column": 0, })
 
-        self.entryDirName = tk.Entry(top, {"width": 30, "textvariable": target})
+        self.entryDirName = tk.Entry(self._frame, {"width": 30, "textvariable": target})
         self.entryDirName.grid({"row": 0, "column": 1, "sticky": tk.E + tk.W, })
 
         if tooltip:
-            CreateToolTip(self.entryDirName, tooltip)
+            CreateToolTip(self._frame, tooltip)
 
     def inputDirName(self):
         self.filename = tkFileDialog.askdirectory(initialdir="/", title="Select folder")
@@ -1243,7 +1258,7 @@ class InputDirPlusText():
         self.entryDirName.insert(0, self.filename)
 
 
-class InputDirPlusBool(InputDirPlusText):
+class InputDirPlusBool():
     def __init__(self, top, text, target, var, tooltip=''):
         top.columnconfigure(1, weight=1)
 
@@ -1303,8 +1318,8 @@ class ListboxWithRefresh(tk.Listbox):
 
     def refresh(self, *_):
         if self.dict == replacement_dict:
-            FC1(self.target.get(), SourceXMLDirName.get(), bRename=True)
-            FC1(self.imgTarget.get(), SourceImageDirName.get(), bRename=False)
+            FC1(self.target.get(), SourceXMLDirName.get())
+            FC1(self.imgTarget.get(), SourceImageDirName.get())
         self.delete(0, tk.END)
         bPlaceablesFromHere = True
         if self.dict in (pict_dict, source_pict_dict):
@@ -1392,7 +1407,7 @@ class GUIApp(tk.Frame):
 
         __tooltipIDPT1 = "Something like E:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
         __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
-        __tooltipIDPT3 = ""
+        __tooltipIDPT3 = "Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library"
         __tooltipIDPT4 = "Final GDL output dir"
         __tooltipIDPT5 = "If set, copy project specific pictures here, too"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
@@ -1448,7 +1463,7 @@ class GUIApp(tk.Frame):
         self.inputFrame.grid_rowconfigure(4, weight=1)
 
         self.InputFrameS = [tk.Frame(self.inputFrame) for _ in range (6)]
-        for f, r, cc in zip(self.InputFrameS, range(6), [0, 0, 1, 0, 0, 1, ]):
+        for f, r, cc in zip(self.InputFrameS, range(6), [0, 1, 1, 0, 0, 1, ]):
             f.grid({"row": r, "column": 0, "sticky": tk.N + tk.S + tk.E + tk.W, })
             self.InputFrameS[r].grid_columnconfigure(cc, weight=1)
             self.InputFrameS[r].rowconfigure(0, weight=1)
@@ -1460,11 +1475,11 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "XML ource folder", self.SourceXMLDirName, __tooltipIDPT1)
+        InputDirPlusText(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, __tooltipIDPT1)
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "GDL ource folder", self.SourceGDLDirName, __tooltipIDPT7)
+        InputDirPlusText(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, __tooltipIDPT7)
 
         iF += 1
 
@@ -1999,7 +2014,7 @@ class GUIApp(tk.Frame):
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
 
-def FC1(inFile, inRootFolder, bRename = False):
+def FC1(inFile, inRootFolder):
     """
     only scanning input dir recursively to set up xml and image files' list
     :param inFile:
@@ -2019,10 +2034,13 @@ def FC1(inFile, inRootFolder, bRename = False):
                     else:
                         # set up replacement dict for other files
                         if os.path.splitext(os.path.basename(f))[0].upper() not in source_pict_dict:
-                            sI = SourceImage(os.path.relpath(src, inRootFolder), root=inRootFolder, bRename=bRename)
+                            sI = SourceImage(os.path.relpath(src, inRootFolder), root=inRootFolder)
+                            SIDN = SourceImageDirName.get()
+                            if SIDN in sI.fullDirName:
+                                sI.isEncodedImage = True
                             source_pict_dict[sI.fileNameWithExt.upper()] = sI
                 else:
-                    FC1(src, inRootFolder, bRename=bRename)
+                    FC1(src, inRootFolder)
 
             except KeyError:
                 print "KeyError %s" % f
@@ -2039,8 +2057,11 @@ def main2():
     else:
         tempdir = tempfile.mkdtemp()
 
-    # tempPicDir = tempfile.mkdtemp()
-    tempPicDir = TargetImageDirName.get()
+    # tempPicDir = TargetImageDirName.get()
+    targPicDir = TargetImageDirName.get()
+    # if not tempPicDir:
+    tempPicDir = tempfile.mkdtemp()
+
     print "tempdir: %s" % tempdir
     print "tempPicDir: %s" % tempPicDir
 
@@ -2174,10 +2195,16 @@ def main2():
     for f in pict_dict.keys():
         if pict_dict[f].sourceFile.isEncodedImage:
             try:
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, TargetImageDirName.get() + "/" + pict_dict[f].relPath)
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
             except IOError:
-                os.makedirs(TargetImageDirName.get() + "/" + pict_dict[f].dirName)
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, TargetImageDirName.get() + "/" + pict_dict[f].relPath)
+                os.makedirs(targPicDir + "/" + pict_dict[f].dirName)
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
+
+            try:
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
+            except IOError:
+                os.makedirs(tempPicDir + "/" + pict_dict[f].dirName)
+                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
         else:
             if TargetGDLDirName.get():
                 try:
@@ -2216,7 +2243,7 @@ def main2():
 
     # cleanup ops
     if not bDebug.get():
-        # shutil.rmtree(tempPicDir) #FIXME
+        shutil.rmtree(tempPicDir) #FIXME
         if not bXML:
             shutil.rmtree(tempdir)
     else:
