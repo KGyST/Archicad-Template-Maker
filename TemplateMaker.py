@@ -1,12 +1,12 @@
 #!C:\Program Files\Python27amd64\python.exe
 # -*- coding: utf-8 -*-
 #HOTFIXREQ if image dest folder is retained, remove common images from it
-#FIXME append param to the end when argument for position
 #TODO renaming errors and param csv parameter overwriting
+#FIXME append param to the end when no argument for position
 #FIXME substring issues
 #FIXME library_images copy always as temporary folder
 
-import os
+# import os
 import os.path
 from os import listdir
 import uuid
@@ -15,12 +15,11 @@ import tempfile
 from subprocess import check_output
 import shutil
 
-from lxml import etree
 import string
 
 import Tkinter as tk
 import tkFileDialog
-import urllib, httplib
+# import urllib, httplib
 import copy
 import argparse
 
@@ -29,6 +28,27 @@ import csv
 
 import httplib, urllib, json, webbrowser, urlparse, os, hashlib, base64
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import pip
+
+try:
+    from googleapiclient.discovery import build
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google.auth.transport.requests import Request
+except ImportError:
+    pip.main(['install', '--user', 'google-api-python-client'])
+    pip.main(['install', '--user', 'google-auth-httplib2'])
+    pip.main(['install', '--user', 'google-auth-oauthlib'])
+
+    from googleapiclient.discovery import build
+    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google.auth.transport.requests import Request
+
+try:
+    from lxml import etree
+except ImportError:
+    pip.main(['install', '--user', 'lxml'])
+    from lxml import etree
+
 
 PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"    #FIXME to be deleted after BO API v1 is removed
 
@@ -885,6 +905,9 @@ class BOAPIv2(object):
             pass
 
 
+# ------------------- Google Drive API connectivity --------------------------------------------------------------------
+
+
 # ------------------- GUI ------------------------------
 # ------------------- GUI ------------------------------
 # ------------------- GUI ------------------------------
@@ -1613,28 +1636,45 @@ class GUIApp(tk.Frame):
         self.buttonFrame        = tk.Frame(self.top)
         self.buttonFrame.grid({"row": 0, "column": 1})
 
+        _i = 0
+
         self.addAllButton       = tk.Button(self.buttonFrame, {"text": ">>", "command": self.addAllFiles})
-        self.addAllButton.grid({"row":0, "column": 0})
+        self.addAllButton.grid({"row":_i, "column": 0})
+
+        _i += 1
 
         self.addRecursiveButton = tk.Button(self.buttonFrame, {"text": "Recursive >", "command": self.addFileRecursively})
-        self.addRecursiveButton.grid({"row":1, "column": 0, "sticky": tk.W + tk.E})
+        self.addRecursiveButton.grid({"row":_i, "column": 0, "sticky": tk.W + tk.E})
         CreateToolTip(self.addRecursiveButton, "Add macro, and all its called macro and subtypes recursively, if not added already")
 
+        _i += 1
+
         self.addButton          = tk.Button(self.buttonFrame, {"text": ">", "command": self.addFile})
-        self.addButton.grid({"row":2, "column": 0, "sticky": tk.W + tk.E})
+        self.addButton.grid({"row":_i, "column": 0, "sticky": tk.W + tk.E})
+
+        _i += 1
 
         self.delButton          = tk.Button(self.buttonFrame, {"text": "X", "command": self.delFile})
-        self.delButton.grid({"row":3, "column": 0, "sticky": tk.W + tk.E})
+        self.delButton.grid({"row":_i, "column": 0, "sticky": tk.W + tk.E})
+
+        _i += 1
 
         self.resetButton         = tk.Button(self.buttonFrame, {"text": "Reset", "command": self.resetAll })
-        self.resetButton.grid({"row": 4, "sticky": tk.W + tk.E})
+        self.resetButton.grid({"row": _i, "sticky": tk.W + tk.E})
+
+        _i += 1
 
         self.CSVbutton          = tk.Button(self.buttonFrame, {"text": "CSV", "command": self.getFromCSV, })
-        self.CSVbutton.grid({"row": 5, "sticky": tk.W + tk.E})
+        self.CSVbutton.grid({"row": _i, "sticky": tk.W + tk.E})
+
+        _i += 1
+
+        self.GoogleSSBbutton     = tk.Button(self.buttonFrame, {"text": "Google Spreadsheet", "command": self.showGoogleSpreadsheetEntry, })
+        self.GoogleSSBbutton.grid({"row": _i, "sticky": tk.W + tk.E})
 
         #FIXME
         # self.reconnectButton      = tk.Button(self.buttonFrame, {"text": "Reconnect", "command": self.reconnect })
-        # self.reconnectButton.grid({"row": 4, "sticky": tk.W + tk.E})
+        # self.reconnectButton.grid({"row": _i, "sticky": tk.W + tk.E})
 
         # ----properties------------------------------------------------------------------------------------------------
 
@@ -1704,17 +1744,23 @@ class GUIApp(tk.Frame):
             with open(csvFileName, "r") as csvFile:
                 firstRow = next(csv.reader(csvFile))
                 for row in csv.reader(csvFile):
-                    # destItem = DestXML(replacement_dict[row[0].upper()], targetFileName=row[1])
-                    # dest_dict[destItem.name.upper()] = destItem
-                    # dest_guids[destItem.guid] = destItem
-                    # dest_sourcenames[destItem.sourceFile.name] = destItem
-                    # self.refreshDestItem()
                     destItem = self.addFileRecursively(row[0], row[1])
                     if row[2]:
                         destItem.parameters.BO_update(row[2])
                     if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
                         for parName, col in zip(firstRow[3:], row[3:]):
                             destItem.parameters.createParamfromCSV(parName, col)
+
+    def showGoogleSpreadsheetEntry(self):
+        self.GoogleSSInfield = GoogleSSInfield(self)
+        self.GoogleSSInfield.top.protocol("WM_DELETE_WINDOW", self.getFromGoogleSpreadsheet)
+
+        self.GoogleSSBbutton.config(cnf={'state': tk.DISABLED})
+
+    def getFromGoogleSpreadsheet(self):
+        self.GoogleSSBbutton.config(cnf={'state': tk.NORMAL})
+        print self.GoogleSSInfield.GoogleSSURL.get()
+        self.GoogleSSInfield.top.destroy()
 
     def setACLoc(self):
         ACLoc = tkFileDialog.askdirectory(initialdir="/", title="Select ArchiCAD folder")
@@ -2009,6 +2055,22 @@ class GUIApp(tk.Frame):
         elif inFileName[:2] == '* ':
             if inFileName[2:].upper() in dest_dict:
                 return inFileName [2:]
+
+# ------------------- Google SpreadSheet infield window ------
+
+class GoogleSSInfield(tk.Frame):
+    def __init__(self, sender):
+        tk.Frame.__init__(self)
+        self.top = tk.Toplevel()
+
+        self.GoogleSSURL = tk.Entry(self.top, {"width": 40,})
+        self.GoogleSSURL.grid({"row": 0, "column": 0})
+
+        self.OKButton = tk.Button(self.top, {"text": "OK", "command": sender.getFromGoogleSpreadsheet, })
+        self.OKButton.grid({"row": 0, "column": 1})
+
+
+# ------------------- Parameter editing window ------
 
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
