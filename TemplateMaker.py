@@ -32,8 +32,10 @@ import pip
 
 try:
     from googleapiclient.discovery import build
-    from google_auth_oauthlib.flow import InstalledAppFlow
+    from google_auth_oauthlib.flow import InstalledAppFlow, Flow
     from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
+
 except ImportError:
     pip.main(['install', '--user', 'google-api-python-client'])
     pip.main(['install', '--user', 'google-auth-httplib2'])
@@ -42,6 +44,7 @@ except ImportError:
     from googleapiclient.discovery import build
     from google_auth_oauthlib.flow import InstalledAppFlow
     from google.auth.transport.requests import Request
+    from google.oauth2.credentials import Credentials
 
 try:
     from lxml import etree
@@ -51,6 +54,15 @@ except ImportError:
 
 
 PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"    #FIXME to be deleted after BO API v1 is removed
+GOOGLE_SPREADSHEET_SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+
+BROWSER_CLOSE_WINDOW = '''<!DOCTYPE html> 
+                        <html> 
+                                <script type="text/javascript"> 
+                                    function close_window() { close(); }
+                                </script>
+                            <body onload="close_window()"/>
+                        </html>'''
 
 ID = ''
 LISTBOX_SEPARATOR = '--------'
@@ -733,13 +745,6 @@ class Param(object):
 # ------------------- API2 connectivity --------------------------------------------------------------------------------
 
 class BOAPIv2(object):
-    BROWSER_CLOSE_WINDOW = '''<!DOCTYPE html> 
-                            <html> 
-                                    <script type="text/javascript"> 
-                                        function close_window() { close(); }
-                                    </script>
-                                <body onload="close_window()"/>
-                            </html>'''
     CLIENT_ID = "NL8IZo82T84ZCOruAZom4LlmrzkQFXPW"
     CLIENT_SECRET = "5RNNKjqAAA1szIImP0CO2IFNC6Z8OoBMQeiMKwwoxST7ntSFJhIQKVG1s1DEbLOV"
     REDIRECT_URI = "http://localhost"
@@ -753,7 +758,7 @@ class BOAPIv2(object):
     class myHandler(BaseHTTPRequestHandler):
         def do_GET(self):
             global data
-            self.wfile.write(BOAPIv2.BROWSER_CLOSE_WINDOW)
+            self.wfile.write(BROWSER_CLOSE_WINDOW)
             data = urlparse.parse_qs(urlparse.urlparse(self.path).query)
             data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
             BOAPIv2.code = data['code']
@@ -905,7 +910,74 @@ class BOAPIv2(object):
             pass
 
 
-# ------------------- Google Drive API connectivity --------------------------------------------------------------------
+# ------------------- Google Spreadsheet API connectivity --------------------------------------------------------------
+
+class NoGoogleCredentialsException(Exception):
+    pass
+
+class GoogleSpreadsheetConnector(object):
+    def __init__(self, inCurrentConfig, inSpreadsheetID):
+        #FIXME renaming/filling out these
+        client_config = {"installed": {
+            "client_id": "224241213692-7gafn34d4heprhps1rod3clt1b8j07j6.apps.googleusercontent.com",
+            "project_id": "quickstart-1558854893881",
+            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+            "token_uri": "https://oauth2.googleapis.com/token",
+            "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+            "client_secret": "PHWQx7k6ldF73rDkqJE2Cedl",
+            "redirect_uris": {
+                "urn:ietf:wg:oauth:2.0:oob",
+                "http://localhost"}
+        }}
+
+        try:
+            if  inCurrentConfig.has_option("GoogleSpreadsheetAPI", "access_token") and \
+                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "refresh_token") and \
+                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "token_type") and \
+                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "id_token") and \
+                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "token_uri") and \
+                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "client_id")and \
+                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "client_secret"):
+
+                self.googleCreds = Credentials(
+                    token=          inCurrentConfig.get("GoogleSpreadsheetAPI", "access_token"),
+                    refresh_token=  inCurrentConfig.get("GoogleSpreadsheetAPI", "refresh_token"),
+                    id_token=       inCurrentConfig.get("GoogleSpreadsheetAPI", "id_token"),
+                    token_uri=      inCurrentConfig.get("GoogleSpreadsheetAPI", "token_uri"),
+                    client_id=      inCurrentConfig.get("GoogleSpreadsheetAPI", "client_id"),
+                    client_secret=  inCurrentConfig.get("GoogleSpreadsheetAPI", "client_secret"),
+                    scopes=         GOOGLE_SPREADSHEET_SCOPES
+                )
+
+                if not self.googleCreds.valid:
+                    if self.googleCreds.expired and self.googleCreds.refresh_token:
+                        self.googleCreds.refresh(Request())
+                    else:
+                        raise NoGoogleCredentialsException
+            else:
+                raise NoGoogleCredentialsException
+
+        except (NoSectionError, NoOptionError, NoGoogleCredentialsException):
+            flow = InstalledAppFlow.from_client_config(client_config, GOOGLE_SPREADSHEET_SCOPES)
+            self.googleCreds = flow.run_local_server()
+
+        service = build('sheets', 'v4', credentials=self.googleCreds)
+
+        sheet = service.spreadsheets()
+
+        sheetName = sheet.get(spreadsheetId=inSpreadsheetID,
+                              includeGridData=True).execute()['sheets'][0]['properties']['title']
+
+        result = sheet.values().get(spreadsheetId=inSpreadsheetID,
+                                    range=sheetName).execute()
+
+        self.values = result.get('values', [])
+
+        if not self.values:
+            print('No data found.')
+        else:
+            for row in self.values:
+                print('%s, %s' % (row[0], row[4]))
 
 
 # ------------------- GUI ------------------------------
@@ -916,7 +988,7 @@ class BOAPIv2(object):
 
 class GeneralFile(object) :
     """
-    ###basePath:   C:\...\
+    basePath:   C:\...\
     fullPath:   C:\...\relPath\fileName.ext  -only for sources; dest stuff can always be modified
     relPath:           relPath\fileName.ext
     dirName            relPath
@@ -1405,7 +1477,8 @@ class GUIApp(tk.Frame):
 
         self.warnings = []
 
-        self.bo = None
+        self.bo                 = None
+        self.googleSpreadsheet  = None
 
         global \
             SourceXMLDirName, SourceGDLDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
@@ -1744,6 +1817,11 @@ class GUIApp(tk.Frame):
             with open(csvFileName, "r") as csvFile:
                 firstRow = next(csv.reader(csvFile))
                 for row in csv.reader(csvFile):
+                    # destItem = DestXML(replacement_dict[row[0].upper()], targetFileName=row[1])
+                    # dest_dict[destItem.name.upper()] = destItem
+                    # dest_guids[destItem.guid] = destItem
+                    # dest_sourcenames[destItem.sourceFile.name] = destItem
+                    # self.refreshDestItem()
                     destItem = self.addFileRecursively(row[0], row[1])
                     if row[2]:
                         destItem.parameters.BO_update(row[2])
@@ -1752,14 +1830,32 @@ class GUIApp(tk.Frame):
                             destItem.parameters.createParamfromCSV(parName, col)
 
     def showGoogleSpreadsheetEntry(self):
+        #FIXME accepting <Enter>
         self.GoogleSSInfield = GoogleSSInfield(self)
         self.GoogleSSInfield.top.protocol("WM_DELETE_WINDOW", self.getFromGoogleSpreadsheet)
-
         self.GoogleSSBbutton.config(cnf={'state': tk.DISABLED})
 
     def getFromGoogleSpreadsheet(self):
         self.GoogleSSBbutton.config(cnf={'state': tk.NORMAL})
-        print self.GoogleSSInfield.GoogleSSURL.get()
+        SSIDRegex = "/spreadsheets/d/([a-zA-Z0-9-_]+)"
+        findall = re.findall(SSIDRegex, self.GoogleSSInfield.GoogleSSURL.get())
+        if findall:
+            SpreadsheetID = findall[0]
+        else:
+            SpreadsheetID = findall
+        print SpreadsheetID
+        self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
+        #FIXME from here maybe to put into a method; same as in getFromCSV
+        firstRow = self.googleSpreadsheet.values[0]
+
+        for row in self.googleSpreadsheet.values[1:]:
+            destItem = self.addFileRecursively(row[0], row[1])
+            if row[2]:
+                destItem.parameters.BO_update(row[2])
+            if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
+                for parName, col in zip(firstRow[3:], row[3:]):
+                    destItem.parameters.createParamfromCSV(parName, col)
+
         self.GoogleSSInfield.top.destroy()
 
     def setACLoc(self):
@@ -2007,6 +2103,8 @@ class GUIApp(tk.Frame):
         self.listBox4.refresh()
 
     def writeConfigBack(self, ):
+        # FIXME encrypting of sensitive data
+
         currentConfig = RawConfigParser()
         currentConfig.add_section("ArchiCAD")
         currentConfig.set("ArchiCAD", "aclocation",         self.ACLocEntry.get())
@@ -2035,6 +2133,15 @@ class GUIApp(tk.Frame):
             currentConfig.set("BOAPIv2", "refresh_token",       self.bo.refresh_token)
             if self.bo.brands:
                 currentConfig.set("BOAPIv2", "brands", ', '.join(list(reduce(lambda x, y: x+y, self.bo.brands.iteritems()))))
+
+        if self.googleSpreadsheet:
+            currentConfig.add_section("GoogleSpreadsheetAPI")
+            currentConfig.set("GoogleSpreadsheetAPI", "access_token",   self.googleSpreadsheet.googleCreds.token)
+            currentConfig.set("GoogleSpreadsheetAPI", "refresh_token",  self.googleSpreadsheet.googleCreds.refresh_token)
+            currentConfig.set("GoogleSpreadsheetAPI", "id_token",       self.googleSpreadsheet.googleCreds.id_token)
+            currentConfig.set("GoogleSpreadsheetAPI", "token_uri",      self.googleSpreadsheet.googleCreds.token_uri)
+            currentConfig.set("GoogleSpreadsheetAPI", "client_id",      self.googleSpreadsheet.googleCreds.client_id)
+            currentConfig.set("GoogleSpreadsheetAPI", "client_secret",  self.googleSpreadsheet.googleCreds.client_secret)
 
         with open(self.appDataDir + "/TemplateMarker.ini", 'wb') as configFile:
             #FIXME proper config place
