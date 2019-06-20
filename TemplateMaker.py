@@ -1,6 +1,7 @@
 #!C:\Program Files\Python27amd64\python.exe
 # -*- coding: utf-8 -*-
 #HOTFIXREQ if image dest folder is retained, remove common images from it
+#HOTFIXREQ ImportError: No module named googleapiclient.discovery
 #TODO renaming errors and param csv parameter overwriting
 #FIXME append param to the end when no argument for position
 #FIXME substring issues
