@@ -3,6 +3,7 @@
 #HOTFIXREQ if image dest folder is retained, remove common images from it
 #HOTFIXREQ ImportError: No module named googleapiclient.discovery
 #TODO renaming errors and param csv parameter overwriting
+#FIXME param name max 32 chars long
 #FIXME append param to the end when no argument for position
 #FIXME substring issues
 #FIXME library_images copy always as temporary folder
