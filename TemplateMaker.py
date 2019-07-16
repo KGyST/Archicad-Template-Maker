@@ -1,10 +1,12 @@
 #!C:\Program Files\Python27amd64\python.exe
 # -*- coding: utf-8 -*-
 #HOTFIXREQ if image dest folder is retained, remove common images from it
-#TODO renaming errors and param csv parameter overwriting
+#HOTFIXREQ ImportError: No module named googleapiclient.discovery
+#FIXME renaming errors and param csv parameter overwriting
 #FIXME append param to the end when no argument for position
 #FIXME substring issues
 #FIXME library_images copy always as temporary folder
+#FIXME param editor should offer auto param inserting from Listing Parameters Google Spreadsheet
 
 # import os
 import os.path
@@ -503,6 +505,7 @@ class Param(object):
                 self.iType  = self.getTypeFromString(inTypeStr)
 
             self.name   = inName
+            if len(self.name) > 32 and self.iType != PAR_COMMENT: self.name = self.name[:32]
             if inValue is not None:
                 self.value = inValue
 
