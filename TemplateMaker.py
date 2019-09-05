@@ -1152,7 +1152,7 @@ class DestXML (XMLFile, DestFile):
             # if "XML Target file exists!" in self.warnings:
             #     self.warnings.remove("XML Target file exists!")
             #     self.refreshFileNames()
-        self.relPath                = sourceFile.dirName + "/" + self.name + sourceFile.ext
+        self.relPath                = os.path.join(sourceFile.dirName, self.name + sourceFile.ext)
 
         super(DestXML, self).__init__(self.relPath, sourceFile=sourceFile)
         self.warnings               = []
@@ -1167,7 +1167,7 @@ class DestXML (XMLFile, DestFile):
 
         self.parameters             = copy.deepcopy(sourceFile.parameters)
 
-        fullPath                    = TargetXMLDirName.get() + "/" + self.relPath
+        fullPath                    = os.path.join(TargetXMLDirName.get(), self.relPath)
         if os.path.isfile(fullPath):
             #for overwriting existing xmls while retaining GUIDs etx
             if bOverWrite.get():
