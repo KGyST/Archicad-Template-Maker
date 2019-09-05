@@ -1344,8 +1344,11 @@ class ListboxWithRefresh(tk.Listbox):
 
     def refresh(self, *_):
         if self.dict == replacement_dict:
-            FC1(self.target.get(), SourceXMLDirName.get())
-            FC1(self.imgTarget.get(), SourceImageDirName.get())
+            try:
+                FC1(self.target.get(), SourceXMLDirName.get())
+                FC1(self.imgTarget.get(), SourceImageDirName.get())
+            except AttributeError:
+                return
         self.delete(0, tk.END)
         bPlaceablesFromHere = True
         if self.dict in (pict_dict, source_pict_dict):
