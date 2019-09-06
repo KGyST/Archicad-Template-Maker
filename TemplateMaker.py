@@ -960,7 +960,7 @@ class GeneralFile(object) :
     def refreshFileNames(self):
         self.fileNameWithExt    = self.name + self.ext
         self.fileNameWithOutExt = self.name
-        self.relPath            = self.dirName + self.fileNameWithExt
+        self.relPath            = os.path.join(self.dirName, self.fileNameWithExt)
 
     def __lt__(self, other):
         return self.fileNameWithOutExt < other.name
