@@ -7,6 +7,7 @@
 #FIXME substring issues
 #FIXME library_images copy always as temporary folder
 #FIXME param editor should offer auto param inserting from Listing Parameters Google Spreadsheet
+#FIXME automatic checking and warning of old project's names
 
 # import os
 import os.path
