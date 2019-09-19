@@ -2218,6 +2218,17 @@ def main2():
                     if n:
                         section.attrib['path'] = os.path.dirname(n) +"/" + os.path.basename(n)
 
+        # ---------------------GDLPicts-------------------------------------------------------
+
+        GDLPictSections = mdp.findall('GDLPict')
+        for GDLPictSection in GDLPictSections:
+            if "path" in GDLPictSection.attrib:
+                reSplit = re.split("/", GDLPictSection.attrib["path"])
+                pictureName = reSplit[-1].upper()
+                if pictureName in source_pict_dict.keys():
+                    reSplit[-1] = next(pict_dict[i].name for i in pict_dict if pict_dict[i].sourceFile.name.upper() == reSplit[-1].upper())
+                    GDLPictSection.attrib["path"] = "/".join(reSplit)
+
         # ---------------------AC18 and over: adding licensing statically---------------------
 
         if dest.iVersion >= AC_18:
