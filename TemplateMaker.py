@@ -990,14 +990,17 @@ class SourceImage(SourceFile):
 
 class DestImage(DestFile):
     def __init__(self, sourceFile, stringFrom, stringTo):
-        self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
+        if not sourceFile.isEncodedImage:
+            self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
+        else:
+            self._name               = sourceFile.name
         self.sourceFile         = sourceFile
         self.relPath            = sourceFile.dirName + "//" + self._name
         super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
         # self.path               = TargetImageDirName.get() + "/" + self.relPath
         self.ext                = self.sourceFile.ext
 
-        if stringTo not in self._name and bAddStr.get():
+        if stringTo not in self._name and bAddStr.get() and not sourceFile.isEncodedImage:
             self.fileNameWithOutExt = os.path.splitext(self._name)[0] + stringTo
             self._name           = self.fileNameWithOutExt + self.ext
         self.fileNameWithExt = self._name
@@ -2220,14 +2223,14 @@ def main2():
 
         # ---------------------GDLPicts-------------------------------------------------------
 
-        GDLPictSections = mdp.findall('GDLPict')
-        for GDLPictSection in GDLPictSections:
-            if "path" in GDLPictSection.attrib:
-                reSplit = re.split("/", GDLPictSection.attrib["path"])
-                pictureName = reSplit[-1].upper()
-                if pictureName in source_pict_dict.keys():
-                    reSplit[-1] = next(pict_dict[i].name for i in pict_dict if pict_dict[i].sourceFile.name.upper() == reSplit[-1].upper())
-                    GDLPictSection.attrib["path"] = "/".join(reSplit)
+        # GDLPictSections = mdp.findall('GDLPict')
+        # for GDLPictSection in GDLPictSections:
+        #     if "path" in GDLPictSection.attrib:
+        #         reSplit = re.split("/", GDLPictSection.attrib["path"])
+        #         pictureName = reSplit[-1].upper()
+        #         if pictureName in source_pict_dict.keys():
+        #             reSplit[-1] = next(pict_dict[i].name for i in pict_dict if pict_dict[i].sourceFile.name.upper() == reSplit[-1].upper())
+        #             GDLPictSection.attrib["path"] = "/".join(reSplit)
 
         # ---------------------AC18 and over: adding licensing statically---------------------
 
