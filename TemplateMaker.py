@@ -2292,8 +2292,10 @@ def main2():
     # _picdir2 = SourceImageDirName.get()
 
     # shutil.copytree(_picdir, tempPicDir + "/IMAGES_GENERIC")
+    dirs_to_delete = set()
     if _picdir:
         for f in listdir(_picdir):
+            dirs_to_delete |= {f}
             shutil.copytree(os.path.join(_picdir, f), os.path.join(tempPicDir, f))
 
     # if _picdir2:
@@ -2351,7 +2353,9 @@ def main2():
 
     # cleanup ops
     if not bDebug.get():
-        shutil.rmtree(tempPicDir) #FIXME
+        if _picdir:
+            for d in dirs_to_delete:
+                shutil.rmtree(os.path.join(tempPicDir, d))
         if not bXML:
             shutil.rmtree(tempdir)
     else:
