@@ -919,6 +919,7 @@ class BOAPIv2(object):
 class NoGoogleCredentialsException(Exception):
     pass
 
+
 class GoogleSpreadsheetConnector(object):
     def __init__(self, inCurrentConfig, inSpreadsheetID):
         #FIXME renaming/filling out these
@@ -1027,7 +1028,6 @@ class GeneralFile(object) :
         if 'root' in kwargs:
             self.fullPath = os.path.join(kwargs['root'], self.relPath)
             self.fullDirName         = os.path.dirname(self.fullPath)
-
 
     def refreshFileNames(self):
         self.fileNameWithExt    = self.name + self.ext
@@ -1338,11 +1338,11 @@ class CreateToolTip:
 
 
 class InputDirPlusText():
-    def __init__(self, top, text, target, tooltip=''):
+    def __init__(self, top, text, target, tooltip='', row=0, column=0):
         self.target = target
         self.filename = ''
         self._frame = tk.Frame(top)
-        self._frame.grid()
+        self._frame.grid({"row": row, "column": column})
 
         self._frame.columnconfigure(1, weight=1)
 
@@ -1366,13 +1366,57 @@ class InputDirPlusBool():
     def __init__(self, top, text, target, var, tooltip=''):
         top.columnconfigure(1, weight=1)
 
-        self.checkbox = tk.Checkbutton(top, {"variable": var})
+        self.frame = tk.Frame(top)
+        self.frame.grid({"row": 0, "column": 1, "sticky": tk.E + tk.W})
+
+        self._var = var
+
+        self.checkbox = tk.Checkbutton(self.frame, {"variable": self._var})
         self.checkbox.grid({"sticky": tk.W, "row": 0, "column": 0})
+
+        self.idpt = InputDirPlusText(self.frame, text, target, row=0, column=1)
+
+        self.bCBobserver = self._var.trace_variable("w", self.checkBoxPressed)
+
+        if tooltip:
+            CreateToolTip(self.frame, tooltip)
+
+    def checkBoxPressed(self, *_):
+        if not self._var.get():
+            self.idpt.entryDirName.config(state=tk.DISABLED)
+            self.idpt.buttonDirName.config(state=tk.DISABLED)
+        else:
+            self.idpt.entryDirName.config(state=tk.NORMAL)
+            self.idpt.buttonDirName.config(state=tk.NORMAL)
+
+
+class InputDirPlusRadio():
+    def __init__(self, top, text, target, var, varValue, tooltip=''):
+        top.columnconfigure(1, weight=1)
 
         self.frame = tk.Frame(top)
         self.frame.grid({"row": 0, "column": 1, "sticky": tk.E + tk.W})
 
-        self.idpt = InputDirPlusText(self.frame, text, target, tooltip)
+        self._var = var
+        self._varValue = varValue
+
+        self.radio = tk.Radiobutton(self.frame, {"variable": self._var, "value": varValue})
+        self.radio.grid({"sticky": tk.W, "row": 0, "column": 0})
+
+        self.idpt = InputDirPlusText(self.frame, text, target, row=0, column=1)
+
+        self.bCBobserver = self._var.trace_variable("w", self.radioModified)
+
+        if tooltip:
+            CreateToolTip(self.frame, tooltip)
+
+    def radioModified(self, *_):
+        if not self._var.get() == self._varValue:
+            self.idpt.entryDirName.config(state=tk.DISABLED)
+            self.idpt.buttonDirName.config(state=tk.DISABLED)
+        else:
+            self.idpt.entryDirName.config(state=tk.NORMAL)
+            self.idpt.buttonDirName.config(state=tk.NORMAL)
 
 
 class InputWithListBox():
@@ -1483,6 +1527,7 @@ class GUIApp(tk.Frame):
 
         self.bXML               = tk.BooleanVar()
         self.bGDL               = tk.BooleanVar()
+        self.isSourceXML        = tk.BooleanVar()
 
         self.observer  = None
         self.observer2 = None
@@ -1554,8 +1599,8 @@ class GUIApp(tk.Frame):
         except NoSectionError:
             print "NoSectionError"
 
-        self.observerXML = self.bXML.trace_variable("w", self.XMLModified)
-        self.observerGDL = self.bGDL.trace_variable("w", self.GDLModified)
+        self.observerXML = self.bXML.trace_variable("w", self.targetXMLModified)
+        self.observerGDL = self.bGDL.trace_variable("w", self.targetGDLModified)
 
         self.warnings = []
 
@@ -1586,11 +1631,11 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, __tooltipIDPT1)
+        InputDirPlusRadio(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, self.isSourceXML, True, __tooltipIDPT1)
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, __tooltipIDPT7)
+        InputDirPlusRadio(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, self.isSourceXML, False, __tooltipIDPT7)
 
         iF += 1
 
@@ -1881,17 +1926,21 @@ class GUIApp(tk.Frame):
         AIDLoc = tkFileDialog.askdirectory(initialdir="/", title="Select additional images' folder")
         self.AdditionalImageDir.set(AIDLoc)
 
-    def GDLModified(self, *_):
+    def targetGDLModified(self, *_):
         if not self.bGDL.get():
             self.bXML.set(True)
-            self.GDLDir.idpt.entryDirName.config(state=tk.DISABLED)
-        else:   self.GDLDir.idpt.entryDirName.config(state=tk.NORMAL)
 
-    def XMLModified(self, *_):
+    def targetXMLModified(self, *_):
         if not self.bXML.get():
             self.bGDL.set(True)
-            self.XMLDir.idpt.entryDirName.config(state=tk.DISABLED)
-        else:   self.XMLDir.idpt.entryDirName.config(state=tk.NORMAL)
+
+    def sourceGDLModified(self, *_):
+        if not self.bGDL.get():
+            self.bXML.set(True)
+
+    def sourceXMLModified(self, *_):
+        if not self.bXML.get():
+            self.bGDL.set(True)
 
     @staticmethod
     def start():
