@@ -30,11 +30,11 @@ class TestSuiteParam(unittest.TestSuite):
         dir_prefix = 'test_param'
         dirName = dir_prefix + "_items"
         for testFileName in os.listdir(dirName):
-            if os.path.isfile(dirName + "\\" + testFileName) and testFileName[0] != '_':
+            if os.path.isfile(os.path.join(dirName, testFileName)) and testFileName[0] != '_':
                 print testFileName
                 tp = TestParam(testFileName, dir_prefix)
                 self.addTest(tp)
-            elif os.path.isfile(dirName + "\\" + testFileName) and testFileName[0] == '_':
+            elif os.path.isfile(os.path.join(dirName, testFileName)) and testFileName[0] == '_':
                 #FIXME expected failures to be here
                 pass
         super(TestSuiteParam, self).__init__(self._tests)
@@ -49,10 +49,10 @@ class TestParam(unittest.TestCase):
     @staticmethod
     def ParamTestCaseFactory(inFileName, inDirPrefix):
         def func(inObj):
-            with open(inDirPrefix + "_items" + "\\" + inFileName, "r") as testFile:
+            with open(os.path.join(inDirPrefix + "_items", inFileName), "r") as testFile:
                 testNode = testFile.read()
                 par = Param(inETree=etree.XML(testNode))
-                out_file_name = inDirPrefix + "_errors\\" + inFileName
+                out_file_name = os.path.join(inDirPrefix + "_errors", inFileName)
                 if os.path.isfile(out_file_name):
                     os.remove(out_file_name)
                 try:

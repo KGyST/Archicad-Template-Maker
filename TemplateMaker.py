@@ -3,7 +3,6 @@
 #HOTFIXREQ if image dest folder is retained, remove common images from it
 #HOTFIXREQ ImportError: No module named googleapiclient.discovery
 #FIXME renaming errors and param csv parameter overwriting
-#FIXME param name max 32 chars long
 #FIXME append param to the end when no argument for position
 #FIXME substring issues
 #FIXME library_images copy always as temporary folder
@@ -506,6 +505,7 @@ class Param(object):
                 self.iType  = self.getTypeFromString(inTypeStr)
 
             self.name   = inName
+            if len(self.name) > 32 and self.iType != PAR_COMMENT: self.name = self.name[:32]
             if inValue is not None:
                 self.value = inValue
 
