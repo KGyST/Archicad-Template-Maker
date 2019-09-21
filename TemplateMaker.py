@@ -7,6 +7,7 @@
 #FIXME substring issues
 #FIXME library_images copy always as temporary folder
 #FIXME param editor should offer auto param inserting from Listing Parameters Google Spreadsheet
+#FIXME automatic checking and warning of old project's names
 
 # import os
 import os.path
@@ -1019,19 +1020,19 @@ class GeneralFile(object) :
     SourceImage     DestImage       SourceXML       DestXML
     """
     def __init__(self, relPath, **kwargs):
-        self.relPath            = relPath.replace("\\", "/")
+        self.relPath            = relPath           #.replace("\\", "/")
         self.fileNameWithExt    = os.path.basename(relPath)
         self.fileNameWithOutExt = os.path.splitext(self.fileNameWithExt)[0]
         self.ext                = os.path.splitext(self.fileNameWithExt)[1]
         self.dirName            = os.path.dirname(relPath)
         if 'root' in kwargs:
-            self.fullPath = kwargs['root'] + "/" + self.relPath
+            self.fullPath = os.path.join(kwargs['root'], self.relPath)
             self.fullDirName         = os.path.dirname(self.fullPath)
 
     def refreshFileNames(self):
         self.fileNameWithExt    = self.name + self.ext
         self.fileNameWithOutExt = self.name
-        self.relPath            = self.dirName + self.fileNameWithExt
+        self.relPath            = os.path.join(self.dirName, self.fileNameWithExt)
 
     def __lt__(self, other):
         return self.fileNameWithOutExt < other.name
@@ -1040,7 +1041,8 @@ class GeneralFile(object) :
 class SourceFile(GeneralFile):
     def __init__(self, relPath, **kwargs):
         super(SourceFile, self).__init__(relPath, **kwargs)
-        self.fullPath = SourceXMLDirName.get() + "/" + relPath.replace("\\", "/")
+        # self.fullPath = SourceXMLDirName.get() + "/" + relPath.replace("\\", "/")
+        self.fullPath = os.path.join(SourceXMLDirName.get(), relPath)
 
 
 class DestFile(GeneralFile):
@@ -1060,14 +1062,17 @@ class SourceImage(SourceFile):
 
 class DestImage(DestFile):
     def __init__(self, sourceFile, stringFrom, stringTo):
-        self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
+        if not sourceFile.isEncodedImage:
+            self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
+        else:
+            self._name               = sourceFile.name
         self.sourceFile         = sourceFile
         self.relPath            = sourceFile.dirName + "//" + self._name
         super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
         # self.path               = TargetImageDirName.get() + "/" + self.relPath
         self.ext                = self.sourceFile.ext
 
-        if stringTo not in self._name and bAddStr.get():
+        if stringTo not in self._name and bAddStr.get() and not sourceFile.isEncodedImage:
             self.fileNameWithOutExt = os.path.splitext(self._name)[0] + stringTo
             self._name           = self.fileNameWithOutExt + self.ext
         self.fileNameWithExt = self._name
@@ -1083,7 +1088,8 @@ class DestImage(DestFile):
     @name.setter
     def name(self, inName):
         self._name      = inName
-        self.relPath    = self.dirName + "/" + self._name
+        # self.relPath    = self.dirName + "/" + self._name
+        self.relPath    = os.path.join(self.dirName, self._name)
 
     def refreshFileNames(self):
         pass
@@ -1224,7 +1230,7 @@ class DestXML (XMLFile, DestFile):
             # if "XML Target file exists!" in self.warnings:
             #     self.warnings.remove("XML Target file exists!")
             #     self.refreshFileNames()
-        self.relPath                = sourceFile.dirName + "/" + self.name + sourceFile.ext
+        self.relPath                = os.path.join(sourceFile.dirName, self.name + sourceFile.ext)
 
         super(DestXML, self).__init__(self.relPath, sourceFile=sourceFile)
         self.warnings               = []
@@ -1239,7 +1245,7 @@ class DestXML (XMLFile, DestFile):
 
         self.parameters             = copy.deepcopy(sourceFile.parameters)
 
-        fullPath                    = TargetXMLDirName.get() + "/" + self.relPath
+        fullPath                    = os.path.join(TargetXMLDirName.get(), self.relPath)
         if os.path.isfile(fullPath):
             #for overwriting existing xmls while retaining GUIDs etx
             if bOverWrite.get():
@@ -1257,7 +1263,7 @@ class DestXML (XMLFile, DestFile):
             else:
                 self.warnings += ["XML Target file exists!"]
 
-        fullGDLPath                 = TargetGDLDirName.get() + "/" + self.fileNameWithOutExt + ".gsm"
+        fullGDLPath                 = os.path.join(TargetGDLDirName.get(), self.fileNameWithOutExt + ".gsm")
         if os.path.isfile(fullGDLPath):
             self.warnings += ["GDL Target file exists!"]
 
@@ -1460,8 +1466,11 @@ class ListboxWithRefresh(tk.Listbox):
 
     def refresh(self, *_):
         if self.dict == replacement_dict:
-            FC1(self.target.get(), SourceXMLDirName.get())
-            FC1(self.imgTarget.get(), SourceImageDirName.get())
+            try:
+                FC1(self.target.get(), SourceXMLDirName.get())
+                FC1(self.imgTarget.get(), SourceImageDirName.get())
+            except AttributeError:
+                return
         self.delete(0, tk.END)
         bPlaceablesFromHere = True
         if self.dict in (pict_dict, source_pict_dict):
@@ -1557,35 +1566,38 @@ class GUIApp(tk.Frame):
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
         __tooltipIDPT7 = "Source GDL folder name"
 
-        for cName, cValue in self.currentConfig.items('ArchiCAD'):
-            try:
-                if   cName == 'bgdl':               self.bGDL.set(cValue)
-                elif cName == 'bxml':               self.bXML.set(cValue)
-                elif cName == 'bdebug':             self.bDebug.set(cValue)
-                elif cName == 'additionalimagedir': self.AdditionalImageDir.set(cValue)
-                elif cName == 'aclocation':         self.ACLocation.set(cValue)
-                elif cName == 'stringto':           self.StringTo.set(cValue)
-                elif cName == 'stringfrom':         self.StringFrom.set(cValue)
-                elif cName == 'inputimagesource':   self.SourceImageDirName.set(cValue)
-                elif cName == 'inputimagetarget':   self.TargetImageDirName.set(cValue)
-                elif cName == 'imgstringfrom':      self.ImgStringFrom.set(cValue)
-                elif cName == 'imgstringto':        self.ImgStringTo.set(cValue)
-                elif cName == 'sourcedirname':      self.SourceXMLDirName.set(cValue)
-                elif cName == 'xmltargetdirname':   self.TargetXMLDirName.set(cValue)
-                elif cName == 'gdltargetdirname':   self.TargetGDLDirName.set(cValue)
-                elif cName == 'baddstr':            self.bAddStr.set(cValue)
-                elif cName == 'boverwrite':         self.bOverWrite.set(cValue)
-                elif cName == 'allkeywords':
-                    all_keywords |= set(v.strip() for v in cValue.split(',') if v !='')
-            except NoOptionError:
-                print "NoOptionError"
-                continue
-            except NoSectionError:
-                print "NoSectionError"
-                continue
-            except ValueError:
-                print "ValueError"
-                continue
+        try:
+            for cName, cValue in self.currentConfig.items('ArchiCAD'):
+                try:
+                    if   cName == 'bgdl':               self.bGDL.set(cValue)
+                    elif cName == 'bxml':               self.bXML.set(cValue)
+                    elif cName == 'bdebug':             self.bDebug.set(cValue)
+                    elif cName == 'additionalimagedir': self.AdditionalImageDir.set(cValue)
+                    elif cName == 'aclocation':         self.ACLocation.set(cValue)
+                    elif cName == 'stringto':           self.StringTo.set(cValue)
+                    elif cName == 'stringfrom':         self.StringFrom.set(cValue)
+                    elif cName == 'inputimagesource':   self.SourceImageDirName.set(cValue)
+                    elif cName == 'inputimagetarget':   self.TargetImageDirName.set(cValue)
+                    elif cName == 'imgstringfrom':      self.ImgStringFrom.set(cValue)
+                    elif cName == 'imgstringto':        self.ImgStringTo.set(cValue)
+                    elif cName == 'sourcedirname':      self.SourceXMLDirName.set(cValue)
+                    elif cName == 'xmltargetdirname':   self.TargetXMLDirName.set(cValue)
+                    elif cName == 'gdltargetdirname':   self.TargetGDLDirName.set(cValue)
+                    elif cName == 'baddstr':            self.bAddStr.set(cValue)
+                    elif cName == 'boverwrite':         self.bOverWrite.set(cValue)
+                    elif cName == 'allkeywords':
+                        all_keywords |= set(v.strip() for v in cValue.split(',') if v !='')
+                except NoOptionError:
+                    print "NoOptionError"
+                    continue
+                except NoSectionError:
+                    print "NoSectionError"
+                    continue
+                except ValueError:
+                    print "ValueError"
+                    continue
+        except NoSectionError:
+            print "NoSectionError"
 
         self.observerXML = self.bXML.trace_variable("w", self.targetXMLModified)
         self.observerGDL = self.bGDL.trace_variable("w", self.targetGDLModified)
@@ -2197,7 +2209,11 @@ class GUIApp(tk.Frame):
 
         with open(self.appDataDir + "/TemplateMarker.ini", 'wb') as configFile:
             #FIXME proper config place
-            currentConfig.write(configFile)
+            try:
+                currentConfig.write(configFile)
+            except UnicodeEncodeError:
+                #FIXME
+                pass
         self.top.destroy()
 
     def reconnect(self):
@@ -2245,7 +2261,7 @@ def FC1(inFile, inRootFolder):
     try:
         for f in listdir(inFile):
             try:
-                src = inFile + "/" + f.replace("\\", "/")
+                src = os.path.join(inFile, f)           #.replace("\\", "/")
                 # if it's NOT a directory
                 if not os.path.isdir(src):
                     if os.path.splitext(os.path.basename(f))[1].upper() in (".XML", ):
@@ -2276,12 +2292,22 @@ def main2():
     if bXML.get():
         tempdir = TargetXMLDirName.get()
     else:
-        tempdir = tempfile.mkdtemp()
+        tempdir = os.path.join(tempfile.mkdtemp(), "library")
 
     # tempPicDir = TargetImageDirName.get()
     targPicDir = TargetImageDirName.get()
-    # if not tempPicDir:
-    tempPicDir = tempfile.mkdtemp()
+
+    if not targPicDir:
+        _head, _libDir = os.path.split(tempdir)
+        if _libDir == "library":
+            targPicDir = os.path.join(_head, "library_images")
+        else:
+            targPicDir = os.path.join(tempdir)
+
+    if not targPicDir:
+        tempPicDir = tempfile.mkdtemp()
+    else:
+        tempPicDir = targPicDir
 
     print "tempdir: %s" % tempdir
     print "tempPicDir: %s" % tempPicDir
@@ -2290,7 +2316,7 @@ def main2():
         dest        = dest_dict[k]
         src         = dest.sourceFile
         srcPath     = src.fullPath
-        destPath    = tempdir + "/" + dest.relPath
+        destPath    = os.path.join(tempdir, dest.relPath)
         destDir     = os.path.dirname(destPath)
 
         print "%s -> %s" % (srcPath, destPath,)
@@ -2349,7 +2375,18 @@ def main2():
                     n = next((pict_dict[p].relPath for p in pict_dict.keys() if
                               os.path.basename(pict_dict[p].sourceFile.relPath).upper() == path), None)
                     if n:
-                        section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n)
+                        section.attrib['path'] = os.path.dirname(n) +"/" + os.path.basename(n)
+
+        # ---------------------GDLPicts-------------------------------------------------------
+
+        # GDLPictSections = mdp.findall('GDLPict')
+        # for GDLPictSection in GDLPictSections:
+        #     if "path" in GDLPictSection.attrib:
+        #         reSplit = re.split("/", GDLPictSection.attrib["path"])
+        #         pictureName = reSplit[-1].upper()
+        #         if pictureName in source_pict_dict.keys():
+        #             reSplit[-1] = next(pict_dict[i].name for i in pict_dict if pict_dict[i].sourceFile.name.upper() == reSplit[-1].upper())
+        #             GDLPictSection.attrib["path"] = "/".join(reSplit)
 
         # ---------------------AC18 and over: adding licensing statically---------------------
 
@@ -2411,9 +2448,11 @@ def main2():
     # _picdir2 = SourceImageDirName.get()
 
     # shutil.copytree(_picdir, tempPicDir + "/IMAGES_GENERIC")
+    dirs_to_delete = set()
     if _picdir:
         for f in listdir(_picdir):
-            shutil.copytree(_picdir + "/" + f, tempPicDir + "/" + f)
+            dirs_to_delete |= {f}
+            shutil.copytree(os.path.join(_picdir, f), os.path.join(tempPicDir, f))
 
     # if _picdir2:
     #     for f in listdir(_picdir2):
@@ -2422,33 +2461,33 @@ def main2():
     for f in pict_dict.keys():
         if pict_dict[f].sourceFile.isEncodedImage:
             try:
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
+                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(targPicDir, pict_dict[f].relPath))
             except IOError:
-                os.makedirs(targPicDir + "/" + pict_dict[f].dirName)
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
+                os.makedirs(os.path.join(targPicDir, pict_dict[f].dirName))
+                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(targPicDir, pict_dict[f].relPath))
 
             try:
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
+                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(tempPicDir, pict_dict[f].relPath))
             except IOError:
-                os.makedirs(tempPicDir + "/" + pict_dict[f].dirName)
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
+                os.makedirs(os.path.join(tempPicDir, pict_dict[f].dirName))
+                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(tempPicDir, pict_dict[f].relPath))
         else:
             if TargetGDLDirName.get():
                 try:
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetGDLDirName.get() + "/" + pict_dict[f].relPath)
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetGDLDirName.get(), pict_dict[f].relPath))
                 except IOError:
-                    os.makedirs(TargetGDLDirName.get() + "/" + pict_dict[f].dirName)
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetGDLDirName.get() + "/" + pict_dict[f].relPath)
+                    os.makedirs(os.path.join(TargetGDLDirName.get(), pict_dict[f].dirName))
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetGDLDirName.get(), pict_dict[f].relPath))
 
             if TargetXMLDirName.get():
                 try:
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetXMLDirName.get() + "/" + pict_dict[f].relPath)
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetXMLDirName.get(), pict_dict[f].relPath))
                 except IOError:
-                    os.makedirs(TargetXMLDirName.get() + "/" + pict_dict[f].dirName)
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetXMLDirName.get() + "/" + pict_dict[f].relPath)
+                    os.makedirs(os.path.join(TargetXMLDirName.get(), pict_dict[f].dirName))
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetXMLDirName.get(), pict_dict[f].relPath))
 
     print "x2l Command being executed..."
-    x2lCommand = '"%s\LP_XMLConverter.exe" x2l -img "%s" "%s" "%s"' % (ACLocation.get(), tempPicDir, tempdir, TargetGDLDirName.get())
+    x2lCommand = '"%s" x2l -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), tempPicDir, tempdir, TargetGDLDirName.get())
 
     if bDebug.get():
         print "ac command:"
@@ -2470,7 +2509,9 @@ def main2():
 
     # cleanup ops
     if not bDebug.get():
-        shutil.rmtree(tempPicDir) #FIXME
+        if _picdir:
+            for d in dirs_to_delete:
+                shutil.rmtree(os.path.join(tempPicDir, d))
         if not bXML:
             shutil.rmtree(tempdir)
     else:
