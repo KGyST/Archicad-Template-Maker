@@ -736,6 +736,8 @@ class Param(object):
         elif type(inValues) == list:
             self.__fd = len(inValues)
             self.__sd = len(inValues[0])
+            if self.__sd == 1:
+                self.__sd = 0
 
             self._aVals = map (self.__toFormat, inValues)
             self.aValsTail = '\n' + 2 * '\t'
