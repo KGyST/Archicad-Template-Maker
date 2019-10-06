@@ -6,25 +6,30 @@ import os
 from TemplateMaker import ParamSection
 from lxml import etree
 import json
+import csv
 
-class TestGUIAppSuite(unittest.TestSuite):
+class TestSuite_CreateParamCommands(unittest.TestSuite):
     def __init__(self):
         self._tests = []
         dir_baseName = 'test_getFromCSV'
         for fileName in os.listdir(dir_baseName  + "_items"):
-            if not fileName.startswith('_'):
+            if not fileName.startswith('_') and os.path.splitext(fileName)[1] == '.xml':
                 print fileName
                 parsedXML = etree.parse(os.path.join(dir_baseName  + "_items", fileName), etree.XMLParser(strip_cdata=False))
                 meta = parsedXML.getroot()
                 value = parsedXML.find("./Value").text
                 embeddedXML = etree.tostring(parsedXML.find("./ParamSection"))
                 with open(meta.attrib['OriginalXML'], "r") as testFile:
+                    if 'TestCSV' in meta.attrib:
+                        aVals = [aR for aR in csv.reader(open(os.path.join(dir_baseName  + "_items", meta.attrib['TestCSV']), "r"))]
+                    else:
+                        aVals = None
                     testNode = testFile.read()
                     ps = ParamSection(inETree=etree.XML(testNode))
                     testCase = (meta.attrib['Command'], value, fileName)
-                    test_case = TestGUIApp(testCase, dir_baseName, ps, embeddedXML=embeddedXML)
+                    test_case = TestCase_CreateParamCommands(testCase, dir_baseName, ps, embeddedXML=embeddedXML, AVals=aVals)
                     self.addTest(test_case)
-        super(TestGUIAppSuite, self).__init__(self._tests)
+        super(TestSuite_CreateParamCommands, self).__init__(self._tests)
 
     def __contains__(self, inName):
         for test in self._tests:
@@ -32,16 +37,16 @@ class TestGUIAppSuite(unittest.TestSuite):
                 return True
         return False
 
-class TestGUIApp(unittest.TestCase):
-    def __init__(self, inParams, inDirPrefix, inParamSection, inCustomName=None, embeddedXML=None):
-        func = self.GUIAppTestCaseFactory(inParams, inDirPrefix, inParamSection, inCustomName, embeddedXML)
-        setattr(TestGUIApp, func.__name__, func)
-        super(TestGUIApp, self).__init__(func.__name__)
+class TestCase_CreateParamCommands(unittest.TestCase):
+    def __init__(self, inParams, inDirPrefix, inParamSection, inCustomName=None, embeddedXML=None, AVals=None):
+        func = self.GUIAppTestCaseFactory(inParams, inDirPrefix, inParamSection, inCustomName, embeddedXML, AVals)
+        setattr(TestCase_CreateParamCommands, func.__name__, func)
+        super(TestCase_CreateParamCommands, self).__init__(func.__name__)
 
     @staticmethod
-    def GUIAppTestCaseFactory(inParams, inDirPrefix, inParamSection, inCustomName=None, embeddedXML=None):
+    def GUIAppTestCaseFactory(inParams, inDirPrefix, inParamSection, inCustomName=None, embeddedXML=None, AVals=None):
         def func(inObj):
-            inParamSection.createParamfromCSV(inParams[0], inParams[1])
+            inParamSection.createParamfromCSV(inParams[0], inParams[1], AVals)
             outFileName = os.path.join(inDirPrefix + "_errors", inParams[2])
             testFileName = os.path.join(inDirPrefix + "_items", inParams[2])
             if os.path.isfile(outFileName):

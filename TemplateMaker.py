@@ -352,7 +352,7 @@ class ParamSection:
         for p in BO_PARAM_TUPLE:
             self.remove_param(p[0])
 
-    def createParamfromCSV(self, inParName, inCol):
+    def createParamfromCSV(self, inParName, inCol, inArrayValues = None):
         splitPars = inParName.split(" ")
         parName = splitPars[0]
         ap = ArgParse(add_help=False)
@@ -366,6 +366,7 @@ class ParamSection:
         ap.add_argument("-u", "--unique", action='store_true')
         ap.add_argument("-o", "--overwrite", action='store_true')
         ap.add_argument("-i", "--inherit", action='store_true', help='Inherit properties form the other parameter')
+        ap.add_argument("-y", "--array", action='store_true', help='Insert an array of [0-9]+ or  [0-9]+x[0-9]+ size')
 
         parsedArgs = ap.parse_known_args(splitPars)[0]
 
@@ -387,38 +388,28 @@ class ParamSection:
             if parsedArgs.type:
                 if parsedArgs.type in ("Length", ):
                     parType = PAR_LENGTH
-                    inCol = float(inCol)
                 elif parsedArgs.type in ("Angle", ):
                     parType = PAR_ANGLE
-                    inCol = float(inCol)
                 elif parsedArgs.type in ("RealNum", ):
                     parType = PAR_REAL
-                    inCol = float(inCol)
                 elif parsedArgs.type in ("Integer", ):
                     parType = PAR_INT
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("Boolean", ):
                     parType = PAR_BOOL
-                    inCol = bool(int(inCol))
                 elif parsedArgs.type in ("String", ):
                     parType = PAR_STRING
                 elif parsedArgs.type in ("Material", ):
                     parType = PAR_MATERIAL
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("LineType", ):
                     parType = PAR_LINETYPE
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("FillPattern", ):
                     parType = PAR_FILL
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("PenColor", ):
                     parType = PAR_PEN
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("Separator", ):
                     parType = PAR_SEPARATOR
                 elif parsedArgs.type in ("Title", ):
                     parType = PAR_TITLE
-                    inCol = None
                 elif parsedArgs.type in ("Comment", ):
                     parType = PAR_COMMENT
                     parName = " " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK "
@@ -435,6 +426,31 @@ class ParamSection:
                     parType = PAR_ANGLE
                 else:
                     parType = PAR_STRING
+
+            if not inArrayValues:
+                arrayValues = None
+                if parType in (PAR_LENGTH, PAR_ANGLE, PAR_REAL, ):
+                    inCol = float(inCol)
+                elif parType in (PAR_INT, PAR_MATERIAL, PAR_LINETYPE, PAR_FILL, PAR_PEN, ):
+                    inCol = int(inCol)
+                elif parType in (PAR_BOOL, ):
+                    inCol = bool(int(inCol))
+                elif parType in (PAR_STRING, ):
+                    inCol = inCol
+                elif parType in (PAR_TITLE, ):
+                    inCol = None
+            else:
+                inCol = None
+                if parType in (PAR_LENGTH, PAR_ANGLE, PAR_REAL, ):
+                    arrayValues = [float(x) if type(x) != list else [float(y) for y in x] for x in inArrayValues]
+                elif parType in (PAR_INT, PAR_MATERIAL, PAR_LINETYPE, PAR_FILL, PAR_PEN, ):
+                    arrayValues = [int(x) if type(x) != list else [int(y) for y in x] for x in inArrayValues]
+                elif parType in (PAR_BOOL, ):
+                    arrayValues = [bool(int(x)) if type(x) != list else [bool(int(y)) for y in x] for x in inArrayValues]
+                elif parType in (PAR_STRING, ):
+                    arrayValues = inArrayValues
+                elif parType in (PAR_TITLE, ):
+                    inCol = None
 
             if parsedArgs.inherit:
                 if parsedArgs.child:
@@ -461,7 +477,8 @@ class ParamSection:
                           inChild=isChild,
                           inBold=isBold,
                           inHidden=isHidden,
-                          inUnique=isUnique,)
+                          inUnique=isUnique,
+                          inAVals=arrayValues)
 
             if parsedArgs.child:
                 self.insertAsChild(parsedArgs.child, param)
@@ -544,6 +561,8 @@ class Param(object):
         :param inData:
         :return:
         """
+        if type(inData) == list:
+            return map (self.__toFormat, inData)
         if self.iType in (PAR_LENGTH, PAR_REAL, PAR_ANGLE):
             # self.digits = 2
             return float(inData)
@@ -698,22 +717,28 @@ class Param(object):
         return aValue
 
     @aVals.setter
-    def aVals(self, inETree):
-        if inETree is not None:
-            self.__fd = int(inETree.attrib["FirstDimension"])
-            self.__sd = int(inETree.attrib["SecondDimension"])
+    def aVals(self, inValues):
+        if type(inValues) == etree._Element:
+            self.__fd = int(inValues.attrib["FirstDimension"])
+            self.__sd = int(inValues.attrib["SecondDimension"])
             if self.__sd > 0:
                 self._aVals = [["" for _ in range(self.__sd)] for _ in range(self.__fd)]
-                for v in inETree.iter("AVal"):
+                for v in inValues.iter("AVal"):
                     x = int(v.attrib["Column"]) - 1
                     y = int(v.attrib["Row"]) - 1
                     self._aVals[y][x] = self.__toFormat(v.text)
             else:
                 self._aVals = [[""] for _ in range(self.__fd)]
-                for v in inETree.iter("AVal"):
+                for v in inValues.iter("AVal"):
                     y = int(v.attrib["Row"]) - 1
                     self._aVals[y][0] = self.__toFormat(v.text)
-            self.aValsTail = inETree.tail
+            self.aValsTail = inValues.tail
+        elif type(inValues) == list:
+            self.__fd = len(inValues)
+            self.__sd = len(inValues[0])
+
+            self._aVals = map (self.__toFormat, inValues)
+            self.aValsTail = '\n' + 2 * '\t'
         else:
             self._aVals = None
 
@@ -1543,7 +1568,7 @@ class GUIApp(tk.Frame):
             pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo
 
         SourceXMLDirName    = self.SourceXMLDirName
-        SourceGDLDirName    = self.SourceXMLDirName
+        SourceGDLDirName    = self.SourceGDLDirName
         TargetXMLDirName    = self.TargetXMLDirName
         TargetGDLDirName    = self.TargetGDLDirName
         SourceImageDirName  = self.SourceImageDirName
@@ -1631,7 +1656,7 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        InputDirPlusRadio(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, self.isSourceXML, True, __tooltipIDPT1)
+        self.inputXMLDir = InputDirPlusRadio(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, self.isSourceXML, True, __tooltipIDPT1)
 
         iF += 1
 
@@ -1642,6 +1667,7 @@ class GUIApp(tk.Frame):
         self.listBox = ListboxWithRefresh(self.InputFrameS[iF], {"target": self.SourceXMLDirName, "imgTarget": self.SourceImageDirName, "dict": replacement_dict})
         self.listBox.grid({"row": 0, "column": 0, "sticky": tk.E + tk.W + tk.N + tk.S})
         self.observerLB1 = self.SourceXMLDirName.trace_variable("w", self.listBox.refresh)
+        self.observerLB2 = self.SourceGDLDirName.trace_variable("w", self.processGDLDir)
 
         self.ListBoxScrollbar = tk.Scrollbar(self.InputFrameS[iF])
         self.ListBoxScrollbar.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
@@ -1872,22 +1898,36 @@ class GUIApp(tk.Frame):
         CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
 
     def getFromCSV(self):
+        SRC_NAME    = 0
+        TARG_NAME   = 1
+        PRODATURL   = 2
+        VALUES      = 3
         csvFileName = tkFileDialog.askopenfilename(initialdir="/", title="Select folder", filetypes=(("CSV files", "*.csv"), ("all files","*.*")))
         if csvFileName:
             with open(csvFileName, "r") as csvFile:
                 firstRow = next(csv.reader(csvFile))
                 for row in csv.reader(csvFile):
-                    # destItem = DestXML(replacement_dict[row[0].upper()], targetFileName=row[1])
-                    # dest_dict[destItem.name.upper()] = destItem
-                    # dest_guids[destItem.guid] = destItem
-                    # dest_sourcenames[destItem.sourceFile.name] = destItem
-                    # self.refreshDestItem()
-                    destItem = self.addFileRecursively(row[0], row[1])
-                    if row[2]:
-                        destItem.parameters.BO_update(row[2])
-                    if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
-                        for parName, col in zip(firstRow[3:], row[3:]):
-                            destItem.parameters.createParamfromCSV(parName, col)
+                    destItem = self.addFileRecursively(row[SRC_NAME], row[TARG_NAME])
+                    if row[PRODATURL]:
+                        destItem.parameters.BO_update(row[PRODATURL])
+                    if len(row) > 3 and next((c for c in row[PRODATURL:] if c != ""), ""):
+                        for parName, col in zip(firstRow[VALUES:], row[VALUES:]):
+                            if "-y" in parName or "-array" in parName:
+                                arrayValues = []
+                                with open(col, "r") as arrayCSV:
+                                    for arrayRow in csv.reader(arrayCSV):
+                                        if arrayRow[TARG_NAME].strip() == row[TARG_NAME].strip:
+                                            arrayValues = [[arrayRow[2:]]]
+                                        if arrayValues \
+                                                and len(arrayRow) > 2 \
+                                                and not arrayRow[TARG_NAME] \
+                                                and arrayRow[2] != "":
+                                            arrayValues += [arrayRow[2:]]
+                                        else:
+                                            break
+                                destItem.parameters.createParamfromCSV(parName, col, arrayValues)
+                            else:
+                                destItem.parameters.createParamfromCSV(parName, col)
 
     def showGoogleSpreadsheetEntry(self):
         #FIXME accepting <Enter>
@@ -1925,6 +1965,22 @@ class GUIApp(tk.Frame):
     def setAdditionalImageDir(self):
         AIDLoc = tkFileDialog.askdirectory(initialdir="/", title="Select additional images' folder")
         self.AdditionalImageDir.set(AIDLoc)
+
+    def processGDLDir(self, *_):
+        '''
+        When self.SourceGDLDirName is modified, convert files to xml and set ui accordingly
+        :return:
+        '''
+        self.tempXMLDir = tempfile.mkdtemp()
+        print self.tempXMLDir
+        print "111"
+        print self.SourceGDLDirName.get()
+        print "222"
+        l2xCommand = '"%s" l2x "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), self.SourceGDLDirName.get(), self.tempXMLDir)
+        check_output(l2xCommand, shell=True)
+        # self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.NORMAL})
+        # self.SourceXMLDirName.set(self.tempXMLDir)
+        # self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.DISABLED})
 
     def targetGDLModified(self, *_):
         if not self.bGDL.get():
@@ -2261,7 +2317,7 @@ def FC1(inFile, inRootFolder):
     try:
         for f in listdir(inFile):
             try:
-                src = os.path.join(inFile, f)           #.replace("\\", "/")
+                src = os.path.join(inFile, f)
                 # if it's NOT a directory
                 if not os.path.isdir(src):
                     if os.path.splitext(os.path.basename(f))[1].upper() in (".XML", ):
@@ -2424,7 +2480,7 @@ def main2():
         # ---------------------Ancestries--------------------
 
         #FIXME not clear, check, writes an extra empty mainunid field
-        #FIXME ancestries to be used in param checking
+        #FIXME ancestries to be used in param checking (they add params as well)
         #FIXME this is unclear what id does
         for m in mdp.findall("./Ancestry/" + ID):
             guid = m.text
@@ -2441,6 +2497,7 @@ def main2():
             os.makedirs(destDir)
         except WindowsError:
             pass
+
         with open(destPath, "w") as file_handle:
             mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
 
