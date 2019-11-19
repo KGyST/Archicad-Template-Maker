@@ -1,9 +1,0 @@
-<RealNum Name="checkSum">
-			<Description><![CDATA["Geometri Checksum"]]></Description>
-			<Flags>
-				<ParFlg_Child/>
-				<ParFlg_Hidden/>
-			</Flags>
-			<Value>247.5</Value>
-		</RealNum>
-		

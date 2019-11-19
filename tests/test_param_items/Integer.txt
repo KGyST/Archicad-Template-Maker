@@ -1,8 +1,0 @@
-<Integer Name="gs_ui_current_page">
-			<Description><![CDATA[""]]></Description>
-			<Flags>
-				<ParFlg_Hidden/>
-			</Flags>
-			<Value>10</Value>
-		</Integer>
-		

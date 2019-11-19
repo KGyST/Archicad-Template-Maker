@@ -1,9 +1,0 @@
-<Boolean Name="gs_gdl_debug">
-			<Description><![CDATA["Debug"]]></Description>
-			<Flags>
-				<ParFlg_Child/>
-				<ParFlg_Unique/>
-			</Flags>
-			<Value>0</Value>
-		</Boolean>
-		
