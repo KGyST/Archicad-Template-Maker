@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 #HOTFIXREQ if image dest folder is retained, remove common images from it
 #HOTFIXREQ ImportError: No module named googleapiclient.discovery
+#HOTFIXREQ SOURCE_IMAGE_DIR_NAME images are not renamed at all
 #FIXME renaming errors and param csv parameter overwriting
 #FIXME append param to the end when no argument for position
 #FIXME substring issues
@@ -920,7 +921,7 @@ class BOAPIv2(object):
 
 class GeneralFile(object) :
     """
-    ###basePath:   C:\...\
+    basePath:   C:\...\
     fullPath:   C:\...\relPath\fileName.ext  -only for sources; dest stuff can always be modified
     relPath:           relPath\fileName.ext
     dirName            relPath
@@ -1817,7 +1818,7 @@ class GUIApp(tk.Frame):
             dest_guids[destItem.guid] = destItem
             dest_sourcenames[destItem.sourceFile.name] = destItem
         else:
-            #File should be in library_additional, possibly worth of checking it or add a warning
+            #FIXME File should be in library_additional, possibly worth of checking it or add a warning
             return
         self.refreshDestItem()
         return destItem
@@ -2170,6 +2171,7 @@ def main2():
         mdp.getroot().attrib[ID] = dest.guid
 
         #FIXME what if calledmacros are not overwritten?
+        #FIXME retainedCalledMacros is not declared at all
         if bOverWrite.get() and dest_dict[k].retainedCalledMacros:
             cmRoot = mdp.find("./CalledMacros")
             for m in mdp.findall("./CalledMacros/Macro"):
