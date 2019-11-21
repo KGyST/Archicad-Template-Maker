@@ -2,12 +2,15 @@
 # -*- coding: utf-8 -*-
 #HOTFIXREQ if image dest folder is retained, remove common images from it
 #HOTFIXREQ ImportError: No module named googleapiclient.discovery
+#HOTFIXREQ SOURCE_IMAGE_DIR_NAME images are not renamed at all
+#HOTFIXREQ unicode error when running ac command in path with native characters
 #FIXME renaming errors and param csv parameter overwriting
 #FIXME param name max 32 chars long
 #FIXME append param to the end when no argument for position
 #FIXME substring issues
 #FIXME library_images copy always as temporary folder
 #FIXME param editor should offer auto param inserting from Listing Parameters Google Spreadsheet
+#FIXME UI process messages
 
 # import os
 import os.path
@@ -1018,13 +1021,13 @@ class GeneralFile(object) :
     SourceImage     DestImage       SourceXML       DestXML
     """
     def __init__(self, relPath, **kwargs):
-        self.relPath            = relPath.replace("\\", "/")
+        self.relPath            = relPath
         self.fileNameWithExt    = os.path.basename(relPath)
         self.fileNameWithOutExt = os.path.splitext(self.fileNameWithExt)[0]
         self.ext                = os.path.splitext(self.fileNameWithExt)[1]
         self.dirName            = os.path.dirname(relPath)
         if 'root' in kwargs:
-            self.fullPath = kwargs['root'] + "/" + self.relPath
+            self.fullPath = os.path.join(kwargs['root'], self.relPath)
             self.fullDirName         = os.path.dirname(self.fullPath)
 
 
@@ -1040,7 +1043,7 @@ class GeneralFile(object) :
 class SourceFile(GeneralFile):
     def __init__(self, relPath, **kwargs):
         super(SourceFile, self).__init__(relPath, **kwargs)
-        self.fullPath = SourceXMLDirName.get() + "/" + relPath.replace("\\", "/")
+        self.fullPath = os.path.join(SourceXMLDirName.get(),relPath)
 
 
 class DestFile(GeneralFile):
@@ -1060,21 +1063,22 @@ class SourceImage(SourceFile):
 
 class DestImage(DestFile):
     def __init__(self, sourceFile, stringFrom, stringTo):
-        self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
+        if not sourceFile.isEncodedImage:
+            self._name               = re.sub(stringFrom, stringTo, sourceFile.name, flags=re.IGNORECASE)
+        else:
+            self._name               = sourceFile.name
         self.sourceFile         = sourceFile
-        self.relPath            = sourceFile.dirName + "//" + self._name
+        self.relPath            = os.path.join(sourceFile.dirName, self._name)
         super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
-        # self.path               = TargetImageDirName.get() + "/" + self.relPath
         self.ext                = self.sourceFile.ext
 
-        if stringTo not in self._name and bAddStr.get():
+        if stringTo not in self._name and bAddStr.get() and not sourceFile.isEncodedImage:
             self.fileNameWithOutExt = os.path.splitext(self._name)[0] + stringTo
             self._name           = self.fileNameWithOutExt + self.ext
         self.fileNameWithExt = self._name
 
-        self.relPath            = sourceFile.dirName + "//" + self._name
+        self.relPath            = os.path.join(sourceFile.dirName, self._name)
         super(DestImage, self).__init__(self.relPath, sourceFile=self.sourceFile)
-        # self.path               = TargetImageDirName.get() + "/" + self.relPath
 
     @property
     def name(self):
@@ -1083,7 +1087,7 @@ class DestImage(DestFile):
     @name.setter
     def name(self, inName):
         self._name      = inName
-        self.relPath    = self.dirName + "/" + self._name
+        self.relPath    = os.path.join(self.dirName, self._name)
 
     def refreshFileNames(self):
         pass
@@ -1097,6 +1101,7 @@ class XMLFile(GeneralFile):
         self._name       = self.fileNameWithOutExt
         self.bPlaceable  = False
         self.prevPict    = ''
+        self.gdlPicts    = []
 
     def __lt__(self, other):
         if self.bPlaceable and not other.bPlaceable:
@@ -1126,7 +1131,7 @@ class SourceXML (XMLFile, SourceFile):
         self.scripts        = {}
 
         mroot = etree.parse(self.fullPath, etree.XMLParser(strip_cdata=False))
-        self.iVersion = mroot.getroot().attrib['Version']
+        self.iVersion = int(mroot.getroot().attrib['Version'])
 
         global ID
         if int(self.iVersion) <= AC_18:
@@ -1158,7 +1163,12 @@ class SourceXML (XMLFile, SourceFile):
             calledMacroID = m.find(ID).text
             self.calledMacros[calledMacroID] = string.strip(m.find("MName").text, "'" + '"')
 
-        #Parameter manipulation: checking usage and later add custom pars
+        for gdlPict in mroot.findall("./GDLPict"):
+            if 'path' in gdlPict.attrib:
+                _path = os.path.basename(gdlPict.attrib['path'])
+                self.gdlPicts += [_path.upper()]
+
+        # Parameter manipulation: checking usage and later add custom pars
         self.parameters = ParamSection(mroot.find("./ParamSection"))
 
         for scriptName in SCRIPT_NAMES_LIST:
@@ -1221,10 +1231,7 @@ class DestXML (XMLFile, DestFile):
                 i += 1
             self.name += "_" + str(i)
 
-            # if "XML Target file exists!" in self.warnings:
-            #     self.warnings.remove("XML Target file exists!")
-            #     self.refreshFileNames()
-        self.relPath                = sourceFile.dirName + "/" + self.name + sourceFile.ext
+        self.relPath                = os.path.join(sourceFile.dirName, self.name + sourceFile.ext)
 
         super(DestXML, self).__init__(self.relPath, sourceFile=sourceFile)
         self.warnings               = []
@@ -1239,7 +1246,7 @@ class DestXML (XMLFile, DestFile):
 
         self.parameters             = copy.deepcopy(sourceFile.parameters)
 
-        fullPath                    = TargetXMLDirName.get() + "/" + self.relPath
+        fullPath                    = os.path.join(TargetXMLDirName.get(), self.relPath)
         if os.path.isfile(fullPath):
             #for overwriting existing xmls while retaining GUIDs etx
             if bOverWrite.get():
@@ -1257,7 +1264,7 @@ class DestXML (XMLFile, DestFile):
             else:
                 self.warnings += ["XML Target file exists!"]
 
-        fullGDLPath                 = TargetGDLDirName.get() + "/" + self.fileNameWithOutExt + ".gsm"
+        fullGDLPath                 = os.path.join(TargetGDLDirName.get(), self.fileNameWithOutExt + ".gsm")
         if os.path.isfile(fullGDLPath):
             self.warnings += ["GDL Target file exists!"]
 
@@ -1948,6 +1955,8 @@ class GUIApp(tk.Frame):
             for script in x.scripts.values():
                 if pict.fileNameWithExt.upper() in script or pict.fileNameWithOutExt.upper() in script.upper():
                     self.addImageFile(pict.fileNameWithExt)
+            if pict.fileNameWithExt.upper() in x.gdlPicts:
+                self.addImageFile(pict.fileNameWithExt)
 
         if x.prevPict:
             bN = os.path.basename(x.prevPict)
@@ -2146,7 +2155,7 @@ class GUIApp(tk.Frame):
             currentConfig.set("GoogleSpreadsheetAPI", "client_id",      self.googleSpreadsheet.googleCreds.client_id)
             currentConfig.set("GoogleSpreadsheetAPI", "client_secret",  self.googleSpreadsheet.googleCreds.client_secret)
 
-        with open(self.appDataDir + "/TemplateMarker.ini", 'wb') as configFile:
+        with open(os.path.join(self.appDataDir,"TemplateMarker.ini"), 'wb') as configFile:
             #FIXME proper config place
             currentConfig.write(configFile)
         self.top.destroy()
@@ -2196,7 +2205,7 @@ def FC1(inFile, inRootFolder):
     try:
         for f in listdir(inFile):
             try:
-                src = inFile + "/" + f.replace("\\", "/")
+                src = os.path.join(inFile, f)
                 # if it's NOT a directory
                 if not os.path.isdir(src):
                     if os.path.splitext(os.path.basename(f))[1].upper() in (".XML", ):
@@ -2241,7 +2250,7 @@ def main2():
         dest        = dest_dict[k]
         src         = dest.sourceFile
         srcPath     = src.fullPath
-        destPath    = tempdir + "/" + dest.relPath
+        destPath    = os.path.join(tempdir, dest.relPath)
         destDir     = os.path.dirname(destPath)
 
         print "%s -> %s" % (srcPath, destPath,)
@@ -2281,6 +2290,7 @@ def main2():
             if section is not None:
                 t = section.text
 
+                #FIXME only replace xmls that are in calledmacros
                 for dI in dest_dict.keys():
                     t = re.sub(dest_dict[dI].sourceFile.name, dest_dict[dI].name, t, flags=re.IGNORECASE)
 
@@ -2300,7 +2310,7 @@ def main2():
                     n = next((pict_dict[p].relPath for p in pict_dict.keys() if
                               os.path.basename(pict_dict[p].sourceFile.relPath).upper() == path), None)
                     if n:
-                        section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n)
+                        section.attrib['path'] = os.path.join(os.path.dirname(n), os.path.basename(n))
 
         # ---------------------AC18 and over: adding licensing statically---------------------
 
@@ -2362,9 +2372,11 @@ def main2():
     # _picdir2 = SourceImageDirName.get()
 
     # shutil.copytree(_picdir, tempPicDir + "/IMAGES_GENERIC")
+    dirs_to_delete = set()
     if _picdir:
         for f in listdir(_picdir):
-            shutil.copytree(_picdir + "/" + f, tempPicDir + "/" + f)
+            dirs_to_delete |= {f}
+            shutil.copytree(os.path.join(_picdir, f), os.path.join(tempPicDir, f))
 
     # if _picdir2:
     #     for f in listdir(_picdir2):
@@ -2373,33 +2385,33 @@ def main2():
     for f in pict_dict.keys():
         if pict_dict[f].sourceFile.isEncodedImage:
             try:
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
+                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(targPicDir, pict_dict[f].relPath))
             except IOError:
-                os.makedirs(targPicDir + "/" + pict_dict[f].dirName)
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, targPicDir + "/" + pict_dict[f].relPath)
+                os.makedirs(os.path.join(targPicDir, pict_dict[f].dirName))
+                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(targPicDir, pict_dict[f].relPath))
 
             try:
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
+                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(tempPicDir, pict_dict[f].relPath))
             except IOError:
-                os.makedirs(tempPicDir + "/" + pict_dict[f].dirName)
-                shutil.copyfile(SourceImageDirName.get() + "/" + pict_dict[f].sourceFile.relPath, tempPicDir + "/" + pict_dict[f].relPath)
+                os.makedirs(os.path.join(tempPicDir, pict_dict[f].dirName))
+                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(tempPicDir, pict_dict[f].relPath))
         else:
             if TargetGDLDirName.get():
                 try:
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetGDLDirName.get() + "/" + pict_dict[f].relPath)
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetGDLDirName.get(), pict_dict[f].relPath))
                 except IOError:
-                    os.makedirs(TargetGDLDirName.get() + "/" + pict_dict[f].dirName)
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetGDLDirName.get() + "/" + pict_dict[f].relPath)
+                    os.makedirs(os.path.join(TargetGDLDirName.get(), pict_dict[f].dirName))
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetGDLDirName.get(), pict_dict[f].relPath))
 
             if TargetXMLDirName.get():
                 try:
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetXMLDirName.get() + "/" + pict_dict[f].relPath)
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetXMLDirName.get(), pict_dict[f].relPath))
                 except IOError:
-                    os.makedirs(TargetXMLDirName.get() + "/" + pict_dict[f].dirName)
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, TargetXMLDirName.get() + "/" + pict_dict[f].relPath)
+                    os.makedirs(os.path.join(TargetXMLDirName.get(), pict_dict[f].dirName))
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetXMLDirName.get(), pict_dict[f].relPath))
 
     print "x2l Command being executed..."
-    x2lCommand = '"%s\LP_XMLConverter.exe" x2l -img "%s" "%s" "%s"' % (ACLocation.get(), tempPicDir, tempdir, TargetGDLDirName.get())
+    x2lCommand = '"%s" x2l -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), tempPicDir, tempdir, TargetGDLDirName.get())
 
     if bDebug.get():
         print "ac command:"
