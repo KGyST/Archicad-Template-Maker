@@ -10,6 +10,7 @@
 #FIXME substring issues
 #FIXME library_images copy always as temporary folder
 #FIXME param editor should offer auto param inserting from Listing Parameters Google Spreadsheet
+#FIXME automatic checking and warning of old project's names
 #FIXME UI process messages
 
 # import os
@@ -60,15 +61,6 @@ except ImportError:
 
 
 PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"    #FIXME to be deleted after BO API v1 is removed
-GOOGLE_SPREADSHEET_SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-
-BROWSER_CLOSE_WINDOW = '''<!DOCTYPE html> 
-                        <html> 
-                                <script type="text/javascript"> 
-                                    function close_window() { close(); }
-                                </script>
-                            <body onload="close_window()"/>
-                        </html>'''
 
 ID = ''
 LISTBOX_SEPARATOR = '--------'
@@ -355,7 +347,7 @@ class ParamSection:
         for p in BO_PARAM_TUPLE:
             self.remove_param(p[0])
 
-    def createParamfromCSV(self, inParName, inCol):
+    def createParamfromCSV(self, inParName, inCol, inArrayValues = None):
         splitPars = inParName.split(" ")
         parName = splitPars[0]
         ap = ArgParse(add_help=False)
@@ -369,6 +361,7 @@ class ParamSection:
         ap.add_argument("-u", "--unique", action='store_true')
         ap.add_argument("-o", "--overwrite", action='store_true')
         ap.add_argument("-i", "--inherit", action='store_true', help='Inherit properties form the other parameter')
+        ap.add_argument("-y", "--array", action='store_true', help='Insert an array of [0-9]+ or  [0-9]+x[0-9]+ size')
 
         parsedArgs = ap.parse_known_args(splitPars)[0]
 
@@ -390,38 +383,28 @@ class ParamSection:
             if parsedArgs.type:
                 if parsedArgs.type in ("Length", ):
                     parType = PAR_LENGTH
-                    inCol = float(inCol)
                 elif parsedArgs.type in ("Angle", ):
                     parType = PAR_ANGLE
-                    inCol = float(inCol)
                 elif parsedArgs.type in ("RealNum", ):
                     parType = PAR_REAL
-                    inCol = float(inCol)
                 elif parsedArgs.type in ("Integer", ):
                     parType = PAR_INT
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("Boolean", ):
                     parType = PAR_BOOL
-                    inCol = bool(int(inCol))
                 elif parsedArgs.type in ("String", ):
                     parType = PAR_STRING
                 elif parsedArgs.type in ("Material", ):
                     parType = PAR_MATERIAL
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("LineType", ):
                     parType = PAR_LINETYPE
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("FillPattern", ):
                     parType = PAR_FILL
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("PenColor", ):
                     parType = PAR_PEN
-                    inCol = int(inCol)
                 elif parsedArgs.type in ("Separator", ):
                     parType = PAR_SEPARATOR
                 elif parsedArgs.type in ("Title", ):
                     parType = PAR_TITLE
-                    inCol = None
                 elif parsedArgs.type in ("Comment", ):
                     parType = PAR_COMMENT
                     parName = " " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK "
@@ -438,6 +421,31 @@ class ParamSection:
                     parType = PAR_ANGLE
                 else:
                     parType = PAR_STRING
+
+            if not inArrayValues:
+                arrayValues = None
+                if parType in (PAR_LENGTH, PAR_ANGLE, PAR_REAL, ):
+                    inCol = float(inCol)
+                elif parType in (PAR_INT, PAR_MATERIAL, PAR_LINETYPE, PAR_FILL, PAR_PEN, ):
+                    inCol = int(inCol)
+                elif parType in (PAR_BOOL, ):
+                    inCol = bool(int(inCol))
+                elif parType in (PAR_STRING, ):
+                    inCol = inCol
+                elif parType in (PAR_TITLE, ):
+                    inCol = None
+            else:
+                inCol = None
+                if parType in (PAR_LENGTH, PAR_ANGLE, PAR_REAL, ):
+                    arrayValues = [float(x) if type(x) != list else [float(y) for y in x] for x in inArrayValues]
+                elif parType in (PAR_INT, PAR_MATERIAL, PAR_LINETYPE, PAR_FILL, PAR_PEN, ):
+                    arrayValues = [int(x) if type(x) != list else [int(y) for y in x] for x in inArrayValues]
+                elif parType in (PAR_BOOL, ):
+                    arrayValues = [bool(int(x)) if type(x) != list else [bool(int(y)) for y in x] for x in inArrayValues]
+                elif parType in (PAR_STRING, ):
+                    arrayValues = [x if type(x) != list else [y for y in x] for x in inArrayValues]
+                elif parType in (PAR_TITLE, ):
+                    inCol = None
 
             if parsedArgs.inherit:
                 if parsedArgs.child:
@@ -464,7 +472,8 @@ class ParamSection:
                           inChild=isChild,
                           inBold=isBold,
                           inHidden=isHidden,
-                          inUnique=isUnique,)
+                          inUnique=isUnique,
+                          inAVals=arrayValues)
 
             if parsedArgs.child:
                 self.insertAsChild(parsedArgs.child, param)
@@ -509,6 +518,7 @@ class Param(object):
                 self.iType  = self.getTypeFromString(inTypeStr)
 
             self.name   = inName
+            if len(self.name) > 32 and self.iType != PAR_COMMENT: self.name = self.name[:32]
             if inValue is not None:
                 self.value = inValue
 
@@ -546,6 +556,8 @@ class Param(object):
         :param inData:
         :return:
         """
+        if type(inData) == list:
+            return map (self.__toFormat, inData)
         if self.iType in (PAR_LENGTH, PAR_REAL, PAR_ANGLE):
             # self.digits = 2
             return float(inData)
@@ -700,22 +712,27 @@ class Param(object):
         return aValue
 
     @aVals.setter
-    def aVals(self, inETree):
-        if inETree is not None:
-            self.__fd = int(inETree.attrib["FirstDimension"])
-            self.__sd = int(inETree.attrib["SecondDimension"])
+    def aVals(self, inValues):
+        if type(inValues) == etree._Element:
+            self.__fd = int(inValues.attrib["FirstDimension"])
+            self.__sd = int(inValues.attrib["SecondDimension"])
             if self.__sd > 0:
                 self._aVals = [["" for _ in range(self.__sd)] for _ in range(self.__fd)]
-                for v in inETree.iter("AVal"):
+                for v in inValues.iter("AVal"):
                     x = int(v.attrib["Column"]) - 1
                     y = int(v.attrib["Row"]) - 1
                     self._aVals[y][x] = self.__toFormat(v.text)
             else:
                 self._aVals = [[""] for _ in range(self.__fd)]
-                for v in inETree.iter("AVal"):
+                for v in inValues.iter("AVal"):
                     y = int(v.attrib["Row"]) - 1
                     self._aVals[y][0] = self.__toFormat(v.text)
-            self.aValsTail = inETree.tail
+            self.aValsTail = inValues.tail
+        elif type(inValues) == list:
+            self.__fd = len(inValues)
+            self.__sd = len(inValues[0]) if len(inValues[0]) > 1 else 0
+
+            self._aVals = map (self.__toFormat, inValues)
         else:
             self._aVals = None
 
@@ -751,6 +768,13 @@ class Param(object):
 # ------------------- API2 connectivity --------------------------------------------------------------------------------
 
 class BOAPIv2(object):
+    BROWSER_CLOSE_WINDOW = '''<!DOCTYPE html> 
+                            <html> 
+                                    <script type="text/javascript"> 
+                                        function close_window() { close(); }
+                                    </script>
+                                <body onload="close_window()"/>
+                            </html>'''
     CLIENT_ID = "NL8IZo82T84ZCOruAZom4LlmrzkQFXPW"
     CLIENT_SECRET = "5RNNKjqAAA1szIImP0CO2IFNC6Z8OoBMQeiMKwwoxST7ntSFJhIQKVG1s1DEbLOV"
     REDIRECT_URI = "http://localhost"
@@ -764,7 +788,7 @@ class BOAPIv2(object):
     class myHandler(BaseHTTPRequestHandler):
         def do_GET(self):
             global data
-            self.wfile.write(BROWSER_CLOSE_WINDOW)
+            self.wfile.write(BOAPIv2.BROWSER_CLOSE_WINDOW)
             data = urlparse.parse_qs(urlparse.urlparse(self.path).query)
             data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
             BOAPIv2.code = data['code']
@@ -922,6 +946,8 @@ class NoGoogleCredentialsException(Exception):
     pass
 
 class GoogleSpreadsheetConnector(object):
+    GOOGLE_SPREADSHEET_SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
+
     def __init__(self, inCurrentConfig, inSpreadsheetID):
         #FIXME renaming/filling out these
         client_config = {"installed": {
@@ -952,7 +978,7 @@ class GoogleSpreadsheetConnector(object):
                     token_uri=      inCurrentConfig.get("GoogleSpreadsheetAPI", "token_uri"),
                     client_id=      inCurrentConfig.get("GoogleSpreadsheetAPI", "client_id"),
                     client_secret=  inCurrentConfig.get("GoogleSpreadsheetAPI", "client_secret"),
-                    scopes=         GOOGLE_SPREADSHEET_SCOPES
+                    scopes=         GoogleSpreadsheetConnector.GOOGLE_SPREADSHEET_SCOPES
                 )
 
                 if not self.googleCreds.valid:
@@ -964,7 +990,7 @@ class GoogleSpreadsheetConnector(object):
                 raise NoGoogleCredentialsException
 
         except (NoSectionError, NoOptionError, NoGoogleCredentialsException):
-            flow = InstalledAppFlow.from_client_config(client_config, GOOGLE_SPREADSHEET_SCOPES)
+            flow = InstalledAppFlow.from_client_config(client_config, GoogleSpreadsheetConnector.GOOGLE_SPREADSHEET_SCOPES)
             self.googleCreds = flow.run_local_server()
 
         service = build('sheets', 'v4', credentials=self.googleCreds)
@@ -1030,11 +1056,10 @@ class GeneralFile(object) :
             self.fullPath = os.path.join(kwargs['root'], self.relPath)
             self.fullDirName         = os.path.dirname(self.fullPath)
 
-
     def refreshFileNames(self):
         self.fileNameWithExt    = self.name + self.ext
         self.fileNameWithOutExt = self.name
-        self.relPath            = self.dirName + self.fileNameWithExt
+        self.relPath            = os.path.join(self.dirName, self.fileNameWithExt)
 
     def __lt__(self, other):
         return self.fileNameWithOutExt < other.name
@@ -1043,7 +1068,8 @@ class GeneralFile(object) :
 class SourceFile(GeneralFile):
     def __init__(self, relPath, **kwargs):
         super(SourceFile, self).__init__(relPath, **kwargs)
-        self.fullPath = os.path.join(SourceXMLDirName.get(),relPath)
+        # self.fullPath = SourceXMLDirName.get() + "/" + relPath.replace("\\", "/")
+        self.fullPath = os.path.join(SourceXMLDirName.get(), relPath)
 
 
 class DestFile(GeneralFile):
@@ -1231,6 +1257,9 @@ class DestXML (XMLFile, DestFile):
                 i += 1
             self.name += "_" + str(i)
 
+            # if "XML Target file exists!" in self.warnings:
+            #     self.warnings.remove("XML Target file exists!")
+            #     self.refreshFileNames()
         self.relPath                = os.path.join(sourceFile.dirName, self.name + sourceFile.ext)
 
         super(DestXML, self).__init__(self.relPath, sourceFile=sourceFile)
@@ -1339,11 +1368,11 @@ class CreateToolTip:
 
 
 class InputDirPlusText():
-    def __init__(self, top, text, target, tooltip=''):
+    def __init__(self, top, text, target, tooltip='', row=0, column=0):
         self.target = target
         self.filename = ''
         self._frame = tk.Frame(top)
-        self._frame.grid()
+        self._frame.grid({"row": row, "column": column})
 
         self._frame.columnconfigure(1, weight=1)
 
@@ -1367,13 +1396,57 @@ class InputDirPlusBool():
     def __init__(self, top, text, target, var, tooltip=''):
         top.columnconfigure(1, weight=1)
 
-        self.checkbox = tk.Checkbutton(top, {"variable": var})
+        self.frame = tk.Frame(top)
+        self.frame.grid({"row": 0, "column": 1, "sticky": tk.E + tk.W})
+
+        self._var = var
+
+        self.checkbox = tk.Checkbutton(self.frame, {"variable": self._var})
         self.checkbox.grid({"sticky": tk.W, "row": 0, "column": 0})
+
+        self.idpt = InputDirPlusText(self.frame, text, target, row=0, column=1)
+
+        self.bCBobserver = self._var.trace_variable("w", self.checkBoxPressed)
+
+        if tooltip:
+            CreateToolTip(self.frame, tooltip)
+
+    def checkBoxPressed(self, *_):
+        if not self._var.get():
+            self.idpt.entryDirName.config(state=tk.DISABLED)
+            self.idpt.buttonDirName.config(state=tk.DISABLED)
+        else:
+            self.idpt.entryDirName.config(state=tk.NORMAL)
+            self.idpt.buttonDirName.config(state=tk.NORMAL)
+
+
+class InputDirPlusRadio():
+    def __init__(self, top, text, target, var, varValue, tooltip=''):
+        top.columnconfigure(1, weight=1)
 
         self.frame = tk.Frame(top)
         self.frame.grid({"row": 0, "column": 1, "sticky": tk.E + tk.W})
 
-        self.idpt = InputDirPlusText(self.frame, text, target, tooltip)
+        self._var = var
+        self._varValue = varValue
+
+        self.radio = tk.Radiobutton(self.frame, {"variable": self._var, "value": varValue})
+        self.radio.grid({"sticky": tk.W, "row": 0, "column": 0})
+
+        self.idpt = InputDirPlusText(self.frame, text, target, row=0, column=1)
+
+        self.bCBobserver = self._var.trace_variable("w", self.radioModified)
+
+        if tooltip:
+            CreateToolTip(self.frame, tooltip)
+
+    def radioModified(self, *_):
+        if not self._var.get() == self._varValue:
+            self.idpt.entryDirName.config(state=tk.DISABLED)
+            self.idpt.buttonDirName.config(state=tk.DISABLED)
+        else:
+            self.idpt.entryDirName.config(state=tk.NORMAL)
+            self.idpt.buttonDirName.config(state=tk.NORMAL)
 
 
 class InputWithListBox():
@@ -1423,8 +1496,11 @@ class ListboxWithRefresh(tk.Listbox):
 
     def refresh(self, *_):
         if self.dict == replacement_dict:
-            FC1(self.target.get(), SourceXMLDirName.get())
-            FC1(self.imgTarget.get(), SourceImageDirName.get())
+            try:
+                FC1(self.target.get(), SourceXMLDirName.get())
+                FC1(self.imgTarget.get(), SourceImageDirName.get())
+            except AttributeError:
+                return
         self.delete(0, tk.END)
         bPlaceablesFromHere = True
         if self.dict in (pict_dict, source_pict_dict):
@@ -1481,6 +1557,7 @@ class GUIApp(tk.Frame):
 
         self.bXML               = tk.BooleanVar()
         self.bGDL               = tk.BooleanVar()
+        self.isSourceXML        = tk.BooleanVar()
 
         self.observer  = None
         self.observer2 = None
@@ -1496,7 +1573,7 @@ class GUIApp(tk.Frame):
             pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo
 
         SourceXMLDirName    = self.SourceXMLDirName
-        SourceGDLDirName    = self.SourceXMLDirName
+        SourceGDLDirName    = self.SourceGDLDirName
         TargetXMLDirName    = self.TargetXMLDirName
         TargetGDLDirName    = self.TargetGDLDirName
         SourceImageDirName  = self.SourceImageDirName
@@ -1519,38 +1596,41 @@ class GUIApp(tk.Frame):
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
         __tooltipIDPT7 = "Source GDL folder name"
 
-        for cName, cValue in self.currentConfig.items('ArchiCAD'):
-            try:
-                if   cName == 'bgdl':               self.bGDL.set(cValue)
-                elif cName == 'bxml':               self.bXML.set(cValue)
-                elif cName == 'bdebug':             self.bDebug.set(cValue)
-                elif cName == 'additionalimagedir': self.AdditionalImageDir.set(cValue)
-                elif cName == 'aclocation':         self.ACLocation.set(cValue)
-                elif cName == 'stringto':           self.StringTo.set(cValue)
-                elif cName == 'stringfrom':         self.StringFrom.set(cValue)
-                elif cName == 'inputimagesource':   self.SourceImageDirName.set(cValue)
-                elif cName == 'inputimagetarget':   self.TargetImageDirName.set(cValue)
-                elif cName == 'imgstringfrom':      self.ImgStringFrom.set(cValue)
-                elif cName == 'imgstringto':        self.ImgStringTo.set(cValue)
-                elif cName == 'sourcedirname':      self.SourceXMLDirName.set(cValue)
-                elif cName == 'xmltargetdirname':   self.TargetXMLDirName.set(cValue)
-                elif cName == 'gdltargetdirname':   self.TargetGDLDirName.set(cValue)
-                elif cName == 'baddstr':            self.bAddStr.set(cValue)
-                elif cName == 'boverwrite':         self.bOverWrite.set(cValue)
-                elif cName == 'allkeywords':
-                    all_keywords |= set(v.strip() for v in cValue.split(',') if v !='')
-            except NoOptionError:
-                print "NoOptionError"
-                continue
-            except NoSectionError:
-                print "NoSectionError"
-                continue
-            except ValueError:
-                print "ValueError"
-                continue
+        try:
+            for cName, cValue in self.currentConfig.items('ArchiCAD'):
+                try:
+                    if   cName == 'bgdl':               self.bGDL.set(cValue)
+                    elif cName == 'bxml':               self.bXML.set(cValue)
+                    elif cName == 'bdebug':             self.bDebug.set(cValue)
+                    elif cName == 'additionalimagedir': self.AdditionalImageDir.set(cValue)
+                    elif cName == 'aclocation':         self.ACLocation.set(cValue)
+                    elif cName == 'stringto':           self.StringTo.set(cValue)
+                    elif cName == 'stringfrom':         self.StringFrom.set(cValue)
+                    elif cName == 'inputimagesource':   self.SourceImageDirName.set(cValue)
+                    elif cName == 'inputimagetarget':   self.TargetImageDirName.set(cValue)
+                    elif cName == 'imgstringfrom':      self.ImgStringFrom.set(cValue)
+                    elif cName == 'imgstringto':        self.ImgStringTo.set(cValue)
+                    elif cName == 'sourcedirname':      self.SourceXMLDirName.set(cValue)
+                    elif cName == 'xmltargetdirname':   self.TargetXMLDirName.set(cValue)
+                    elif cName == 'gdltargetdirname':   self.TargetGDLDirName.set(cValue)
+                    elif cName == 'baddstr':            self.bAddStr.set(cValue)
+                    elif cName == 'boverwrite':         self.bOverWrite.set(cValue)
+                    elif cName == 'allkeywords':
+                        all_keywords |= set(v.strip() for v in cValue.split(',') if v !='')
+                except NoOptionError:
+                    print "NoOptionError"
+                    continue
+                except NoSectionError:
+                    print "NoSectionError"
+                    continue
+                except ValueError:
+                    print "ValueError"
+                    continue
+        except NoSectionError:
+            print "NoSectionError"
 
-        self.observerXML = self.bXML.trace_variable("w", self.XMLModified)
-        self.observerGDL = self.bGDL.trace_variable("w", self.GDLModified)
+        self.observerXML = self.bXML.trace_variable("w", self.targetXMLModified)
+        self.observerGDL = self.bGDL.trace_variable("w", self.targetGDLModified)
 
         self.warnings = []
 
@@ -1581,17 +1661,18 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, __tooltipIDPT1)
+        self.inputXMLDir = InputDirPlusRadio(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, self.isSourceXML, True, __tooltipIDPT1)
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, __tooltipIDPT7)
+        InputDirPlusRadio(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, self.isSourceXML, False, __tooltipIDPT7)
 
         iF += 1
 
         self.listBox = ListboxWithRefresh(self.InputFrameS[iF], {"target": self.SourceXMLDirName, "imgTarget": self.SourceImageDirName, "dict": replacement_dict})
         self.listBox.grid({"row": 0, "column": 0, "sticky": tk.E + tk.W + tk.N + tk.S})
         self.observerLB1 = self.SourceXMLDirName.trace_variable("w", self.listBox.refresh)
+        self.observerLB2 = self.SourceGDLDirName.trace_variable("w", self.processGDLDir)
 
         self.ListBoxScrollbar = tk.Scrollbar(self.InputFrameS[iF])
         self.ListBoxScrollbar.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
@@ -1822,22 +1903,36 @@ class GUIApp(tk.Frame):
         CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
 
     def getFromCSV(self):
+        SRC_NAME    = 0
+        TARG_NAME   = 1
+        PRODATURL   = 2
+        VALUES      = 3
         csvFileName = tkFileDialog.askopenfilename(initialdir="/", title="Select folder", filetypes=(("CSV files", "*.csv"), ("all files","*.*")))
         if csvFileName:
             with open(csvFileName, "r") as csvFile:
                 firstRow = next(csv.reader(csvFile))
                 for row in csv.reader(csvFile):
-                    # destItem = DestXML(replacement_dict[row[0].upper()], targetFileName=row[1])
-                    # dest_dict[destItem.name.upper()] = destItem
-                    # dest_guids[destItem.guid] = destItem
-                    # dest_sourcenames[destItem.sourceFile.name] = destItem
-                    # self.refreshDestItem()
-                    destItem = self.addFileRecursively(row[0], row[1])
-                    if row[2]:
-                        destItem.parameters.BO_update(row[2])
-                    if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
-                        for parName, col in zip(firstRow[3:], row[3:]):
-                            destItem.parameters.createParamfromCSV(parName, col)
+                    destItem = self.addFileRecursively(row[SRC_NAME], row[TARG_NAME])
+                    if row[PRODATURL]:
+                        destItem.parameters.BO_update(row[PRODATURL])
+                    if len(row) > 3 and next((c for c in row[PRODATURL:] if c != ""), ""):
+                        for parName, col in zip(firstRow[VALUES:], row[VALUES:]):
+                            if "-y" in parName or "-array" in parName:
+                                arrayValues = []
+                                with open(col, "r") as arrayCSV:
+                                    for arrayRow in csv.reader(arrayCSV):
+                                        if arrayRow[TARG_NAME].strip() == row[TARG_NAME].strip:
+                                            arrayValues = [[arrayRow[2:]]]
+                                        if arrayValues \
+                                                and len(arrayRow) > 2 \
+                                                and not arrayRow[TARG_NAME] \
+                                                and arrayRow[2] != "":
+                                            arrayValues += [arrayRow[2:]]
+                                        else:
+                                            break
+                                destItem.parameters.createParamfromCSV(parName, col, arrayValues)
+                            else:
+                                destItem.parameters.createParamfromCSV(parName, col)
 
     def showGoogleSpreadsheetEntry(self):
         #FIXME accepting <Enter>
@@ -1876,13 +1971,37 @@ class GUIApp(tk.Frame):
         AIDLoc = tkFileDialog.askdirectory(initialdir="/", title="Select additional images' folder")
         self.AdditionalImageDir.set(AIDLoc)
 
-    def GDLModified(self, *_):
+    def processGDLDir(self, *_):
+        '''
+        When self.SourceGDLDirName is modified, convert files to xml and set ui accordingly
+        :return:
+        '''
+        self.tempXMLDir = tempfile.mkdtemp()
+        print self.tempXMLDir
+        print "111"
+        print self.SourceGDLDirName.get()
+        print "222"
+        l2xCommand = '"%s" l2x "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), self.SourceGDLDirName.get(), self.tempXMLDir)
+        check_output(l2xCommand, shell=True)
+        # self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.NORMAL})
+        # self.SourceXMLDirName.set(self.tempXMLDir)
+        # self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.DISABLED})
+
+    def targetGDLModified(self, *_):
+        if not self.bGDL.get():
+            self.bXML.set(True)
+
+    def targetXMLModified(self, *_):
+        if not self.bXML.get():
+            self.bGDL.set(True)
+
+    def sourceGDLModified(self, *_):
         if not self.bGDL.get():
             self.bXML.set(True)
             self.GDLDir.idpt.entryDirName.config(state=tk.DISABLED)
         else:   self.GDLDir.idpt.entryDirName.config(state=tk.NORMAL)
 
-    def XMLModified(self, *_):
+    def sourceXMLModified(self, *_):
         if not self.bXML.get():
             self.bGDL.set(True)
             self.XMLDir.idpt.entryDirName.config(state=tk.DISABLED)
@@ -2157,7 +2276,11 @@ class GUIApp(tk.Frame):
 
         with open(os.path.join(self.appDataDir,"TemplateMarker.ini"), 'wb') as configFile:
             #FIXME proper config place
-            currentConfig.write(configFile)
+            try:
+                currentConfig.write(configFile)
+            except UnicodeEncodeError:
+                #FIXME
+                pass
         self.top.destroy()
 
     def reconnect(self):
