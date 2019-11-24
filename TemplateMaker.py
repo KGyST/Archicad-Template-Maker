@@ -577,7 +577,11 @@ class Param(object):
                     inVal = '"' + inVal
                 if not inVal.endswith('"') or len(inVal) == 1:
                     inVal += '"'
-                return etree.CDATA(inVal)
+                try:
+                    #FIXME
+                    return etree.CDATA(inVal.decode('UTF8'))
+                except UnicodeEncodeError:
+                    return etree.CDATA(inVal)
             else:
                 return etree.CDATA('""')
         elif self.iType in (PAR_REAL, PAR_LENGTH, PAR_ANGLE):
