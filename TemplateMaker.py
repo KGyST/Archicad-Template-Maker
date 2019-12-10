@@ -38,6 +38,7 @@ from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import pip
 
 try:
+    import googleapiclient.errors
     from googleapiclient.discovery import build
     from google_auth_oauthlib.flow import InstalledAppFlow, Flow
     from google.auth.transport.requests import Request
@@ -48,6 +49,7 @@ except ImportError:
     pip.main(['install', '--user', 'google-auth-httplib2'])
     pip.main(['install', '--user', 'google-auth-oauthlib'])
 
+    import googleapiclient.errors
     from googleapiclient.discovery import build
     from google_auth_oauthlib.flow import InstalledAppFlow
     from google.auth.transport.requests import Request
@@ -59,6 +61,7 @@ except ImportError:
     pip.main(['install', '--user', 'lxml'])
     from lxml import etree
 
+import xml.dom
 
 PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"    #FIXME to be deleted after BO API v1 is removed
 
@@ -154,14 +157,21 @@ class ParamSection:
         return item in self.__paramDict
 
     def __setitem__(self, key, value):
-        #FIXME currently only existing ones
         if key in self.__paramDict:
             self.__paramDict[key].setValue(value)
+        else:
+            # FIXME test
+            self.append(value, key)
 
-    def append(self, inEtree, inName):
+    def __delitem__(self, key):
+        del self.__paramDict[key]
+        self.__paramList = [i for i in self.__paramList if i.name != key]
+
+    def append(self, inEtree, inParName):
+        #Adding param to the end
         self.__paramList.append(inEtree)
         if not isinstance(inEtree, etree._Comment):
-            self.__paramDict[inName] = inEtree
+            self.__paramDict[inParName] = inEtree
 
     def insertAfter(self, inParName, inEtree):
         self.__paramList.insert(self.__getIndex(inParName) + 1, inEtree)
@@ -362,6 +372,7 @@ class ParamSection:
         ap.add_argument("-o", "--overwrite", action='store_true')
         ap.add_argument("-i", "--inherit", action='store_true', help='Inherit properties form the other parameter')
         ap.add_argument("-y", "--array", action='store_true', help='Insert an array of [0-9]+ or  [0-9]+x[0-9]+ size')
+        ap.add_argument("-r", "--remove", action='store_true')
 
         parsedArgs = ap.parse_known_args(splitPars)[0]
 
@@ -371,14 +382,6 @@ class ParamSection:
             desc = ''
 
         if parName not in self:
-            # if inCol:
-            #     if inCol[0] != '"':
-            #         inCol = '"' + inCol
-            #     if inCol[-1] != '"':
-            #         inCol = inCol + '"'
-            # else:
-            #     inCol = '""'
-
             parType = PAR_UNKNOWN
             if parsedArgs.type:
                 if parsedArgs.type in ("Length", ):
@@ -481,16 +484,23 @@ class ParamSection:
                 self.insertAfter(parsedArgs.after, param)
             elif parsedArgs.frontof:
                 self.insertBefore(parsedArgs.frontof, param)
+            else:
+                #FIXME writing tests for this
+                self.append(param, parName)
 
             if parType == PAR_TITLE:
                 paramComment = Param(inType=PAR_COMMENT,
                                      inName=" " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ", )
                 self.insertBefore(param.name, paramComment)
         else:
-            #FIXME Pickin around an existing param, to be thought through
-            self[parName] = inCol
-            if desc:
-                self.__paramDict[parName].desc = " ".join(parsedArgs.desc)
+            # FIXME writing tests for this
+            if parsedArgs.remove:
+                if inCol:
+                    del self[parName]
+            else:
+                self[parName] = inCol
+                if desc:
+                    self.__paramDict[parName].desc = " ".join(parsedArgs.desc)
 
 
 class Param(object):
@@ -1423,6 +1433,10 @@ class InputDirPlusBool():
             self.idpt.entryDirName.config(state=tk.NORMAL)
             self.idpt.buttonDirName.config(state=tk.NORMAL)
 
+    def config(self, **kwargs):
+        self.idpt.entryDirName.config(kwargs)
+        self.idpt.buttonDirName.config(kwargs)
+
 
 class InputDirPlusRadio():
     def __init__(self, top, text, target, var, varValue, tooltip=''):
@@ -1438,6 +1452,10 @@ class InputDirPlusRadio():
         self.radio.grid({"sticky": tk.W, "row": 0, "column": 0})
 
         self.idpt = InputDirPlusText(self.frame, text, target, row=0, column=1)
+
+        if varValue:
+            self.idpt.entryDirName.config(state=tk.DISABLED)
+            self.idpt.buttonDirName.config(state=tk.DISABLED)
 
         self.bCBobserver = self._var.trace_variable("w", self.radioModified)
 
@@ -1501,8 +1519,8 @@ class ListboxWithRefresh(tk.Listbox):
     def refresh(self, *_):
         if self.dict == replacement_dict:
             try:
-                FC1(self.target.get(), SourceXMLDirName.get())
-                FC1(self.imgTarget.get(), SourceImageDirName.get())
+                scanDirs(self.target.get(), SourceXMLDirName.get())
+                scanDirs(self.imgTarget.get(), SourceImageDirName.get())
             except AttributeError:
                 return
         self.delete(0, tk.END)
@@ -1558,6 +1576,7 @@ class GUIApp(tk.Frame):
         self.bDebug             = tk.BooleanVar()
         self.bOverWrite         = tk.BooleanVar()
         self.bAddStr            = tk.BooleanVar()
+        self.doBOUpdate         = tk.BooleanVar()
 
         self.bXML               = tk.BooleanVar()
         self.bGDL               = tk.BooleanVar()
@@ -1574,7 +1593,7 @@ class GUIApp(tk.Frame):
         global \
             SourceXMLDirName, SourceGDLDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
             AdditionalImageDir, bDebug, bCheckParams, ACLocation, bGDL, bXML, dest_dict, dest_guids, replacement_dict, id_dict, \
-            pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo
+            pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo, doBOUpdate
 
         SourceXMLDirName    = self.SourceXMLDirName
         SourceGDLDirName    = self.SourceGDLDirName
@@ -1587,6 +1606,7 @@ class GUIApp(tk.Frame):
         bDebug              = self.bDebug
         bXML                = self.bXML
         bGDL                = self.bGDL
+        doBOUpdate          = self.doBOUpdate
         ACLocation          = self.ACLocation
         bAddStr             = self.bAddStr
         bOverWrite          = self.bOverWrite
@@ -1596,7 +1616,7 @@ class GUIApp(tk.Frame):
         __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
         __tooltipIDPT3 = "Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library"
         __tooltipIDPT4 = "Final GDL output dir"
-        __tooltipIDPT5 = "If set, copy project specific pictures here, too"
+        __tooltipIDPT5 = "If set, copy project specific pictures here, too, for endcoded images. Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library_images"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
         __tooltipIDPT7 = "Source GDL folder name"
 
@@ -1665,11 +1685,11 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        self.inputXMLDir = InputDirPlusRadio(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, self.isSourceXML, True, __tooltipIDPT1)
+        self.inputXMLDir = InputDirPlusRadio(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, self.isSourceXML, False, __tooltipIDPT1)
 
         iF += 1
 
-        InputDirPlusRadio(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, self.isSourceXML, False, __tooltipIDPT7)
+        InputDirPlusRadio(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, self.isSourceXML, True, __tooltipIDPT7)
 
         iF += 1
 
@@ -1796,6 +1816,9 @@ class GUIApp(tk.Frame):
         self.OverWriteCheckButton   = tk.Checkbutton(self.bottomFrame, {"text": "Overwrite", "variable": self.bOverWrite})
         self.OverWriteCheckButton.grid({"row": 0, "column": iF}); iF += 1
 
+        self.BOUpdateCheckButton    = tk.Checkbutton(self.bottomFrame, {"text": "BO_update", "variable": self.doBOUpdate})
+        self.OverWriteCheckButton.grid({"row": 0, "column": iF}); iF += 1
+
         self.startButton        = tk.Button(self.bottomFrame, {"text": "Start", "command": self.start})
         self.startButton.grid({"row": 0, "column": 7, "sticky": tk.E})
 
@@ -1840,7 +1863,15 @@ class GUIApp(tk.Frame):
         self.GoogleSSBbutton     = tk.Button(self.buttonFrame, {"text": "Google Spreadsheet", "command": self.showGoogleSpreadsheetEntry, })
         self.GoogleSSBbutton.grid({"row": _i, "sticky": tk.W + tk.E})
 
+        _i += 1
+
+        self.ParamWriteButton    = tk.Button(self.buttonFrame, {"text": "Write params", "command": self.paramWrite, })
+        self.ParamWriteButton.grid({"row": _i, "sticky": tk.W + tk.E})
+
         #FIXME
+        #
+        #_i += 1
+        #
         # self.reconnectButton      = tk.Button(self.buttonFrame, {"text": "Reconnect", "command": self.reconnect })
         # self.reconnectButton.grid({"row": _i, "sticky": tk.W + tk.E})
 
@@ -1906,7 +1937,50 @@ class GUIApp(tk.Frame):
         CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
         CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
 
+    def createDestItems(self, inList):
+        firstRow = inList.values[0]
+
+        for row in inList.values[1:]:
+            destItem = self.addFileRecursively(row[0], row[1])
+            # if row[2]:
+            #     destItem.parameters.BO_update(row[2])
+            if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
+                for parName, col in zip(firstRow[3:], row[3:]):
+                    destItem.parameters.createParamfromCSV(parName, col)
+
+    def getListFromGoogleSpreadsheet(self):
+        self.GoogleSSBbutton.config(cnf={'state': tk.NORMAL})
+        SSIDRegex = "/spreadsheets/d/([a-zA-Z0-9-_]+)"
+        findall = re.findall(SSIDRegex, self.GoogleSSInfield.GoogleSSURL.get())
+        if findall:
+            SpreadsheetID = findall[0]
+        else:
+            SpreadsheetID = findall
+        print SpreadsheetID
+
+        try:
+            self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
+        except googleapiclient.errors.HttpError:
+            print ("HttpError: Spreadsheet ID (%s) seems to be invalid" % SSIDRegex)
+            return
+        self.GoogleSSInfield.top.destroy()
+        self.createDestItems(self.googleSpreadsheet)
+
+    def paramWrite(self):
+        """
+        This method should write params directly into selected .GSMs/.XLSs
+        (source and destination is the same)
+        :return:
+        """
+        self.XMLDir.config(state=tk.DISABLED)
+        self.GDLDir.config(state=tk.DISABLED)
+        self.showGoogleSpreadsheetEntry(inFunc=self.getListFromGoogleSpreadsheet)
+
     def getFromCSV(self):
+        """
+        Source-dest file conversation based on csv
+        :return:
+        """
         SRC_NAME    = 0
         TARG_NAME   = 1
         PRODATURL   = 2
@@ -1938,22 +2012,32 @@ class GUIApp(tk.Frame):
                             else:
                                 destItem.parameters.createParamfromCSV(parName, col)
 
-    def showGoogleSpreadsheetEntry(self):
-        #FIXME accepting <Enter>
-        self.GoogleSSInfield = GoogleSSInfield(self)
-        self.GoogleSSInfield.top.protocol("WM_DELETE_WINDOW", self.getFromGoogleSpreadsheet)
-        self.GoogleSSBbutton.config(cnf={'state': tk.DISABLED})
+    def convertFilesGoogleSpreadsheet(self):
+        """
+        Source-dest file conversation based on Google Spreadsheet
+        :return:
+        """
+        self.showGoogleSpreadsheetEntry()
 
-    def getFromGoogleSpreadsheet(self):
+    def getFromGoogleSpreadsheet(self, *args):
         self.GoogleSSBbutton.config(cnf={'state': tk.NORMAL})
         SSIDRegex = "/spreadsheets/d/([a-zA-Z0-9-_]+)"
         findall = re.findall(SSIDRegex, self.GoogleSSInfield.GoogleSSURL.get())
+        if not findall:
+            self.GoogleSSInfield.top.destroy()
+            return
         if findall:
             SpreadsheetID = findall[0]
         else:
             SpreadsheetID = findall
         print SpreadsheetID
-        self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
+
+        try:
+            self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
+        except googleapiclient.errors.HttpError:
+            self.GoogleSSInfield.top.destroy()
+            return
+        #FIXME above here paramWrite uses the same
         #FIXME from here maybe to put into a method; same as in getFromCSV
         firstRow = self.googleSpreadsheet.values[0]
 
@@ -1966,6 +2050,13 @@ class GUIApp(tk.Frame):
                     destItem.parameters.createParamfromCSV(parName, col)
 
         self.GoogleSSInfield.top.destroy()
+
+    def showGoogleSpreadsheetEntry(self, inFunc=None):
+        if not inFunc:
+            inFunc = self.getFromGoogleSpreadsheet
+        self.GoogleSSInfield = GoogleSSInfield(self)
+        self.GoogleSSInfield.top.protocol("WM_DELETE_WINDOW", inFunc)
+        self.GoogleSSBbutton.config(cnf={'state': tk.DISABLED})
 
     def setACLoc(self):
         ACLoc = tkFileDialog.askdirectory(initialdir="/", title="Select ArchiCAD folder")
@@ -1981,10 +2072,8 @@ class GUIApp(tk.Frame):
         :return:
         '''
         self.tempXMLDir = tempfile.mkdtemp()
-        print self.tempXMLDir
-        print "111"
-        print self.SourceGDLDirName.get()
-        print "222"
+        print "tempXMLDri: %s" % self.tempXMLDir
+        print "SourceGDLDirName %s" % self.SourceGDLDirName.get()
         l2xCommand = '"%s" l2x "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), self.SourceGDLDirName.get(), self.tempXMLDir)
         check_output(l2xCommand, shell=True)
         # self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.NORMAL})
@@ -2105,6 +2194,9 @@ class GUIApp(tk.Frame):
         self.fileName.set('')
 
     def resetAll(self):
+        self.XMLDir.config(state=tk.NORMAL)
+        self.GDLDir.config(state=tk.NORMAL)
+
         dest_dict.clear()
         dest_guids.clear()
         dest_sourcenames.clear()
@@ -2315,6 +2407,8 @@ class GoogleSSInfield(tk.Frame):
         self.OKButton = tk.Button(self.top, {"text": "OK", "command": sender.getFromGoogleSpreadsheet, })
         self.OKButton.grid({"row": 0, "column": 1})
 
+        self.top.bind('<Return>', sender.getFromGoogleSpreadsheet)
+
 
 # ------------------- Parameter editing window ------
 
@@ -2322,7 +2416,7 @@ class GoogleSSInfield(tk.Frame):
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
 
-def FC1(inFile, inRootFolder):
+def scanDirs(inFile, inRootFolder, inAcceptedFormatS = (".XML",)):
     """
     only scanning input dir recursively to set up xml and image files' list
     :param inFile:
@@ -2335,7 +2429,7 @@ def FC1(inFile, inRootFolder):
                 src = os.path.join(inFile, f)
                 # if it's NOT a directory
                 if not os.path.isdir(src):
-                    if os.path.splitext(os.path.basename(f))[1].upper() in (".XML", ):
+                    if os.path.splitext(os.path.basename(f))[1].upper() in inAcceptedFormatS:
                         sf = SourceXML(os.path.relpath(src, inRootFolder))
                         replacement_dict[sf._name.upper()] = sf
                         # id_dict[sf.guid.upper()] = ""
@@ -2348,7 +2442,7 @@ def FC1(inFile, inRootFolder):
                                 sI.isEncodedImage = True
                             source_pict_dict[sI.fileNameWithExt.upper()] = sI
                 else:
-                    FC1(src, inRootFolder)
+                    scanDirs(src, inRootFolder)
 
             except KeyError:
                 print "KeyError %s" % f
@@ -2365,10 +2459,8 @@ def main2():
     else:
         tempdir = tempfile.mkdtemp()
 
-    # tempPicDir = TargetImageDirName.get()
-    targPicDir = TargetImageDirName.get()
-    # if not tempPicDir:
-    tempPicDir = tempfile.mkdtemp()
+    targPicDir = TargetImageDirName.get()   # For target library's encoded images
+    tempPicDir = tempfile.mkdtemp()         # For every image file, collected
 
     print "tempdir: %s" % tempdir
     print "tempPicDir: %s" % tempPicDir
@@ -2437,7 +2529,7 @@ def main2():
                     n = next((pict_dict[p].relPath for p in pict_dict.keys() if
                               os.path.basename(pict_dict[p].sourceFile.relPath).upper() == path), None)
                     if n:
-                        section.attrib['path'] = os.path.join(os.path.dirname(n), os.path.basename(n))
+                        section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n) # Not os.path.join!
 
         # ---------------------AC18 and over: adding licensing statically---------------------
 
@@ -2495,33 +2587,30 @@ def main2():
         with open(destPath, "w") as file_handle:
             mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
 
-    _picdir =  AdditionalImageDir.get()
-    # _picdir2 = SourceImageDirName.get()
+    _picdir =  AdditionalImageDir.get() # Like IMAGES_GENERIC
 
-    # shutil.copytree(_picdir, tempPicDir + "/IMAGES_GENERIC")
-    dirs_to_delete = set()
+    # dirs_to_delete = set()
     if _picdir:
         for f in listdir(_picdir):
-            dirs_to_delete |= {f}
+            # dirs_to_delete |= {f}
             shutil.copytree(os.path.join(_picdir, f), os.path.join(tempPicDir, f))
-
-    # if _picdir2:
-    #     for f in listdir(_picdir2):
-    #         shutil.copytree(_picdir2 + "/" + f, tempPicDir + "/" + f)
 
     for f in pict_dict.keys():
         if pict_dict[f].sourceFile.isEncodedImage:
-            try:
-                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(targPicDir, pict_dict[f].relPath))
-            except IOError:
-                os.makedirs(os.path.join(targPicDir, pict_dict[f].dirName))
-                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(targPicDir, pict_dict[f].relPath))
-
             try:
                 shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(tempPicDir, pict_dict[f].relPath))
             except IOError:
                 os.makedirs(os.path.join(tempPicDir, pict_dict[f].dirName))
                 shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(tempPicDir, pict_dict[f].relPath))
+
+            if targPicDir:
+                try:
+                    shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath),
+                                    os.path.join(targPicDir, pict_dict[f].relPath))
+                except IOError:
+                    os.makedirs(os.path.join(targPicDir, pict_dict[f].dirName))
+                    shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath),
+                                    os.path.join(targPicDir, pict_dict[f].relPath))
         else:
             if TargetGDLDirName.get():
                 try:
@@ -2537,8 +2626,9 @@ def main2():
                     os.makedirs(os.path.join(TargetXMLDirName.get(), pict_dict[f].dirName))
                     shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetXMLDirName.get(), pict_dict[f].relPath))
 
-    print "x2l Command being executed..."
     x2lCommand = '"%s" x2l -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), tempPicDir, tempdir, TargetGDLDirName.get())
+    print "x2l Command being executed..."
+    print x2lCommand
 
     if bDebug.get():
         print "ac command:"

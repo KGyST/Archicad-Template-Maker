@@ -5,8 +5,33 @@ import unittest
 import os
 from TemplateMaker import ParamSection
 from lxml import etree
-import json
 import csv
+
+from xml import dom
+from xml.dom import minidom
+
+class XMLTree(minidom.Element):
+    PATH_SEPARATOR = "/"
+
+    def __init__(self, inDoc):
+        self.__dict__ = inDoc.__dict__
+
+    def getroot(self):
+        return self.childNodes[0]
+
+    def find(self, sPath):
+        lPath = sPath.split(XMLTree.PATH_SEPARATOR)[1:]
+        return self._getNode(self.getroot(), lPath)
+
+    def _getNode(self, inNode, inListPath):
+        if inListPath:
+            for cN in inNode.childNodes:
+                if cN.nodeType == XMLTree.ELEMENT_NODE:
+                    if cN.nodeName == inListPath[0]:
+                        return inNode._getNode(cN, inListPath[1:])
+        else:
+            return inNode
+
 
 class TestSuite_CreateParamCommands(unittest.TestSuite):
     def __init__(self):
@@ -16,8 +41,10 @@ class TestSuite_CreateParamCommands(unittest.TestSuite):
             if not fileName.startswith('_') and os.path.splitext(fileName)[1] == '.xml':
                 print fileName
                 parsedXML = etree.parse(os.path.join(dir_baseName  + "_items", fileName), etree.XMLParser(strip_cdata=False))
+                # parsedXML = minidom.parse (os.path.join(dir_baseName  + "_items", fileName))
                 meta = parsedXML.getroot()
                 value = parsedXML.find("./Value").text
+                # value = parsedXML.find("./Value").text
                 embeddedXML = etree.tostring(parsedXML.find("./ParamSection"))
                 with open(meta.attrib['OriginalXML'], "r") as testFile:
                     if 'TestCSV' in meta.attrib:
