@@ -2,13 +2,11 @@
 # -*- coding: utf-8 -*-
 #HOTFIXREQ if image dest folder is retained, remove common images from it
 #HOTFIXREQ ImportError: No module named googleapiclient.discovery
-#HOTFIXREQ SOURCE_IMAGE_DIR_NAME images are not renamed at all
 #HOTFIXREQ unicode error when running ac command in path with native characters
 #FIXME renaming errors and param csv parameter overwriting
-#FIXME param name max 32 chars long
 #FIXME append param to the end when no argument for position
 #FIXME substring issues
-#FIXME library_images copy always as temporary folder
+#FIXME library_images copy always as temporary folder; instead junction
 #FIXME param editor should offer auto param inserting from Listing Parameters Google Spreadsheet
 #FIXME automatic checking and warning of old project's names
 #FIXME UI process messages
@@ -36,6 +34,7 @@ import csv
 import httplib, urllib, json, webbrowser, urlparse, os, hashlib, base64
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 import pip
+import multiprocessing as mp
 
 try:
     import googleapiclient.errors
@@ -61,7 +60,7 @@ except ImportError:
     pip.main(['install', '--user', 'lxml'])
     from lxml import etree
 
-import xml.dom
+# import xml.dom
 
 PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"    #FIXME to be deleted after BO API v1 is removed
 
@@ -166,6 +165,12 @@ class ParamSection:
     def __delitem__(self, key):
         del self.__paramDict[key]
         self.__paramList = [i for i in self.__paramList if i.name != key]
+
+    def __getitem__(self, item):
+        if isinstance(item, int):
+            return self.__paramList[item]
+        if isinstance(item, str):
+            return self.__paramDict[item]
 
     def append(self, inEtree, inParName):
         #Adding param to the end
@@ -312,14 +317,14 @@ class ParamSection:
                               inValue=e.text,
                               inTypeStr=e.get('VariableType'),
                               inAVals=None,
-                              inChild=(e.get('VariableModifier')=='Child'),
-                              inBold=(e.get('VariableStyle')=='Bold'), )
+                              inChild=(e.get('VariableModifier') == 'Child'),
+                              inBold=(e.get('VariableStyle') == 'Bold'), )
                 self.append(param, varName)
             self.__paramList[-1].tail = '\n\t'
 
     def BO_update2(self, prodatURL, currentConfig, bo):
         '''
-        FIXME
+        FIXME this doesn't work at all currently
         BO_update with API v2
         :param prodatURL:
         :return:
@@ -518,6 +523,7 @@ class Param(object):
                  inUnique=False,
                  inHidden=False,
                  inBold=False):
+        self.__index = 0
         self.value      = None
 
         if inETree is not None:
@@ -555,9 +561,37 @@ class Param(object):
         self.isInherited    = False
         self.isUsed         = True
 
+    def __iter__(self):
+        if self._aVals:
+            return self
+
+    def __next__(self):
+        if self.__index >= len(self._aVals) - 1:
+            raise StopIteration
+        else:
+            self.__index += 1
+            return self._aVals[self.__index]
+
+    def __setitem__(self, key, value):
+        if isinstance(value, list):
+            self._aVals[key - 1] = self.__toFormat(value)
+            self.__fd = max(self.__fd, key - 1)
+            self.__sd = max(self.__sd, len(value))
+        else:
+            self._aVals[key - 1] = [self.__toFormat(value)]
+            self.__fd = max(self.__fd, key - 1)
+
     def setValue(self, inVal):
-        #FIXME to be removed?
-        self.value = self.__toFormat(inVal)
+        if type(inVal) == list:
+            self.aVals = self.__toFormat(inVal)
+            if self.value:
+                print("WARNING: value -> array change: %s" % self.name)
+            self.value = None
+        else:
+            self.value = self.__toFormat(inVal)
+            if self.aVals:
+                print("WARNING: array -> value change: %s" % self.name)
+            self.aVals = None
 
     def __toFormat(self, inData):
 
@@ -744,7 +778,7 @@ class Param(object):
             self.aValsTail = inValues.tail
         elif type(inValues) == list:
             self.__fd = len(inValues)
-            self.__sd = len(inValues[0]) if len(inValues[0]) > 1 else 0
+            self.__sd = len(inValues[0]) if isinstance(inValues[0], list) > 1 else 0
 
             self._aVals = map (self.__toFormat, inValues)
         else:
@@ -1021,9 +1055,9 @@ class GoogleSpreadsheetConnector(object):
 
         if not self.values:
             print('No data found.')
-        else:
-            for row in self.values:
-                print('%s, %s' % (row[0], row[4]))
+        # else:
+        #     for row in self.values:
+        #         print('%s, %s' % (row[0], row[4]))
 
 
 # ------------------- GUI ------------------------------
@@ -1164,7 +1198,7 @@ class XMLFile(GeneralFile):
 class SourceXML (XMLFile, SourceFile):
 
     def __init__(self, relPath):
-        global all_keywords
+        global all_keywords, ID
         super(SourceXML, self).__init__(relPath)
         self.calledMacros   = {}
         self.parentSubTypes = []
@@ -1173,7 +1207,6 @@ class SourceXML (XMLFile, SourceFile):
         mroot = etree.parse(self.fullPath, etree.XMLParser(strip_cdata=False))
         self.iVersion = int(mroot.getroot().attrib['Version'])
 
-        global ID
         if int(self.iVersion) <= AC_18:
             ID = 'UNID'
             self.ID = 'UNID'
@@ -1535,7 +1568,7 @@ class ListboxWithRefresh(tk.Listbox):
                 if f.warnings:
                     self.insert(tk.END, "* " + f.name)
                 else:
-                        self.insert(tk.END, f.name)
+                    self.insert(tk.END, f.name)
             except AttributeError:
                 self.insert(tk.END, f.name)
 
@@ -1580,7 +1613,7 @@ class GUIApp(tk.Frame):
 
         self.bXML               = tk.BooleanVar()
         self.bGDL               = tk.BooleanVar()
-        self.isSourceXML        = tk.BooleanVar()
+        self.isSourceGDL        = tk.BooleanVar()
 
         self.observer  = None
         self.observer2 = None
@@ -1589,11 +1622,12 @@ class GUIApp(tk.Frame):
 
         self.bo                 = None
         self.googleSpreadsheet  = None
+        self.bWriteToSelf       = False             # Whether to write back to the file itself
 
         global \
             SourceXMLDirName, SourceGDLDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
             AdditionalImageDir, bDebug, bCheckParams, ACLocation, bGDL, bXML, dest_dict, dest_guids, replacement_dict, id_dict, \
-            pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo, doBOUpdate
+            pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo, doBOUpdate, bWriteToSelf
 
         SourceXMLDirName    = self.SourceXMLDirName
         SourceGDLDirName    = self.SourceGDLDirName
@@ -1611,6 +1645,7 @@ class GUIApp(tk.Frame):
         bAddStr             = self.bAddStr
         bOverWrite          = self.bOverWrite
         StringTo            = self.StringTo
+        bWriteToSelf        = self.bWriteToSelf
 
         __tooltipIDPT1 = "Something like E:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
         __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
@@ -1685,11 +1720,11 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        self.inputXMLDir = InputDirPlusRadio(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, self.isSourceXML, False, __tooltipIDPT1)
+        self.inputXMLDir = InputDirPlusRadio(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, self.isSourceGDL, False, __tooltipIDPT1)
 
         iF += 1
 
-        InputDirPlusRadio(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, self.isSourceXML, True, __tooltipIDPT7)
+        InputDirPlusRadio(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, self.isSourceGDL, True, __tooltipIDPT7)
 
         iF += 1
 
@@ -1722,7 +1757,7 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        InputDirPlusText(self.InputFrameS[iF], "Images' source folder",  self.SourceImageDirName, __tooltipIDPT2)
+        self.sourceImageDir = InputDirPlusText(self.InputFrameS[iF], "Images' source folder", self.SourceImageDirName, __tooltipIDPT2)
         if SourceXMLDirName:
             self.listBox.refresh()
             self.listBox2.refresh()
@@ -1938,14 +1973,21 @@ class GUIApp(tk.Frame):
         CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
 
     def createDestItems(self, inList):
-        firstRow = inList.values[0]
+        firstRow = inList[0]
 
-        for row in inList.values[1:]:
-            destItem = self.addFileRecursively(row[0], row[1])
-            # if row[2]:
-            #     destItem.parameters.BO_update(row[2])
-            if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
-                for parName, col in zip(firstRow[3:], row[3:]):
+        for row in inList[1:]:
+            if firstRow[1] == "":
+                #empty header => row[1] is for destItem
+                destItem = self.addFileRecursively(row[0], row[1])
+
+            else:
+                #no destitem so write to itself
+                destItem = DestXML(row[0], targetFileName=row[0])
+                dest_dict[destItem.name.upper()] = destItem
+                dest_guids[destItem.guid] = destItem
+                dest_sourcenames[destItem.sourceFile.name] = destItem
+            if len(row) > 2 and next((c for c in row[2:] if c != ""), ""):
+                for parName, col in zip(firstRow[2:], row[2:]):
                     destItem.parameters.createParamfromCSV(parName, col)
 
     def getListFromGoogleSpreadsheet(self):
@@ -1964,7 +2006,7 @@ class GUIApp(tk.Frame):
             print ("HttpError: Spreadsheet ID (%s) seems to be invalid" % SSIDRegex)
             return
         self.GoogleSSInfield.top.destroy()
-        self.createDestItems(self.googleSpreadsheet)
+        self.createDestItems(self.googleSpreadsheet.values)
 
     def paramWrite(self):
         """
@@ -1972,6 +2014,7 @@ class GUIApp(tk.Frame):
         (source and destination is the same)
         :return:
         """
+        self.bWriteToSelf = True
         self.XMLDir.config(state=tk.DISABLED)
         self.GDLDir.config(state=tk.DISABLED)
         self.showGoogleSpreadsheetEntry(inFunc=self.getListFromGoogleSpreadsheet)
@@ -2071,14 +2114,27 @@ class GUIApp(tk.Frame):
         When self.SourceGDLDirName is modified, convert files to xml and set ui accordingly
         :return:
         '''
+        global SourceXMLDirName, SourceImageDirName
+        if not self.SourceGDLDirName.get():
+            return
         self.tempXMLDir = tempfile.mkdtemp()
-        print "tempXMLDri: %s" % self.tempXMLDir
+        self.tempImgDir = tempfile.mkdtemp()
+        print "tempXMLDir: %s" % self.tempXMLDir
+        print "tempImgDir: %s" % self.tempImgDir
         print "SourceGDLDirName %s" % self.SourceGDLDirName.get()
-        l2xCommand = '"%s" l2x "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), self.SourceGDLDirName.get(), self.tempXMLDir)
+        l2xCommand = '"%s" l2x -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), self.tempImgDir, self.SourceGDLDirName.get(), self.tempXMLDir)
+        print "l2xCommand: %s" % l2xCommand
         check_output(l2xCommand, shell=True)
-        # self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.NORMAL})
-        # self.SourceXMLDirName.set(self.tempXMLDir)
-        # self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.DISABLED})
+        self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.NORMAL})
+        self.sourceImageDir.entryDirName.config(cnf={'state': tk.NORMAL})
+        self.sourceImageDir.buttonDirName.config(cnf={'state': tk.NORMAL})
+        self.SourceXMLDirName.set(self.tempXMLDir)
+        self.SourceImageDirName.set(self.tempImgDir)
+        self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.DISABLED})
+        self.sourceImageDir.entryDirName.config(cnf={'state': tk.DISABLED})
+        self.sourceImageDir.buttonDirName.config(cnf={'state': tk.DISABLED})
+        self.listBox.refresh()
+        self.listBox2.refresh()
 
     def targetGDLModified(self, *_):
         if not self.bGDL.get():
@@ -2215,6 +2271,8 @@ class GUIApp(tk.Frame):
             w.destroy()
 
         self.addAllButton.config({"state": tk.NORMAL})
+        self.sourceImageDir.entryDirName.config(cnf={'state': tk.NORMAL})
+        self.sourceImageDir.buttonDirName.config(cnf={'state': tk.NORMAL})
 
     def listboxselect(self, event, ):
         if not event.widget.get(0):
@@ -2340,11 +2398,11 @@ class GUIApp(tk.Frame):
         currentConfig.set("ArchiCAD", "bdebug",             self.bDebug.get())
         currentConfig.set("ArchiCAD", "bxml",               self.bXML.get())
         currentConfig.set("ArchiCAD", "bgdl",               self.bGDL.get())
-
-        currentConfig.set("ArchiCAD", "sourcedirname", self.SourceXMLDirName.get())
+        if not self.isSourceGDL.get():
+            currentConfig.set("ArchiCAD", "sourcedirname",      self.SourceXMLDirName.get())
+            currentConfig.set("ArchiCAD", "inputimagesource",   self.SourceImageDirName.get())
         currentConfig.set("ArchiCAD", "xmltargetdirname",   self.TargetXMLDirName.get())
         currentConfig.set("ArchiCAD", "gdltargetdirname",   self.TargetGDLDirName.get())
-        currentConfig.set("ArchiCAD", "inputimagesource",   self.SourceImageDirName.get())
         currentConfig.set("ArchiCAD", "inputimagetarget",   self.TargetImageDirName.get())
         currentConfig.set("ArchiCAD", "stringfrom",         self.StringFrom.get())
         currentConfig.set("ArchiCAD", "stringto",           self.StringTo.get())
@@ -2459,140 +2517,30 @@ def main2():
     else:
         tempdir = tempfile.mkdtemp()
 
+    if not bWriteToSelf:
+        targGDLDir = TargetGDLDirName.get()
+    else:
+        targGDLDir = tempfile.mkdtemp()
+
     targPicDir = TargetImageDirName.get()   # For target library's encoded images
     tempPicDir = tempfile.mkdtemp()         # For every image file, collected
 
     print "tempdir: %s" % tempdir
     print "tempPicDir: %s" % tempPicDir
 
-    for k in dest_dict.keys():
-        dest        = dest_dict[k]
-        src         = dest.sourceFile
-        srcPath     = src.fullPath
-        destPath    = os.path.join(tempdir, dest.relPath)
-        destDir     = os.path.dirname(destPath)
+    pool_map = [(dest_dict[k], tempdir, bOverWrite.get()) for k in dest_dict.keys()]
+    cpuCount = max(mp.cpu_count() - 1, 1)
 
-        print "%s -> %s" % (srcPath, destPath,)
+    p = mp.Pool(processes=cpuCount)
+    p.map(processOneXML, pool_map)
 
-        #FIXME multithreading, map-reduce
-        mdp = etree.parse(srcPath, etree.XMLParser(strip_cdata=False))
-        mdp.getroot().attrib[ID] = dest.guid
-
-        #FIXME what if calledmacros are not overwritten?
-        if bOverWrite.get() and dest_dict[k].retainedCalledMacros:
-            cmRoot = mdp.find("./CalledMacros")
-            for m in mdp.findall("./CalledMacros/Macro"):
-                cmRoot.remove(m)
-
-            for key, cM in dest.retainedCalledMacros.iteritems():
-                macro = etree.Element("Macro")
-
-                mName = etree.Element("MName")
-                mName.text = etree.CDATA('"' + cM + '"')
-                macro.append(mName)
-
-                guid = etree.Element(dest.ID)
-                guid.text = key
-                macro.append(guid)
-
-                cmRoot.append(macro)
-        else:
-            for m in mdp.findall("./CalledMacros/Macro"):
-                for dI in dest_dict.keys():
-                    d = dest_dict[dI]
-                    if  string.strip(m.find("MName").text, "'" + '"')  == d.sourceFile.name:
-                        m.find("MName").text = etree.CDATA('"' + d.name + '"')
-                        m.find(ID).text = d.guid
-
-        for sect in ["./Script_2D", "./Script_3D", "./Script_1D", "./Script_PR", "./Script_UI", "./Script_VL", "./Script_FWM", "./Script_BWM", ]:
-            section = mdp.find(sect)
-            if section is not None:
-                t = section.text
-
-                #FIXME only replace xmls that are in calledmacros
-                for dI in dest_dict.keys():
-                    t = re.sub(dest_dict[dI].sourceFile.name, dest_dict[dI].name, t, flags=re.IGNORECASE)
-
-                for pr in pict_dict.keys():
-                    #Replacing images
-                    t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo.get() + ')', pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
-
-                section.text = etree.CDATA(t)
-
-        # ---------------------Prevpict-------------------------------------------------------
-
-        if dest.bPlaceable:
-            section = mdp.find('Picture')
-            if isinstance(section, etree._Element) and 'path' in section.attrib:
-                path = os.path.basename(section.attrib['path']).upper()
-                if path:
-                    n = next((pict_dict[p].relPath for p in pict_dict.keys() if
-                              os.path.basename(pict_dict[p].sourceFile.relPath).upper() == path), None)
-                    if n:
-                        section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n) # Not os.path.join!
-
-        # ---------------------AC18 and over: adding licensing statically---------------------
-
-        if dest.iVersion >= AC_18:
-            for cr in mdp.getroot().findall("Copyright"):
-                mdp.getroot().remove(cr)
-
-            eCopyright = etree.Element("Copyright", SectVersion="1", SectionFlags="0", SubIdent="0")
-            eAuthor = etree.Element("Author")
-            eCopyright.append(eAuthor)
-            eAuthor.text = dest.author
-
-            eLicense = etree.Element("License")
-            eCopyright.append(eLicense)
-
-            eLType = etree.Element("Type")
-            eLicense.append(eLType)
-            eLType.text = dest.license
-
-            eLVersion = etree.Element("Version")
-            eLicense.append(eLVersion)
-
-            eLVersion.text = dest.licneseVersion
-
-            mdp.getroot().append(eCopyright)
-
-        # ---------------------BO_update---------------------
-        parRoot = mdp.find("./ParamSection")
-        parPar = parRoot.getparent()
-        parPar.remove(parRoot)
-
-        destPar = dest.parameters.toEtree()
-        parPar.append(destPar)
-
-        # ---------------------Ancestries--------------------
-
-        #FIXME not clear, check, writes an extra empty mainunid field
-        #FIXME ancestries to be used in param checking
-        #FIXME this is unclear what id does
-        for m in mdp.findall("./Ancestry/" + ID):
-            guid = m.text
-            if guid.upper() in id_dict:
-                print "ANCESTRY: %s" % guid
-                par = m.getparent()
-                par.remove(m)
-
-                element = etree.Element(ID)
-                element.text = id_dict[guid]
-                element.tail = '\n'
-                par.append(element)
-        try:
-            os.makedirs(destDir)
-        except WindowsError:
-            pass
-        with open(destPath, "w") as file_handle:
-            mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
+    # for k in dest_dict.keys():
+    #     processOneXML(k, tempdir)
 
     _picdir =  AdditionalImageDir.get() # Like IMAGES_GENERIC
 
-    # dirs_to_delete = set()
     if _picdir:
         for f in listdir(_picdir):
-            # dirs_to_delete |= {f}
             shutil.copytree(os.path.join(_picdir, f), os.path.join(tempPicDir, f))
 
     for f in pict_dict.keys():
@@ -2612,12 +2560,12 @@ def main2():
                     shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath),
                                     os.path.join(targPicDir, pict_dict[f].relPath))
         else:
-            if TargetGDLDirName.get():
+            if targGDLDir:
                 try:
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetGDLDirName.get(), pict_dict[f].relPath))
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(targGDLDir, pict_dict[f].relPath))
                 except IOError:
-                    os.makedirs(os.path.join(TargetGDLDirName.get(), pict_dict[f].dirName))
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetGDLDirName.get(), pict_dict[f].relPath))
+                    os.makedirs(os.path.join(targGDLDir, pict_dict[f].dirName))
+                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(targGDLDir, pict_dict[f].relPath))
 
             if TargetXMLDirName.get():
                 try:
@@ -2626,9 +2574,16 @@ def main2():
                     os.makedirs(os.path.join(TargetXMLDirName.get(), pict_dict[f].dirName))
                     shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetXMLDirName.get(), pict_dict[f].relPath))
 
-    x2lCommand = '"%s" x2l -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), tempPicDir, tempdir, TargetGDLDirName.get())
+    x2lCommand = '"%s" x2l -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), tempPicDir, tempdir, targGDLDir)
     print "x2l Command being executed..."
     print x2lCommand
+
+    if bWriteToSelf:
+        tempGDLArchiveDir = tempfile.mkdtemp()
+        print "GDL's archive dir: %s" % tempGDLArchiveDir
+        for k in dest_dict.keys():
+            os.rename(k.sourceFile.fullPath, os.path.join(tempGDLArchiveDir, k.sourceFile.relPath))
+            os.rename(os.path.join(targGDLDir, k.sourceFile.relPath), k.sourceFile.fullPath)
 
     if bDebug.get():
         print "ac command:"
@@ -2658,6 +2613,125 @@ def main2():
         print "tempPicDir: %s" % tempPicDir
 
     print "*****FINISHED SUCCESFULLY******"
+
+
+def processOneXML(inData):
+    dest = inData[0]
+    tempdir = inData[1]
+    bOverWrite = inData[2]
+
+    src = dest.sourceFile
+    srcPath = src.fullPath
+    destPath = os.path.join(tempdir, dest.relPath)
+    destDir = os.path.dirname(destPath)
+
+    print "%s -> %s" % (srcPath, destPath,)
+
+    # FIXME multithreading, map-reduce
+    mdp = etree.parse(srcPath, etree.XMLParser(strip_cdata=False))
+    mdp.getroot().attrib[dest.sourceFile.ID] = dest.guid
+    # FIXME what if calledmacros are not overwritten?
+    if bOverWrite and dest.retainedCalledMacros:
+        cmRoot = mdp.find("./CalledMacros")
+        for m in mdp.findall("./CalledMacros/Macro"):
+            cmRoot.remove(m)
+
+        for key, cM in dest.retainedCalledMacros.iteritems():
+            macro = etree.Element("Macro")
+
+            mName = etree.Element("MName")
+            mName.text = etree.CDATA('"' + cM + '"')
+            macro.append(mName)
+
+            guid = etree.Element(dest.sourceFile.ID)
+            guid.text = key
+            macro.append(guid)
+
+            cmRoot.append(macro)
+    else:
+        for m in mdp.findall("./CalledMacros/Macro"):
+            for dI in dest_dict.keys():
+                d = dest_dict[dI]
+                if string.strip(m.find("MName").text, "'" + '"') == d.sourceFile.name:
+                    m.find("MName").text = etree.CDATA('"' + d.name + '"')
+                    m.find(dest.sourceFile.ID).text = d.guid
+    for sect in ["./Script_2D", "./Script_3D", "./Script_1D", "./Script_PR", "./Script_UI", "./Script_VL",
+                 "./Script_FWM", "./Script_BWM", ]:
+        section = mdp.find(sect)
+        if section is not None:
+            t = section.text
+
+            # FIXME only replace xmls that are in calledmacros
+            for dI in dest_dict.keys():
+                t = re.sub(dest_dict[dI].sourceFile.name, dest_dict[dI].name, t, flags=re.IGNORECASE)
+
+            for pr in pict_dict.keys():
+                # Replacing images
+                t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo.get() + ')',
+                           pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
+
+            section.text = etree.CDATA(t)
+    # ---------------------Prevpict-------------------------------------------------------
+    if dest.bPlaceable:
+        section = mdp.find('Picture')
+        if isinstance(section, etree._Element) and 'path' in section.attrib:
+            path = os.path.basename(section.attrib['path']).upper()
+            if path:
+                n = next((pict_dict[p].relPath for p in pict_dict.keys() if
+                          os.path.basename(pict_dict[p].sourceFile.relPath).upper() == path), None)
+                if n:
+                    section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n)  # Not os.path.join!
+    # ---------------------AC18 and over: adding licensing statically---------------------
+    if dest.iVersion >= AC_18:
+        for cr in mdp.getroot().findall("Copyright"):
+            mdp.getroot().remove(cr)
+
+        eCopyright = etree.Element("Copyright", SectVersion="1", SectionFlags="0", SubIdent="0")
+        eAuthor = etree.Element("Author")
+        eCopyright.append(eAuthor)
+        eAuthor.text = dest.author
+
+        eLicense = etree.Element("License")
+        eCopyright.append(eLicense)
+
+        eLType = etree.Element("Type")
+        eLicense.append(eLType)
+        eLType.text = dest.license
+
+        eLVersion = etree.Element("Version")
+        eLicense.append(eLVersion)
+
+        eLVersion.text = dest.licneseVersion
+
+        mdp.getroot().append(eCopyright)
+    # ---------------------BO_update---------------------
+    parRoot = mdp.find("./ParamSection")
+    parPar = parRoot.getparent()
+    parPar.remove(parRoot)
+    destPar = dest.parameters.toEtree()
+    parPar.append(destPar)
+    # ---------------------Ancestries--------------------
+    # FIXME not clear, check, writes an extra empty mainunid field
+    # FIXME ancestries to be used in param checking
+    # FIXME this is unclear what id does
+    for m in mdp.findall("./Ancestry/" + dest.sourceFile.ID):
+        guid = m.text
+        if guid.upper() in id_dict:
+            print "ANCESTRY: %s" % guid
+            par = m.getparent()
+            par.remove(m)
+
+            element = etree.Element(dest.sourceFile.ID)
+            element.text = id_dict[guid]
+            element.tail = '\n'
+            par.append(element)
+    try:
+        os.makedirs(destDir)
+    except WindowsError:
+        pass
+    with open(destPath, "w") as file_handle:
+        mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
+
 
 def main():
     global app

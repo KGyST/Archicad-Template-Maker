@@ -39,13 +39,15 @@ class TestSuite_CreateParamCommands(unittest.TestSuite):
         dir_baseName = 'test_getFromCSV'
         for fileName in os.listdir(dir_baseName  + "_items"):
             if not fileName.startswith('_') and os.path.splitext(fileName)[1] == '.xml':
-                print fileName
                 parsedXML = etree.parse(os.path.join(dir_baseName  + "_items", fileName), etree.XMLParser(strip_cdata=False))
                 # parsedXML = minidom.parse (os.path.join(dir_baseName  + "_items", fileName))
                 meta = parsedXML.getroot()
                 value = parsedXML.find("./Value").text
-                # value = parsedXML.find("./Value").text
-                embeddedXML = etree.tostring(parsedXML.find("./ParamSection"))
+                embeddedXML = etree.tostring(parsedXML.find("./ParamSection"), encoding="UTF-8")
+                if parsedXML.find("./Note") is not None:
+                    print parsedXML.find("./Note").text
+                else:
+                    print fileName
                 with open(meta.attrib['OriginalXML'], "r") as testFile:
                     if 'TestCSV' in meta.attrib:
                         aVals = [aR for aR in csv.reader(open(os.path.join(dir_baseName  + "_items", meta.attrib['TestCSV']), "r"))]
@@ -78,7 +80,7 @@ class TestCase_CreateParamCommands(unittest.TestCase):
             testFileName = os.path.join(inDirPrefix + "_items", inParams[2])
             if os.path.isfile(outFileName):
                 os.remove(outFileName)
-            resultXMLasString = etree.tostring(inParamSection.toEtree())
+            resultXMLasString = etree.tostring(inParamSection.toEtree(), encoding="UTF-8")
             try:
                 if embeddedXML:
                     inObj.assertEqual(embeddedXML, resultXMLasString)
@@ -89,6 +91,8 @@ class TestCase_CreateParamCommands(unittest.TestCase):
                 with open(outFileName, "w") as outputXMLFile:
                     outputXMLFile.write(resultXMLasString)
                 raise
+            except UnicodeDecodeError:
+                inObj.assertEqual(embeddedXML.decode("UTF-8"), resultXMLasString.decode("UTF-8"))
         if not inCustomName:
             func.__name__ = "test_" + inParams[2][:-4]
         else:

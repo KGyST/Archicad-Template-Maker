@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Root Command="TestString -c detlevel -t String" OriginalXML="original.xml">
 <Value><![CDATA["Árvíztűrő tükörfúrógép]]></Value>
+<Note>Inserting strings with native characters</Note>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>
 		<Version>22</Version>

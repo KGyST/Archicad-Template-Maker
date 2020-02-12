@@ -2,6 +2,7 @@
 <!--Resetting parameter, only value-->
 <Root Command="AC_show2DHotspotsIn3D" OriginalXML="original2.xml">
 <Value>0</Value>
+<Note>Resetting a Boolean parameter's value</Note>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>
 		<Version>22</Version>
