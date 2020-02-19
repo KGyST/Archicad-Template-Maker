@@ -3,6 +3,7 @@
 #HOTFIXREQ if image dest folder is retained, remove common images from it
 #HOTFIXREQ ImportError: No module named googleapiclient.discovery
 #HOTFIXREQ unicode error when running ac command in path with native characters
+#HOTFIXREQ SOURCE_IMAGE_DIR_NAME images are not renamed at all
 #FIXME renaming errors and param csv parameter overwriting
 #FIXME append param to the end when no argument for position
 #FIXME substring issues
@@ -60,7 +61,6 @@ except ImportError:
     pip.main(['install', '--user', 'lxml'])
     from lxml import etree
 
-# import xml.dom
 
 PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"    #FIXME to be deleted after BO API v1 is removed
 
@@ -125,16 +125,16 @@ class ParamSection:
     iterable class of all params
     """
     def __init__(self, inETree):
-        self.eTree          = inETree
-        self.__header       = inETree.find("ParamSectHeader")
+        # self.eTree          = inETree
+        self.__header       = etree.tostring(inETree.find("ParamSectHeader"))
         self.__paramList    = []
         self.__paramDict    = {}
         self.__index        = 0
         self.usedParamSet   = {}
 
         for attr in ["SectVersion", "SectionFlags", "SubIdent", ]:
-            if attr in self.eTree.attrib:
-                setattr(self, attr, self.eTree.attrib[attr])
+            if attr in inETree.attrib:
+                setattr(self, attr, inETree.attrib[attr])
             else:
                 setattr(self, attr, None)
 
@@ -246,7 +246,7 @@ class ParamSection:
     def toEtree(self):
         eTree = etree.Element("ParamSection", SectVersion=self.SectVersion, SectionFlags=self.SectionFlags, SubIdent=self.SubIdent, )
         eTree.text = '\n\t'
-        eTree.append(self.__header)
+        eTree.append(etree.fromstring(self.__header))
         eTree.tail = '\n'
 
         parTree = etree.Element("Parameters")
@@ -775,6 +775,15 @@ class Param(object):
                 for v in inValues.iter("AVal"):
                     y = int(v.attrib["Row"]) - 1
                     self._aVals[y][0] = self.__toFormat(v.text)
+            self.aValsTail = inValues.tail
+        elif type(inValues) == list:
+            self.__fd = len(inValues)
+            self.__sd = len(inValues[0])
+            if self.__sd == 1:
+                self.__sd = 0
+
+            self._aVals = map (self.__toFormat, inValues)
+            self.aValsTail = '\n' + 2 * '\t'
             self.aValsTail = inValues.tail
         elif type(inValues) == list:
             self.__fd = len(inValues)
@@ -2535,7 +2544,7 @@ def main2():
     p.map(processOneXML, pool_map)
 
     # for k in dest_dict.keys():
-    #     processOneXML(k, tempdir)
+    #     processOneXML([dest_dict[k], tempdir, bOverWrite.get()])
 
     _picdir =  AdditionalImageDir.get() # Like IMAGES_GENERIC
 
