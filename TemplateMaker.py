@@ -1616,6 +1616,7 @@ class GUIApp(tk.Frame):
 
         self.bCheckParams       = tk.BooleanVar()
         self.bDebug             = tk.BooleanVar()
+        self.bCleanup           = tk.BooleanVar()
         self.bOverWrite         = tk.BooleanVar()
         self.bAddStr            = tk.BooleanVar()
         self.doBOUpdate         = tk.BooleanVar()
@@ -1635,7 +1636,7 @@ class GUIApp(tk.Frame):
 
         global \
             SourceXMLDirName, SourceGDLDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
-            AdditionalImageDir, bDebug, bCheckParams, ACLocation, bGDL, bXML, dest_dict, dest_guids, replacement_dict, id_dict, \
+            AdditionalImageDir, bDebug, bCleanup, bCheckParams, ACLocation, bGDL, bXML, dest_dict, dest_guids, replacement_dict, id_dict, \
             pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo, doBOUpdate, bWriteToSelf
 
         SourceXMLDirName    = self.SourceXMLDirName
@@ -1647,6 +1648,7 @@ class GUIApp(tk.Frame):
         AdditionalImageDir  = self.AdditionalImageDir
         bCheckParams        = self.bCheckParams
         bDebug              = self.bDebug
+        bCleanup            = self.bCleanup
         bXML                = self.bXML
         bGDL                = self.bGDL
         doBOUpdate          = self.doBOUpdate
@@ -1853,6 +1855,9 @@ class GUIApp(tk.Frame):
 
         self.debugCheckButton   = tk.Checkbutton(self.bottomFrame, {"text": "Debug", "variable": self.bDebug})
         self.debugCheckButton.grid({"row": 0, "column": iF}); iF += 1
+
+        self.cleanupCheckButton   = tk.Checkbutton(self.bottomFrame, {"text": "Cleanup", "variable": self.bCleanup})
+        self.cleanupCheckButton.grid({"row": 0, "column": iF}); iF += 1
 
         self.bAddStrCheckButton = tk.Checkbutton(self.bottomFrame, {"text": "Always add strings", "variable": self.bAddStr})
         self.bAddStrCheckButton.grid({"row": 0, "column": iF}); iF += 1
@@ -2616,8 +2621,8 @@ def main2():
         check_output(x2lCommand, shell=True)
 
     # cleanup ops
-    if not bDebug.get():
-        shutil.rmtree(tempPicDir) #FIXME
+    if not bCleanup.get():
+        shutil.rmtree(tempPicDir)
         if not bXML:
             shutil.rmtree(tempdir)
     else:
