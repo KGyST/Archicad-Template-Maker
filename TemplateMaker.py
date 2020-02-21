@@ -2537,14 +2537,17 @@ def main2():
     print "tempdir: %s" % tempdir
     print "tempPicDir: %s" % tempPicDir
 
-    pool_map = [(dest_dict[k], tempdir, bOverWrite.get()) for k in dest_dict.keys()]
+    pool_map = [{"dest": dest_dict[k],
+                 "tempdir": tempdir,
+                 "bOverWrite": bOverWrite.get(),
+                 "StringTo": StringTo.get(),
+                 "pict_dict": pict_dict,
+                 "dest_dict": dest_dict,
+                 } for k in dest_dict.keys() if isinstance(dest_dict[k], DestXML)]
     cpuCount = max(mp.cpu_count() - 1, 1)
 
     p = mp.Pool(processes=cpuCount)
     p.map(processOneXML, pool_map)
-
-    # for k in dest_dict.keys():
-    #     processOneXML([dest_dict[k], tempdir, bOverWrite.get()])
 
     _picdir =  AdditionalImageDir.get() # Like IMAGES_GENERIC
 
@@ -2625,9 +2628,12 @@ def main2():
 
 
 def processOneXML(inData):
-    dest = inData[0]
-    tempdir = inData[1]
-    bOverWrite = inData[2]
+    dest = inData['dest']
+    tempdir = inData["tempdir"]
+    dest_dict = inData["dest_dict"]
+    pict_dict = inData["pict_dict"]
+    bOverWrite = inData["bOverWrite"]
+    StringTo = inData["StringTo"]
 
     src = dest.sourceFile
     srcPath = src.fullPath
@@ -2664,6 +2670,7 @@ def processOneXML(inData):
                 if string.strip(m.find("MName").text, "'" + '"') == d.sourceFile.name:
                     m.find("MName").text = etree.CDATA('"' + d.name + '"')
                     m.find(dest.sourceFile.ID).text = d.guid
+
     for sect in ["./Script_2D", "./Script_3D", "./Script_1D", "./Script_PR", "./Script_UI", "./Script_VL",
                  "./Script_FWM", "./Script_BWM", ]:
         section = mdp.find(sect)
@@ -2676,7 +2683,7 @@ def processOneXML(inData):
 
             for pr in pict_dict.keys():
                 # Replacing images
-                t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo.get() + ')',
+                t = re.sub(pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo + ')',
                            pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
 
             section.text = etree.CDATA(t)
