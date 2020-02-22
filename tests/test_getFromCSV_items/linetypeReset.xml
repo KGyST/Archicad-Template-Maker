@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--Resetting parameter, only value-->
-<Root Command="AC_show2DHotspotsIn3D" OriginalXML="original2.xml">
-<Value>0</Value>
+<Root Command="ac_line_type" OriginalXML="original2.xml">
+<Value>1</Value>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>
 		<Version>22</Version>
@@ -34,7 +34,7 @@
 			<Flags>
 				<ParFlg_Hidden/>
 			</Flags>
-			<Value>0</Value>
+			<Value>1</Value>
 		</Boolean>
 		<Material Name="gs_shutPanel_materialMain">
 			<Description><![CDATA["Shutter Panel Surface"]]></Description>
@@ -54,7 +54,7 @@
 				<ParFlg_Unique/>
 				<ParFlg_Hidden/>
 			</Flags>
-			<Value>0</Value>
+			<Value>1</Value>
 		</LineType>
 		<FillPattern Name="gs_sunShade_cutFillType">
 			<Description><![CDATA["Cut Fill Type"]]></Description>

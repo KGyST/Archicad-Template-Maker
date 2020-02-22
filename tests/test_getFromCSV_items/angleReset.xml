@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--Resetting parameter, only value-->
-<Root Command="AC_show2DHotspotsIn3D" OriginalXML="original2.xml">
-<Value>0</Value>
+<Root Command="gs_shutPanel_louverAngle" OriginalXML="original2.xml">
+<Value>1</Value>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>
 		<Version>22</Version>
@@ -13,7 +13,7 @@
 		</Length>
 		<Angle Name="gs_shutPanel_louverAngle">
 			<Description><![CDATA["Louver Angle"]]></Description>
-			<Value>30</Value>
+			<Value>1</Value>
 		</Angle>
 		<RealNum Name="BO_width">
 			<Description><![CDATA["Width (mm):"]]></Description>
@@ -34,7 +34,7 @@
 			<Flags>
 				<ParFlg_Hidden/>
 			</Flags>
-			<Value>0</Value>
+			<Value>1</Value>
 		</Boolean>
 		<Material Name="gs_shutPanel_materialMain">
 			<Description><![CDATA["Shutter Panel Surface"]]></Description>
