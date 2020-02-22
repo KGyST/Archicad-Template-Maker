@@ -2635,25 +2635,6 @@ def main2():
     print "*****FINISHED SUCCESFULLY******"
 
 
-# def ireplace(old, new, text):
-#     '''
-#     Case insensitive string replacement instead of using re
-#     Source: https://stackoverflow.com/questions/919056/case-insensitive-replace
-#     :param old:
-#     :param new:
-#     :param text:
-#     :return:
-#     '''
-#     idx = 0
-#     while idx < len(text):
-#         index_l = text.lower().find(old.lower(), idx)
-#         if index_l == -1:
-#             return text
-#         text = text[:index_l] + new + text[index_l + len(old):]
-#         idx = index_l + len(new)
-#     return text
-
-
 def processOneXML(inData):
     dest = inData['dest']
     tempdir = inData["tempdir"]
@@ -2705,16 +2686,12 @@ def processOneXML(inData):
             t = section.text
 
             for dI in dest_dict.keys():
-                t = re.sub(r'(?<=[,"\'` ])' + dest_dict[dI].sourceFile.name + r'(?=[,"\'` ])', dest_dict[dI].name, t, flags=re.IGNORECASE)
-                # t = ireplace(dest_dict[dI].sourceFile.name, dest_dict[dI].name, t)
+                t = re.sub(r'(?<=[,"\'`\s])' + dest_dict[dI].sourceFile.name + r'(?=[,"\'`\s])', dest_dict[dI].name, t, flags=re.IGNORECASE)
 
             for pr in sorted(pict_dict.keys(), key=lambda x: -len(x)):
                 # Replacing images
-                t = re.sub(r'(?<=[,"\'` ])' + pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo + ')',
+                t = re.sub(r'(?<=[,"\'`\s])' + pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo + ')',
                            pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
-                #
-                # t = ireplace(pict_dict[pr].sourceFile.fileNameWithOutExt, pict_dict[pr].fileNameWithOutExt, t)
-
 
             section.text = etree.CDATA(t)
     # ---------------------Prevpict-------------------------------------------------------
