@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--Resetting parameter, only value-->
-<Root Command="gs_sunShade_unCutLinesPen" OriginalXML="original2.xml">
-<Value>2</Value>
+<Root Command="bAppended" OriginalXML="original2.xml">
+<Value>0</Value>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>
 		<Version>22</Version>
@@ -87,7 +87,7 @@
 		</FillPattern>
 		<PenColor Name="gs_sunShade_unCutLinesPen">
 			<Description><![CDATA["Uncut Line Pen"]]></Description>
-			<Value>2</Value>
+			<Value>1</Value>
 		</PenColor>
 		<String Name="gs_shutPanel_type">
 			<Description><![CDATA["Panel Type"]]></Description>
@@ -124,6 +124,10 @@
 			</Flags>
 			<Value>-1</Value>
 		</Integer>
+		<Boolean Name="bAppended">
+			<Description><![CDATA[""]]></Description>
+			<Value>0</Value>
+		</Boolean>
 	</Parameters>
 </ParamSection>
 </Root>

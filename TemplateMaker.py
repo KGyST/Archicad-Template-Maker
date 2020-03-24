@@ -152,6 +152,22 @@ class ParamSection:
             self.__index += 1
             return self.__paramList[self.__index]
 
+    def __getNext(self, inParam):
+        """
+        Gives back next parameter
+        """
+        _index = self.__paramList.index(inParam)
+        if _index+1 < len(self.__paramList):
+            return self.__paramList[_index+1]
+
+    def __getPrev(self, inParam):
+        """
+        Gives previous next parameter
+        """
+        _index = self.__paramList.index(inParam)
+        if _index > 0:
+            return self.__paramList[_index-1]
+
     def __contains__(self, item):
         return item in self.__paramDict
 
@@ -159,8 +175,8 @@ class ParamSection:
         if key in self.__paramDict:
             self.__paramDict[key].setValue(value)
         else:
-            # FIXME test
-            self.append(value, key)
+            _param = self.createParam(value, key)
+            self.append(value, _param)
 
     def __delitem__(self, key):
         del self.__paramDict[key]
@@ -170,6 +186,8 @@ class ParamSection:
         if isinstance(item, int):
             return self.__paramList[item]
         if isinstance(item, str):
+            return self.__paramDict[item]
+        if isinstance(item, unicode):
             return self.__paramDict[item]
 
     def append(self, inEtree, inParName):
@@ -246,7 +264,9 @@ class ParamSection:
     def toEtree(self):
         eTree = etree.Element("ParamSection", SectVersion=self.SectVersion, SectionFlags=self.SectionFlags, SubIdent=self.SubIdent, )
         eTree.text = '\n\t'
-        eTree.append(etree.fromstring(self.__header))
+        _header = etree.fromstring(self.__header)
+        _header.tail = '\n\t'
+        eTree.append(_header)
         eTree.tail = '\n'
 
         parTree = etree.Element("Parameters")
@@ -378,6 +398,8 @@ class ParamSection:
         ap.add_argument("-i", "--inherit", action='store_true', help='Inherit properties form the other parameter')
         ap.add_argument("-y", "--array", action='store_true', help='Insert an array of [0-9]+ or  [0-9]+x[0-9]+ size')
         ap.add_argument("-r", "--remove", action='store_true')
+        ap.add_argument("-1", "--firstDimension")
+        ap.add_argument("-2", "--secondDimension")
 
         parsedArgs = ap.parse_known_args(splitPars)[0]
 
@@ -416,78 +438,44 @@ class ParamSection:
                 elif parsedArgs.type in ("Comment", ):
                     parType = PAR_COMMENT
                     parName = " " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK "
+                param = self.createParam(parName, inCol, inArrayValues, parType)
             else:
-                if re.match(r'\bis[A-Z]', splitPars[0]) or re.match(r'\bb[A-Z]', splitPars[0]):
-                    parType = PAR_BOOL
-                elif re.match(r'\bi[A-Z]', splitPars[0]) or re.match(r'\bn[A-Z]', splitPars[0]):
-                    parType = PAR_INT
-                elif re.match(r'\bs[A-Z]', splitPars[0]) or re.match(r'\bst[A-Z]', splitPars[0]) or re.match(r'\bmp_', splitPars[0]):
-                    parType = PAR_STRING
-                elif re.match(r'\bx[A-Z]', splitPars[0]) or re.match(r'\by[A-Z]', splitPars[0]) or re.match(r'\bz[A-Z]', splitPars[0]):
-                    parType = PAR_LENGTH
-                elif re.match(r'\bx[A-Z]', splitPars[0]):
-                    parType = PAR_ANGLE
-                else:
-                    parType = PAR_STRING
+                param = self.createParam(parName, inCol, inArrayValues)
 
-            if not inArrayValues:
-                arrayValues = None
-                if parType in (PAR_LENGTH, PAR_ANGLE, PAR_REAL, ):
-                    inCol = float(inCol)
-                elif parType in (PAR_INT, PAR_MATERIAL, PAR_LINETYPE, PAR_FILL, PAR_PEN, ):
-                    inCol = int(inCol)
-                elif parType in (PAR_BOOL, ):
-                    inCol = bool(int(inCol))
-                elif parType in (PAR_STRING, ):
-                    inCol = inCol
-                elif parType in (PAR_TITLE, ):
-                    inCol = None
-            else:
-                inCol = None
-                if parType in (PAR_LENGTH, PAR_ANGLE, PAR_REAL, ):
-                    arrayValues = [float(x) if type(x) != list else [float(y) for y in x] for x in inArrayValues]
-                elif parType in (PAR_INT, PAR_MATERIAL, PAR_LINETYPE, PAR_FILL, PAR_PEN, ):
-                    arrayValues = [int(x) if type(x) != list else [int(y) for y in x] for x in inArrayValues]
-                elif parType in (PAR_BOOL, ):
-                    arrayValues = [bool(int(x)) if type(x) != list else [bool(int(y)) for y in x] for x in inArrayValues]
-                elif parType in (PAR_STRING, ):
-                    arrayValues = [x if type(x) != list else [y for y in x] for x in inArrayValues]
-                elif parType in (PAR_TITLE, ):
-                    inCol = None
+            if desc:
+                param.desc = desc
 
             if parsedArgs.inherit:
                 if parsedArgs.child:
                     paramToInherit = self.__paramDict[parsedArgs.child]
                 elif parsedArgs.after:
                     paramToInherit = self.__paramDict[parsedArgs.after]
+                    if PARFLG_BOLDNAME in paramToInherit.flags and not parsedArgs.bold:
+                        param.flags.add(PARFLG_CHILD)
                 elif parsedArgs.frontof:
                     paramToInherit = self.__paramDict[parsedArgs.frontof]
 
-                isChild  =  PARFLG_CHILD in paramToInherit.flags
-                isBold = PARFLG_BOLDNAME in paramToInherit.flags
-                isUnique = PARFLG_UNIQUE in paramToInherit.flags
-                isHidden = PARFLG_HIDDEN in paramToInherit.flags
-            else:
-                isChild = "child" in dir(parsedArgs)
-                isBold = parsedArgs.bold
-                isUnique = parsedArgs.unique
-                isHidden = parsedArgs.hidden
-
-            param = Param(inType=parType,
-                          inName=parName,
-                          inDesc=desc,
-                          inValue=inCol,
-                          inChild=isChild,
-                          inBold=isBold,
-                          inHidden=isHidden,
-                          inUnique=isUnique,
-                          inAVals=arrayValues)
+                if PARFLG_CHILD     in paramToInherit.flags: param.flags.add(PARFLG_CHILD)
+                if PARFLG_BOLDNAME  in paramToInherit.flags: param.flags.add(PARFLG_BOLDNAME)
+                if PARFLG_UNIQUE    in paramToInherit.flags: param.flags.add(PARFLG_UNIQUE)
+                if PARFLG_HIDDEN    in paramToInherit.flags: param.flags.add(PARFLG_HIDDEN)
+            elif "flags" in param.__dict__:
+                # Comments etc have no flags
+                if parsedArgs.child:            param.flags.add(PARFLG_CHILD)
+                if parsedArgs.bold:             param.flags.add(PARFLG_BOLDNAME)
+                if parsedArgs.unique:           param.flags.add(PARFLG_UNIQUE)
+                if parsedArgs.hidden:           param.flags.add(PARFLG_HIDDEN)
 
             if parsedArgs.child:
                 self.insertAsChild(parsedArgs.child, param)
             elif parsedArgs.after:
+                _n = self.__getNext(self[parsedArgs.after])
+                if _n and PARFLG_CHILD in _n.flags:
+                    param.flags.add(PARFLG_CHILD)
                 self.insertAfter(parsedArgs.after, param)
             elif parsedArgs.frontof:
+                if PARFLG_CHILD in self[parsedArgs.frontof].flags:
+                    param.flags.add(PARFLG_CHILD)
                 self.insertBefore(parsedArgs.frontof, param)
             else:
                 #FIXME writing tests for this
@@ -498,14 +486,113 @@ class ParamSection:
                                      inName=" " + parName + ": PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ===== PARAMETER BLOCK ", )
                 self.insertBefore(param.name, paramComment)
         else:
-            # FIXME writing tests for this
+            # Parameter already there
             if parsedArgs.remove:
+                # FIXME writing tests for this
                 if inCol:
                     del self[parName]
+            elif parsedArgs.firstDimension:
+                # FIXME tricky, indexing according to gdl (from 1) but for lists according to Python (from 0) !!!
+                parsedArgs.firstDimension = int(parsedArgs.firstDimension)
+                if parsedArgs.secondDimension:
+                    parsedArgs.secondDimension = int(parsedArgs.secondDimension)
+                    self[parName][parsedArgs.firstDimension][parsedArgs.secondDimension] = inCol
+                elif isinstance(inCol, list):
+                    self[parName][parsedArgs.firstDimension] = inCol
+                else:
+                    self[parName][parsedArgs.firstDimension][1] = inCol
             else:
                 self[parName] = inCol
                 if desc:
                     self.__paramDict[parName].desc = " ".join(parsedArgs.desc)
+
+    @staticmethod
+    def createParam(inParName, inCol, inArrayValues=None, inParType=None):
+        """
+        From a key, value pair (like placeable.params[key] = value) detect desired param type and create param
+        FIXME checking for numbers whether inCol can be converted when needed
+        :return:
+        """
+        arrayValues = None
+
+        if inParType:
+            parType = inParType
+        else:
+            if re.match(r'\bis[A-Z]', inParName) or re.match(r'\bb[A-Z]', inParName):
+                parType = PAR_BOOL
+            elif re.match(r'\bi[A-Z]', inParName) or re.match(r'\bn[A-Z]', inParName):
+                parType = PAR_INT
+            elif re.match(r'\bs[A-Z]', inParName) or re.match(r'\bst[A-Z]', inParName) or re.match(r'\bmp_', inParName):
+                parType = PAR_STRING
+            elif re.match(r'\bx[A-Z]', inParName) or re.match(r'\by[A-Z]', inParName) or re.match(r'\bz[A-Z]', inParName):
+                parType = PAR_LENGTH
+            elif re.match(r'\ba[A-Z]', inParName):
+                parType = PAR_ANGLE
+            else:
+                parType = PAR_STRING
+
+        if not inArrayValues:
+            arrayValues = None
+            if parType in (PAR_LENGTH, PAR_ANGLE, PAR_REAL,):
+                inCol = float(inCol)
+            elif parType in (PAR_INT, PAR_MATERIAL, PAR_LINETYPE, PAR_FILL, PAR_PEN,):
+                inCol = int(inCol)
+            elif parType in (PAR_BOOL,):
+                inCol = bool(int(inCol))
+            elif parType in (PAR_STRING,):
+                inCol = inCol
+            elif parType in (PAR_TITLE,):
+                inCol = None
+        else:
+            inCol = None
+            if parType in (PAR_LENGTH, PAR_ANGLE, PAR_REAL,):
+                arrayValues = [float(x) if type(x) != list else [float(y) for y in x] for x in inArrayValues]
+            elif parType in (PAR_INT, PAR_MATERIAL, PAR_LINETYPE, PAR_FILL, PAR_PEN,):
+                arrayValues = [int(x) if type(x) != list else [int(y) for y in x] for x in inArrayValues]
+            elif parType in (PAR_BOOL,):
+                arrayValues = [bool(int(x)) if type(x) != list else [bool(int(y)) for y in x] for x in inArrayValues]
+            elif parType in (PAR_STRING,):
+                arrayValues = [x if type(x) != list else [y for y in x] for x in inArrayValues]
+            elif parType in (PAR_TITLE,):
+                inCol = None
+
+        return Param(inType=parType,
+                     inName=inParName,
+                     inValue=inCol,
+                     inAVals=arrayValues)
+
+
+class ReszieableGDLDict(dict):
+    """
+    List child with incexing from 1 instead of 0
+    writing outside of list size resizes list
+    """
+    def __init__(self, inObj=None):
+        self.size = 0
+        if not inObj:
+            super(ReszieableGDLDict, self).__init__(self)
+        elif isinstance(inObj, list):
+            _d = {}
+            for i in range(len(inObj)):
+                if isinstance(inObj[i], list):
+                    _d[i+1] = ReszieableGDLDict(inObj[i])
+                else:
+                    _d[i+1] = inObj[i]
+                self.size = max(self.size, i+1)
+            super(ReszieableGDLDict, self).__init__(_d)
+        else:
+            super(ReszieableGDLDict, self).__init__(inObj)
+
+
+    def __getitem__(self, item):
+        if item not in self:
+            dict.__setitem__(self, item, ReszieableGDLDict({}))
+            self.size = max(self.size, item)
+        return dict.__getitem__(self, item)
+
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, key, value)
+        self.size = max(self.size, key)
 
 
 class Param(object):
@@ -572,14 +659,20 @@ class Param(object):
             self.__index += 1
             return self._aVals[self.__index]
 
+    def __getitem__(self, item):
+        return self._aVals[item]
+
     def __setitem__(self, key, value):
         if isinstance(value, list):
-            self._aVals[key - 1] = self.__toFormat(value)
-            self.__fd = max(self.__fd, key - 1)
+            self._aVals[key] = self.__toFormat(value)
+            self.__fd = max(self.__fd, key)
             self.__sd = max(self.__sd, len(value))
         else:
-            self._aVals[key - 1] = [self.__toFormat(value)]
-            self.__fd = max(self.__fd, key - 1)
+            if self.__sd == 0:
+                self._aVals[key] = self.__toFormat(value)
+            else:
+                self._aVals[key] = self.__toFormat(value)
+            self.__fd = max(self.__fd, key)
 
     def setValue(self, inVal):
         if type(inVal) == list:
@@ -601,7 +694,7 @@ class Param(object):
         :return:
         """
         if type(inData) == list:
-            return map (self.__toFormat, inData)
+            return map(self.__toFormat, inData)
         if self.iType in (PAR_LENGTH, PAR_REAL, PAR_ANGLE):
             # self.digits = 2
             return float(inData)
@@ -740,23 +833,27 @@ class Param(object):
     @property
     def aVals(self):
         if self._aVals is not None:
-            aValue = etree.Element("ArrayValues", FirstDimension=str(self.__fd), SecondDimension=str(self.__sd))
+            maxVal = max([self._aVals[avk].size for avk in self._aVals.keys()])
+            aValue = etree.Element("ArrayValues", FirstDimension=str(self._aVals.size), SecondDimension=str(maxVal if maxVal>1 else 0))
         else:
             return None
         aValue.text = '\n' + 4 * '\t'
         aValue.tail = '\n' + 2 * '\t'
 
-        for rowIdx, row in enumerate(self._aVals):
-            for colIdx, cell in enumerate(row):
+        for _i, rowIdx in enumerate(self._aVals):
+            row = self._aVals[rowIdx]
+            for _j, colIdx in enumerate(row):
+                cell = row[colIdx]
                 if self.__sd:
-                    arrayValue = etree.Element("AVal", Column=str(colIdx + 1), Row=str(rowIdx + 1))
-                    nTabs = 3 if colIdx == len(row) - 1 and rowIdx == len(self._aVals) - 1 else 4
+                    arrayValue = etree.Element("AVal", Column=str(colIdx), Row=str(rowIdx))
+                    nTabs = 4 #if _j == len(row) and _i == len(self._aVals) else 4
                 else:
-                    arrayValue = etree.Element("AVal", Row=str(rowIdx + 1))
-                    nTabs = 3 if rowIdx == len(self._aVals) - 1 else 4
+                    arrayValue = etree.Element("AVal", Row=str(rowIdx))
+                    nTabs = 4 #if _i == len(self._aVals) - 1 else 4
                 arrayValue.tail = '\n' + nTabs * '\t'
                 aValue.append(arrayValue)
                 arrayValue.text = self._valueToString(cell)
+        arrayValue.tail = '\n\t\t\t'
         return aValue
 
     @aVals.setter
@@ -765,31 +862,24 @@ class Param(object):
             self.__fd = int(inValues.attrib["FirstDimension"])
             self.__sd = int(inValues.attrib["SecondDimension"])
             if self.__sd > 0:
-                self._aVals = [["" for _ in range(self.__sd)] for _ in range(self.__fd)]
+                self._aVals = ReszieableGDLDict()
                 for v in inValues.iter("AVal"):
-                    x = int(v.attrib["Column"]) - 1
-                    y = int(v.attrib["Row"]) - 1
+                    x = int(v.attrib["Column"])
+                    y = int(v.attrib["Row"])
                     self._aVals[y][x] = self.__toFormat(v.text)
             else:
-                self._aVals = [[""] for _ in range(self.__fd)]
+                self._aVals = ReszieableGDLDict()
                 for v in inValues.iter("AVal"):
-                    y = int(v.attrib["Row"]) - 1
-                    self._aVals[y][0] = self.__toFormat(v.text)
+                    y = int(v.attrib["Row"])
+                    self._aVals[y][1] = self.__toFormat(v.text)
             self.aValsTail = inValues.tail
-        elif type(inValues) == list:
+        elif isinstance(inValues, list):
             self.__fd = len(inValues)
-            self.__sd = len(inValues[0])
-            if self.__sd == 1:
-                self.__sd = 0
+            self.__sd = len(inValues[0]) if isinstance(inValues[0], list) and len (inValues[0]) > 1 else 0
 
-            self._aVals = map (self.__toFormat, inValues)
+            _v = map(self.__toFormat, inValues)
+            self._aVals = ReszieableGDLDict(_v)
             self.aValsTail = '\n' + 2 * '\t'
-            self.aValsTail = inValues.tail
-        elif type(inValues) == list:
-            self.__fd = len(inValues)
-            self.__sd = len(inValues[0]) if isinstance(inValues[0], list) > 1 else 0
-
-            self._aVals = map (self.__toFormat, inValues)
         else:
             self._aVals = None
 
@@ -2524,6 +2614,7 @@ def scanDirs(inFile, inRootFolder, inAcceptedFormatS = (".XML",)):
                 continue
     except WindowsError:
         pass
+
 
 def main2():
     """

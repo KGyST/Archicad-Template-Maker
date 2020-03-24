@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Root Command="sTestNative -a iFamily -y -d ÁŁvíztűrő tükörfúrógép" OriginalXML="original.xml" TestCSV="sArray_3x2_native.csv">
+<Root Command="iArray_3x2 -a iFamily -t Integer -y" OriginalXML="original.xml" TestCSV="iArray_3x2.csv">
+<Description>Integer array test, to be tested against ARCHICAD</Description>
 <Value></Value>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>
@@ -21,20 +22,20 @@
 			</Flags>
 			<Value>10000</Value>
 		</Integer>
-		<String Name="sTestNative">
-			<Description><![CDATA["ÁŁvíztűrő tükörfúrógép"]]></Description>
+		<Integer Name="iArray_3x2">
+			<Description><![CDATA[""]]></Description>
 			<Flags>
 				<ParFlg_Child/>
 			</Flags>
 			<ArrayValues FirstDimension="3" SecondDimension="2">
-				<AVal Column="1" Row="1"><![CDATA["Árvíztűrő tükörfúrógép"]]></AVal>
-				<AVal Column="2" Row="1"><![CDATA["Teszt string 1 2"]]></AVal>
-				<AVal Column="1" Row="2"><![CDATA["Teszt string 2 1"]]></AVal>
-				<AVal Column="2" Row="2"><![CDATA["Teszt string 2 2"]]></AVal>
-				<AVal Column="1" Row="3"><![CDATA["Teszt string 3 1"]]></AVal>
-				<AVal Column="2" Row="3"><![CDATA["Teszt string 3 2"]]></AVal>
+				<AVal Column="1" Row="1">1</AVal>
+				<AVal Column="2" Row="1">2</AVal>
+				<AVal Column="1" Row="2">3</AVal>
+				<AVal Column="2" Row="2">4</AVal>
+				<AVal Column="1" Row="3">5</AVal>
+				<AVal Column="2" Row="3">6</AVal>
 			</ArrayValues>
-		</String>
+		</Integer>
 		<Integer Name="iThickness">
 			<Description><![CDATA[""]]></Description>
 			<Flags>

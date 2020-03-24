@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!--Resetting parameter, only value-->
-<Root Command="gs_sunShade_unCutLinesPen" OriginalXML="original2.xml">
-<Value>2</Value>
+<Root Command="iNtegerArray2d -1 5 -2 4" OriginalXML="original2.xml">
+<Description>Integer array test, indexing out of the original size of an array</Description>
+<Value>5544</Value>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>
 		<Version>22</Version>
@@ -27,13 +27,14 @@
 			<Flags>
 				<ParFlg_Child/>
 			</Flags>
-			<ArrayValues FirstDimension="3" SecondDimension="2">
+			<ArrayValues FirstDimension="5" SecondDimension="4">
 				<AVal Column="1" Row="1">1</AVal>
 				<AVal Column="2" Row="1">2</AVal>
 				<AVal Column="1" Row="2">3</AVal>
 				<AVal Column="2" Row="2">4</AVal>
 				<AVal Column="1" Row="3">5</AVal>
 				<AVal Column="2" Row="3">3</AVal>
+				<AVal Column="4" Row="5">5544</AVal>
 			</ArrayValues>
 		</Integer>
 		<Angle Name="gs_shutPanel_louverAngle">
@@ -87,7 +88,7 @@
 		</FillPattern>
 		<PenColor Name="gs_sunShade_unCutLinesPen">
 			<Description><![CDATA["Uncut Line Pen"]]></Description>
-			<Value>2</Value>
+			<Value>1</Value>
 		</PenColor>
 		<String Name="gs_shutPanel_type">
 			<Description><![CDATA["Panel Type"]]></Description>

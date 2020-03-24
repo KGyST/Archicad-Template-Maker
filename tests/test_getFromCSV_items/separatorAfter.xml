@@ -43,9 +43,6 @@
 		</Integer>
 		<Separator Name="TestSeparator">
 			<Description><![CDATA[""]]></Description>
-			<Flags>
-				<ParFlg_Child/>
-			</Flags>
 		</Separator>
 	</Parameters>
 </ParamSection>

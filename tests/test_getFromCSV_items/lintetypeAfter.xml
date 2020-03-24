@@ -24,6 +24,7 @@
 		<LineType Name="lIneTypeTest">
 			<Description><![CDATA[""]]></Description>
 			<Flags>
+				<ParFlg_Child/>
 				<ParFlg_BoldName/>
 				<ParFlg_Hidden/>
 			</Flags>

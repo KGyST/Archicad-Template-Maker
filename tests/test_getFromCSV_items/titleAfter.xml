@@ -46,9 +46,6 @@
 
 		<Title Name="TestTitle">
 			<Description><![CDATA[""]]></Description>
-			<Flags>
-				<ParFlg_Child/>
-			</Flags>
 		</Title>
 	</Parameters>
 </ParamSection>
