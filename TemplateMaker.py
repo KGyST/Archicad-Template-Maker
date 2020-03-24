@@ -567,15 +567,16 @@ class ReszieableGDLDict(dict):
     List child with incexing from 1 instead of 0
     writing outside of list size resizes list
     """
-    def __init__(self, inObj=None):
+    def __init__(self, inObj=None, firstLevel = True):
         self.size = 0
+        self.firstLevel = firstLevel    #For determining first or second level
         if not inObj:
             super(ReszieableGDLDict, self).__init__(self)
         elif isinstance(inObj, list):
             _d = {}
             for i in range(len(inObj)):
                 if isinstance(inObj[i], list):
-                    _d[i+1] = ReszieableGDLDict(inObj[i])
+                    _d[i+1] = ReszieableGDLDict(inObj[i], firstLevel=False)
                 else:
                     _d[i+1] = inObj[i]
                 self.size = max(self.size, i+1)
@@ -590,8 +591,11 @@ class ReszieableGDLDict(dict):
             self.size = max(self.size, item)
         return dict.__getitem__(self, item)
 
-    def __setitem__(self, key, value):
-        dict.__setitem__(self, key, value)
+    def __setitem__(self, key, value, firstLevel=True):
+        if self.firstLevel and isinstance(value, list):
+            dict.__setitem__(self, key, ReszieableGDLDict(value))
+        else:
+            dict.__setitem__(self, key, value)
         self.size = max(self.size, key)
 
 
