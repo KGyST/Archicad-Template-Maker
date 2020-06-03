@@ -2277,7 +2277,7 @@ class GUIApp(tk.Frame):
     def addFile(self, sourceFileName='', targetFileName=''):
         if not sourceFileName:
             sourceFileName = self.listBox.get(tk.ACTIVE)
-        if sourceFileName == LISTBOX_SEPARATOR:
+        if sourceFileName.startswith(LISTBOX_SEPARATOR):
             self.listBox.select_clear(tk.ACTIVE)
             return
         if sourceFileName.upper() in replacement_dict:
@@ -2301,7 +2301,7 @@ class GUIApp(tk.Frame):
     def addImageFile(self, fileName=''):
         if not fileName:
             fileName = self.listBox2.get(tk.ACTIVE)
-        if not fileName.upper() in pict_dict and fileName != LISTBOX_SEPARATOR:
+        if not fileName.upper() in pict_dict and not fileName.startswith(LISTBOX_SEPARATOR):
             destItem = DestImage(source_pict_dict[fileName.upper()], self.StringFrom.get(), self.StringTo.get())
             pict_dict[destItem.fileNameWithExt.upper()] = destItem
         self.refreshDestItem()
@@ -2357,7 +2357,7 @@ class GUIApp(tk.Frame):
     def delFile(self, fileName = ''):
         if not fileName:
             fileName = self.listBox3.get(tk.ACTIVE)
-        if fileName == LISTBOX_SEPARATOR:
+        if fileName.startswith(LISTBOX_SEPARATOR):
             self.listBox3.select_clear(tk.ACTIVE)
             return
 
@@ -2398,7 +2398,7 @@ class GUIApp(tk.Frame):
     def listboxselect(self, event, ):
         if not event.widget.get(0):
             return
-        if event.widget.get(event.widget.curselection()[0]) == LISTBOX_SEPARATOR:
+        if event.widget.get(event.widget.curselection()[0]).startswith(LISTBOX_SEPARATOR):
             return
 
         currentSelection = event.widget.get(int(event.widget.curselection()[0])).upper()
