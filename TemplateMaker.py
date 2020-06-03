@@ -23,19 +23,20 @@ import shutil
 
 import string
 
-import Tkinter as tk
-import tkFileDialog
+import tkinter as tk
+import tkinter.filedialog
 # import urllib, httplib
 import copy
 import argparse
 
-from ConfigParser import *  #FIXME not *
+from configparser import *  #FIXME not *
 import csv
 
-import httplib, urllib, json, webbrowser, urlparse, os, hashlib, base64
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+import http.client, urllib.request, urllib.parse, urllib.error, json, webbrowser, urllib.parse, os, hashlib, base64
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import pip
 import multiprocessing as mp
+from functools import reduce
 
 try:
     import googleapiclient.errors
@@ -145,7 +146,7 @@ class ParamSection:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         if self.__index >= len(self.__paramList) - 1:
             raise StopIteration
         else:
@@ -187,7 +188,7 @@ class ParamSection:
             return self.__paramList[item]
         if isinstance(item, str):
             return self.__paramDict[item]
-        if isinstance(item, unicode):
+        if isinstance(item, str):
             return self.__paramDict[item]
 
     def append(self, inEtree, inParName):
@@ -288,14 +289,14 @@ class ParamSection:
         #FIXME code for unsuccessful updates, BO_edinum to -1, removing BO_productguid
         #FIXME new authentication
         headers = {"Content-type": "application/x-www-form-urlencoded"}
-        _xml = urllib.urlencode({"value": "<?xml version='1.0' encoding='UTF-8'?>"
+        _xml = urllib.parse.urlencode({"value": "<?xml version='1.0' encoding='UTF-8'?>"
                                             "<Bim API='%s'>"
                                                 "<Objects>"
                                                     "<Object ProductId='%s'/>"
                                                 "</Objects>"
                                             "</Bim>" % (PERSONAL_ID, prodatURL, )})
 
-        conn = httplib.HTTPSConnection("api.bimobject.com")
+        conn = http.client.HTTPSConnection("api.bimobject.com")
         conn.request("POST", "/GetBimObjectInfoXml2", _xml, headers)
         response = conn.getresponse()
         resp = response.read()
@@ -682,12 +683,12 @@ class Param(object):
         if type(inVal) == list:
             self.aVals = self.__toFormat(inVal)
             if self.value:
-                print("WARNING: value -> array change: %s" % self.name)
+                print(("WARNING: value -> array change: %s" % self.name))
             self.value = None
         else:
             self.value = self.__toFormat(inVal)
             if self.aVals:
-                print("WARNING: array -> value change: %s" % self.name)
+                print(("WARNING: array -> value change: %s" % self.name))
             self.aVals = None
 
     def __toFormat(self, inData):
@@ -698,7 +699,7 @@ class Param(object):
         :return:
         """
         if type(inData) == list:
-            return map(self.__toFormat, inData)
+            return list(map(self.__toFormat, inData))
         if self.iType in (PAR_LENGTH, PAR_REAL, PAR_ANGLE):
             # self.digits = 2
             return float(inData)
@@ -837,7 +838,7 @@ class Param(object):
     @property
     def aVals(self):
         if self._aVals is not None:
-            maxVal = max([self._aVals[avk].size for avk in self._aVals.keys()])
+            maxVal = max([self._aVals[avk].size for avk in list(self._aVals.keys())])
             aValue = etree.Element("ArrayValues", FirstDimension=str(self._aVals.size), SecondDimension=str(maxVal if maxVal>1 else 0))
         else:
             return None
@@ -881,7 +882,7 @@ class Param(object):
             self.__fd = len(inValues)
             self.__sd = len(inValues[0]) if isinstance(inValues[0], list) and len (inValues[0]) > 1 else 0
 
-            _v = map(self.__toFormat, inValues)
+            _v = list(map(self.__toFormat, inValues))
             self._aVals = ReszieableGDLDict(_v)
             self.aValsTail = '\n' + 2 * '\t'
         else:
@@ -940,7 +941,7 @@ class BOAPIv2(object):
         def do_GET(self):
             global data
             self.wfile.write(BOAPIv2.BROWSER_CLOSE_WINDOW)
-            data = urlparse.parse_qs(urlparse.urlparse(self.path).query)
+            data = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
             data = dict([(i, data[i][0]) if data[i] else (i, '') for i in data])
             BOAPIv2.code = data['code']
 
@@ -973,7 +974,7 @@ class BOAPIv2(object):
                                              "page": page,
                                              "pageSize": BOAPIv2.PAGE_MAX_SIZE})
             rjson = json.load(res)
-            if res.status == httplib.OK:
+            if res.status == http.client.OK:
                 for brand in rjson['data'] :
                     self.brands[brand['permalink']] = brand['id']
                 if rjson['meta']['hasNextPage']:
@@ -1006,30 +1007,30 @@ class BOAPIv2(object):
     def get_data_with_access_token(self, inPath, inUrlDict):
         response = self._get_data_with_access_token(inPath, inUrlDict)
 
-        if response.status != httplib.OK:
+        if response.status != http.client.OK:
             self.log_in()
             response = self._get_data_with_access_token(inPath, inUrlDict)
         return response
 
     def _get_data_with_access_token(self, inPath, inUrlDict):
-        conn = httplib.HTTPSConnection("api.bimobject.com")
+        conn = http.client.HTTPSConnection("api.bimobject.com")
         headers = {"Content-type": "application/x-www-form-urlencoded",
                    "Authorization": self.token_type + " " + self.access_token}
-        urlDict = urllib.urlencode(inUrlDict)
+        urlDict = urllib.parse.urlencode(inUrlDict)
         conn.request("GET", inPath + "?" +  urlDict, '', headers)
         return conn.getresponse()
 
     # 2. If access token doesn't work, try refresh_token
     def get_access_token_from_refresh_token(self):
-        conn = httplib.HTTPSConnection("api.bimobject.com")
-        urlDict = urllib.urlencode({"client_id": BOAPIv2.CLIENT_ID,
+        conn = http.client.HTTPSConnection("api.bimobject.com")
+        urlDict = urllib.parse.urlencode({"client_id": BOAPIv2.CLIENT_ID,
                                     "client_secret": BOAPIv2.CLIENT_SECRET,
                                     "grant_type": "refresh_token",
                                     "refresh_token": self.refresh_token, })
         headers = {"Content-type": "application/x-www-form-urlencoded", }
         conn.request("POST", "/oauth2/token", urlDict, headers)
         response = conn.getresponse()
-        if response.status != httplib.OK:
+        if response.status != http.client.OK:
             self.log_in()
         else:
             rjson = json.load(response)
@@ -1042,7 +1043,7 @@ class BOAPIv2(object):
         # code_challenge = base64.b64encode(hashlib.sha256(code_verifier).digest())
 
         authorizePath = '/identity/connect/authorize'
-        urlDict = urllib.urlencode({"client_id": BOAPIv2.CLIENT_ID,
+        urlDict = urllib.parse.urlencode({"client_id": BOAPIv2.CLIENT_ID,
                                     "response_type": "code",
                                     "redirect_uri": BOAPIv2.REDIRECT_URI,
                                     "scope": "admin admin.brand admin.product offline_access",
@@ -1052,7 +1053,7 @@ class BOAPIv2(object):
                                     "state": "1",
                                     })
 
-        ue = urlparse.urlunparse(('https',
+        ue = urllib.parse.urlunparse(('https',
                                   'accounts.bimobject.com',
                                   authorizePath,
                                   '',
@@ -1066,7 +1067,7 @@ class BOAPIv2(object):
         except IOError:
             pass
 
-        urlDict2 = urllib.urlencode({"client_id": BOAPIv2.CLIENT_ID,
+        urlDict2 = urllib.parse.urlencode({"client_id": BOAPIv2.CLIENT_ID,
                                      "client_secret": BOAPIv2.CLIENT_SECRET,
                                      "grant_type": "authorization_code",
                                      # "grant_type"       : "client_credentials_for_admin",
@@ -1077,11 +1078,11 @@ class BOAPIv2(object):
         # print urlDict2
 
         headers = {"Content-type": "application/x-www-form-urlencoded", }
-        conn = httplib.HTTPSConnection("accounts.bimobject.com")
+        conn = http.client.HTTPSConnection("accounts.bimobject.com")
         conn.request("POST", "/identity/connect/token", urlDict2, headers)
         # conn.request("GET", "/identity/connect/authorize", urlDict2, headers)
         response = conn.getresponse().read()
-        print "response: " + response
+        print("response: " + response)
 
         try:
             self.access_token  = json.loads(response)['access_token']
@@ -1151,7 +1152,7 @@ class GoogleSpreadsheetConnector(object):
         sheetName = sheet.get(spreadsheetId=inSpreadsheetID,
                               includeGridData=True).execute()['sheets'][0]['properties']['title']
 
-        result = sheet.values().get(spreadsheetId=inSpreadsheetID,
+        result = list(sheet.values()).get(spreadsheetId=inSpreadsheetID,
                                     range=sheetName).execute()
 
         self.values = result.get('values', [])
@@ -1213,7 +1214,14 @@ class GeneralFile(object) :
         self.relPath            = os.path.join(self.dirName, self.fileNameWithExt)
 
     def __lt__(self, other):
-        return self.fileNameWithOutExt < other.name
+        if self.dirName != other.dirName:
+            if self.dirName in other.dirName:
+                return True
+            elif other.dirName in self.dirName:
+                return False
+            else:
+                return self.dirName.upper() < other.dirName.upper()
+        return self.fileNameWithOutExt.upper() < other.name.upper()
 
 
 class SourceFile(GeneralFile):
@@ -1285,7 +1293,7 @@ class XMLFile(GeneralFile):
             return True
         if not self.bPlaceable and other.bPlaceable:
             return False
-        return self._name < other.name
+        return super().__lt__(other)
 
     @property
     def name(self):
@@ -1337,7 +1345,7 @@ class SourceXML (XMLFile, SourceFile):
 
         for m in mroot.findall("./CalledMacros/Macro"):
             calledMacroID = m.find(ID).text
-            self.calledMacros[calledMacroID] = string.strip(m.find("MName").text, "'" + '"')
+            self.calledMacros[calledMacroID] = m.find("MName").text.strip( "'" + '"')
 
         for gdlPict in mroot.findall("./GDLPict"):
             if 'path' in gdlPict.attrib:
@@ -1382,7 +1390,7 @@ class SourceXML (XMLFile, SourceFile):
             if inPar.name in script:
                 return True
 
-        for _, macroName in self.calledMacros.iteritems():
+        for _, macroName in self.calledMacros.items():
             if macroName in replacement_dict:
                 if macroName not in inMacroSet:
                     if replacement_dict[macroName].checkParameterUsage(inPar, inMacroSet):
@@ -1403,7 +1411,7 @@ class DestXML (XMLFile, DestFile):
                 self.name += stringTo
         if self.name.upper() in dest_dict:
             i = 1
-            while self.name.upper() + "_" + str(i) in dest_dict.keys():
+            while self.name.upper() + "_" + str(i) in list(dest_dict.keys()):
                 i += 1
             self.name += "_" + str(i)
 
@@ -1439,7 +1447,7 @@ class DestXML (XMLFile, DestFile):
                 # else:
                 #     self.ID = "UNID"
                 self.guid = mdp.getroot().attrib[ID]
-                print mdp.getroot().attrib[ID]
+                print(mdp.getroot().attrib[ID])
             else:
                 self.warnings += ["XML Target file exists!"]
 
@@ -1536,7 +1544,7 @@ class InputDirPlusText():
             CreateToolTip(self._frame, tooltip)
 
     def inputDirName(self):
-        self.filename = tkFileDialog.askdirectory(initialdir="/", title="Select folder")
+        self.filename = tkinter.filedialog.askdirectory(initialdir="/", title="Select folder")
         self.target.set(self.filename)
         self.entryDirName.delete(0, tk.END)
         self.entryDirName.insert(0, self.filename)
@@ -1650,7 +1658,7 @@ class ListboxWithRefresh(tk.Listbox):
         if "dict" in _dict:
             self.dict = _dict["dict"]
             del _dict["dict"]
-        tk.Listbox.__init__(self, top, _dict)
+        tk.Listbox.__init__(self, top, _dict, selectmode=tk.EXTENDED)
 
     def refresh(self, *_):
         if self.dict == replacement_dict:
@@ -1660,18 +1668,15 @@ class ListboxWithRefresh(tk.Listbox):
             except AttributeError:
                 return
         self.delete(0, tk.END)
-        bPlaceablesFromHere = True
-        if self.dict in (pict_dict, source_pict_dict):
-            bPlaceablesFromHere = False
-        for f in sorted([self.dict[k] for k in self.dict.keys()]):
+        _prevObj = None
+        for f in sorted([self.dict[k] for k in list(self.dict.keys())]):
             try:
-                if not f.bPlaceable and bPlaceablesFromHere:
-                    self.insert(tk.END, LISTBOX_SEPARATOR)
-                    bPlaceablesFromHere = False
+                if _prevObj and _prevObj.dirName != f.dirName:
+                    self.insert(tk.END, LISTBOX_SEPARATOR + f.dirName)
+                _prevObj = f
                 if f.warnings:
                     self.insert(tk.END, "* " + f.name)
-                else:
-                    self.insert(tk.END, f.name)
+                self.insert(tk.END, f.name)
             except AttributeError:
                 self.insert(tk.END, f.name)
 
@@ -1782,16 +1787,16 @@ class GUIApp(tk.Frame):
                     elif cName == 'allkeywords':
                         all_keywords |= set(v.strip() for v in cValue.split(',') if v !='')
                 except NoOptionError:
-                    print "NoOptionError"
+                    print("NoOptionError")
                     continue
                 except NoSectionError:
-                    print "NoSectionError"
+                    print("NoSectionError")
                     continue
                 except ValueError:
-                    print "ValueError"
+                    print("ValueError")
                     continue
         except NoSectionError:
-            print "NoSectionError"
+            print("NoSectionError")
 
         self.observerXML = self.bXML.trace_variable("w", self.targetXMLModified)
         self.observerGDL = self.bGDL.trace_variable("w", self.targetGDLModified)
@@ -1813,7 +1818,7 @@ class GUIApp(tk.Frame):
         self.inputFrame.grid_rowconfigure(4, weight=1)
 
         self.InputFrameS = [tk.Frame(self.inputFrame) for _ in range (6)]
-        for f, r, cc in zip(self.InputFrameS, range(6), [0, 1, 1, 0, 0, 1, ]):
+        for f, r, cc in zip(self.InputFrameS, list(range(6)), [0, 1, 1, 0, 0, 1, ]):
             f.grid({"row": r, "column": 0, "sticky": tk.N + tk.S + tk.E + tk.W, })
             self.InputFrameS[r].grid_columnconfigure(cc, weight=1)
             self.InputFrameS[r].rowconfigure(0, weight=1)
@@ -1876,7 +1881,7 @@ class GUIApp(tk.Frame):
         self.outputFrame.grid_rowconfigure(4, weight=1)
 
         self.outputFrameS = [tk.Frame(self.outputFrame) for _ in range (6)]
-        for f, r, cc in zip(self.outputFrameS, range(6), [0, 1, 1, 0, 0, 1]):
+        for f, r, cc in zip(self.outputFrameS, list(range(6)), [0, 1, 1, 0, 0, 1]):
             f.grid({"row": r, "column": 0, "sticky": tk.SW + tk.NE, })
             self.outputFrameS[r].grid_columnconfigure(cc, weight=1)
             self.outputFrameS[r].rowconfigure(0, weight=1)
@@ -1977,13 +1982,13 @@ class GUIApp(tk.Frame):
 
         _i += 1
 
-        self.addRecursiveButton = tk.Button(self.buttonFrame, {"text": "Recursive >", "command": self.addFileRecursively})
+        self.addRecursiveButton = tk.Button(self.buttonFrame, {"text": "Recursive >", "command": self.addMoreFilesRecursively})
         self.addRecursiveButton.grid({"row":_i, "column": 0, "sticky": tk.W + tk.E})
         CreateToolTip(self.addRecursiveButton, "Add macro, and all its called macro and subtypes recursively, if not added already")
 
         _i += 1
 
-        self.addButton          = tk.Button(self.buttonFrame, {"text": ">", "command": self.addFile})
+        self.addButton          = tk.Button(self.buttonFrame, {"text": ">", "command": self.addMoreFiles})
         self.addButton.grid({"row":_i, "column": 0, "sticky": tk.W + tk.E})
 
         _i += 1
@@ -2106,12 +2111,12 @@ class GUIApp(tk.Frame):
             SpreadsheetID = findall[0]
         else:
             SpreadsheetID = findall
-        print SpreadsheetID
+        print(SpreadsheetID)
 
         try:
             self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
         except googleapiclient.errors.HttpError:
-            print ("HttpError: Spreadsheet ID (%s) seems to be invalid" % SSIDRegex)
+            print(("HttpError: Spreadsheet ID (%s) seems to be invalid" % SSIDRegex))
             return
         self.GoogleSSInfield.top.destroy()
         self.createDestItems(self.googleSpreadsheet.values)
@@ -2136,7 +2141,7 @@ class GUIApp(tk.Frame):
         TARG_NAME   = 1
         PRODATURL   = 2
         VALUES      = 3
-        csvFileName = tkFileDialog.askopenfilename(initialdir="/", title="Select folder", filetypes=(("CSV files", "*.csv"), ("all files","*.*")))
+        csvFileName = tkinter.filedialog.askopenfilename(initialdir="/", title="Select folder", filetypes=(("CSV files", "*.csv"), ("all files","*.*")))
         if csvFileName:
             with open(csvFileName, "r") as csvFile:
                 firstRow = next(csv.reader(csvFile))
@@ -2181,7 +2186,7 @@ class GUIApp(tk.Frame):
             SpreadsheetID = findall[0]
         else:
             SpreadsheetID = findall
-        print SpreadsheetID
+        print(SpreadsheetID)
 
         try:
             self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
@@ -2210,11 +2215,11 @@ class GUIApp(tk.Frame):
         self.GoogleSSBbutton.config(cnf={'state': tk.DISABLED})
 
     def setACLoc(self):
-        ACLoc = tkFileDialog.askdirectory(initialdir="/", title="Select ArchiCAD folder")
+        ACLoc = tkinter.filedialog.askdirectory(initialdir="/", title="Select ArchiCAD folder")
         self.ACLocation.set(ACLoc)
 
     def setAdditionalImageDir(self):
-        AIDLoc = tkFileDialog.askdirectory(initialdir="/", title="Select additional images' folder")
+        AIDLoc = tkinter.filedialog.askdirectory(initialdir="/", title="Select additional images' folder")
         self.AdditionalImageDir.set(AIDLoc)
 
     def processGDLDir(self, *_):
@@ -2227,11 +2232,11 @@ class GUIApp(tk.Frame):
             return
         self.tempXMLDir = tempfile.mkdtemp()
         self.tempImgDir = tempfile.mkdtemp()
-        print "tempXMLDir: %s" % self.tempXMLDir
-        print "tempImgDir: %s" % self.tempImgDir
-        print "SourceGDLDirName %s" % self.SourceGDLDirName.get()
+        print("tempXMLDir: %s" % self.tempXMLDir)
+        print("tempImgDir: %s" % self.tempImgDir)
+        print("SourceGDLDirName %s" % self.SourceGDLDirName.get())
         l2xCommand = '"%s" l2x -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), self.tempImgDir, self.SourceGDLDirName.get(), self.tempXMLDir)
-        print "l2xCommand: %s" % l2xCommand
+        print("l2xCommand: %s" % l2xCommand)
         check_output(l2xCommand, shell=True)
         self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.NORMAL})
         self.sourceImageDir.entryDirName.config(cnf={'state': tk.NORMAL})
@@ -2289,6 +2294,10 @@ class GUIApp(tk.Frame):
         self.refreshDestItem()
         return destItem
 
+    def addMoreFiles(self):
+        for sourceFileIndex in self.listBox.curselection():
+            self.addFile(sourceFileName=self.listBox.get(sourceFileIndex))
+
     def addImageFile(self, fileName=''):
         if not fileName:
             fileName = self.listBox2.get(tk.ACTIVE)
@@ -2318,7 +2327,7 @@ class GUIApp(tk.Frame):
 
         x = replacement_dict[sourceFileName.upper()]
 
-        for k, v in x.calledMacros.iteritems():
+        for k, v in x.calledMacros.items():
             if v not in dest_sourcenames:
                 self.addFileRecursively(v)
 
@@ -2327,8 +2336,8 @@ class GUIApp(tk.Frame):
                 if parentGUID in source_guids:
                     self.addFileRecursively(source_guids[parentGUID])
 
-        for pict in source_pict_dict.values():
-            for script in x.scripts.values():
+        for pict in list(source_pict_dict.values()):
+            for script in list(x.scripts.values()):
                 if pict.fileNameWithExt.upper() in script or pict.fileNameWithOutExt.upper() in script.upper():
                     self.addImageFile(pict.fileNameWithExt)
             if pict.fileNameWithExt.upper() in x.gdlPicts:
@@ -2340,6 +2349,10 @@ class GUIApp(tk.Frame):
 
         self.refreshDestItem()
         return destItem
+
+    def addMoreFilesRecursively(self):
+        for sourceFileIndex in self.listBox.curselection():
+            self.addFileRecursively(sourceFileName=self.listBox.get(sourceFileIndex))
 
     def delFile(self, fileName = ''):
         if not fileName:
@@ -2425,7 +2438,7 @@ class GUIApp(tk.Frame):
         for w in self.warnings:
             w.destroy()
         self.warnings = [tk.Label(self.warningFrame, {"text": w}) for w in self.destItem.warnings]
-        for w, n in zip(self.warnings, range(len(self.warnings))):
+        for w, n in zip(self.warnings, list(range(len(self.warnings)))):
             w.grid({"row": n, "sticky": tk.W})
             #FIXME wrong
 
@@ -2478,7 +2491,7 @@ class GUIApp(tk.Frame):
             self.bo.refreshBrandDict()
             self.brandGUID = self.bo.brands[_brandName]
 
-        print self.bo.getProductData(self.brandGUID, _productGUID)
+        print(self.bo.getProductData(self.brandGUID, _productGUID))
 
     def modifyDestItem(self, *_):
         fN = self.fileName.get().upper()
@@ -2525,7 +2538,7 @@ class GUIApp(tk.Frame):
             currentConfig.set("BOAPIv2", "token_type",          self.bo.token_type)
             currentConfig.set("BOAPIv2", "refresh_token",       self.bo.refresh_token)
             if self.bo.brands:
-                currentConfig.set("BOAPIv2", "brands", ', '.join(list(reduce(lambda x, y: x+y, self.bo.brands.iteritems()))))
+                currentConfig.set("BOAPIv2", "brands", ', '.join(list(reduce(lambda x, y: x+y, iter(self.bo.brands.items())))))
 
         if self.googleSpreadsheet:
             currentConfig.add_section("GoogleSpreadsheetAPI")
@@ -2536,7 +2549,7 @@ class GUIApp(tk.Frame):
             currentConfig.set("GoogleSpreadsheetAPI", "client_id",      self.googleSpreadsheet.googleCreds.client_id)
             currentConfig.set("GoogleSpreadsheetAPI", "client_secret",  self.googleSpreadsheet.googleCreds.client_secret)
 
-        with open(os.path.join(self.appDataDir,"TemplateMarker.ini"), 'wb') as configFile:
+        with open(os.path.join(self.appDataDir, "TemplateMarker.ini"), 'w') as configFile:
             #FIXME proper config place
             try:
                 currentConfig.write(configFile)
@@ -2611,10 +2624,10 @@ def scanDirs(inFile, inRootFolder, inAcceptedFormatS = (".XML",)):
                     scanDirs(src, inRootFolder)
 
             except KeyError:
-                print "KeyError %s" % f
+                print("KeyError %s" % f)
                 continue
             except etree.XMLSyntaxError:
-                print "XMLSyntaxError %s" % f
+                print("XMLSyntaxError %s" % f)
                 continue
     except WindowsError:
         pass
@@ -2637,8 +2650,8 @@ def main2():
     targPicDir = TargetImageDirName.get()   # For target library's encoded images
     tempPicDir = tempfile.mkdtemp()         # For every image file, collected
 
-    print "tempdir: %s" % tempdir
-    print "tempPicDir: %s" % tempPicDir
+    print("tempdir: %s" % tempdir)
+    print("tempPicDir: %s" % tempPicDir)
 
     pool_map = [{"dest": dest_dict[k],
                  "tempdir": tempdir,
@@ -2646,7 +2659,7 @@ def main2():
                  "StringTo": StringTo.get(),
                  "pict_dict": pict_dict,
                  "dest_dict": dest_dict,
-                 } for k in dest_dict.keys() if isinstance(dest_dict[k], DestXML)]
+                 } for k in list(dest_dict.keys()) if isinstance(dest_dict[k], DestXML)]
     cpuCount = max(mp.cpu_count() - 1, 1)
 
     p = mp.Pool(processes=cpuCount)
@@ -2658,7 +2671,7 @@ def main2():
         for f in listdir(_picdir):
             shutil.copytree(os.path.join(_picdir, f), os.path.join(tempPicDir, f))
 
-    for f in pict_dict.keys():
+    for f in list(pict_dict.keys()):
         if pict_dict[f].sourceFile.isEncodedImage:
             try:
                 shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(tempPicDir, pict_dict[f].relPath))
@@ -2690,29 +2703,29 @@ def main2():
                     shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetXMLDirName.get(), pict_dict[f].relPath))
 
     x2lCommand = '"%s" x2l -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), tempPicDir, tempdir, targGDLDir)
-    print "x2l Command being executed..."
-    print x2lCommand
+    print("x2l Command being executed...")
+    print(x2lCommand)
 
     if bWriteToSelf:
         tempGDLArchiveDir = tempfile.mkdtemp()
-        print "GDL's archive dir: %s" % tempGDLArchiveDir
-        for k in dest_dict.keys():
+        print("GDL's archive dir: %s" % tempGDLArchiveDir)
+        for k in list(dest_dict.keys()):
             os.rename(k.sourceFile.fullPath, os.path.join(tempGDLArchiveDir, k.sourceFile.relPath))
             os.rename(os.path.join(targGDLDir, k.sourceFile.relPath), k.sourceFile.fullPath)
 
     if bDebug.get():
-        print "ac command:"
-        print x2lCommand
+        print("ac command:")
+        print(x2lCommand)
         with open(tempdir + "\dict.txt", "w") as d:
-            for k in dest_dict.keys():
+            for k in list(dest_dict.keys()):
                 d.write(k + " " + dest_dict[k].sourceFile.name + "->" + dest_dict[k].name + " " + dest_dict[k].sourceFile.guid + " -> " + dest_dict[k].guid + "\n")
 
         with open(tempdir + "\pict_dict.txt", "w") as d:
-            for k in pict_dict.keys():
+            for k in list(pict_dict.keys()):
                 d.write(pict_dict[k].sourceFile.fullPath + "->" + pict_dict[k].relPath+ "\n")
 
         with open(tempdir + "\id_dict.txt", "w") as d:
-            for k in id_dict.keys():
+            for k in list(id_dict.keys()):
                 d.write(id_dict[k] + "\n")
 
     if bGDL.get():
@@ -2724,10 +2737,10 @@ def main2():
         if not bXML:
             shutil.rmtree(tempdir)
     else:
-        print "tempdir: %s" % tempdir
-        print "tempPicDir: %s" % tempPicDir
+        print("tempdir: %s" % tempdir)
+        print("tempPicDir: %s" % tempPicDir)
 
-    print "*****FINISHED SUCCESFULLY******"
+    print("*****FINISHED SUCCESFULLY******")
 
 
 def processOneXML(inData):
@@ -2743,7 +2756,7 @@ def processOneXML(inData):
     destPath = os.path.join(tempdir, dest.relPath)
     destDir = os.path.dirname(destPath)
 
-    print "%s -> %s" % (srcPath, destPath,)
+    print("%s -> %s" % (srcPath, destPath,))
 
     # FIXME multithreading, map-reduce
     mdp = etree.parse(srcPath, etree.XMLParser(strip_cdata=False))
@@ -2754,7 +2767,7 @@ def processOneXML(inData):
         for m in mdp.findall("./CalledMacros/Macro"):
             cmRoot.remove(m)
 
-        for key, cM in dest.retainedCalledMacros.iteritems():
+        for key, cM in dest.retainedCalledMacros.items():
             macro = etree.Element("Macro")
 
             mName = etree.Element("MName")
@@ -2768,7 +2781,7 @@ def processOneXML(inData):
             cmRoot.append(macro)
     else:
         for m in mdp.findall("./CalledMacros/Macro"):
-            for dI in dest_dict.keys():
+            for dI in list(dest_dict.keys()):
                 d = dest_dict[dI]
                 if string.strip(m.find("MName").text, "'" + '"') == d.sourceFile.name:
                     m.find("MName").text = etree.CDATA('"' + d.name + '"')
@@ -2780,10 +2793,10 @@ def processOneXML(inData):
         if section is not None:
             t = section.text
 
-            for dI in dest_dict.keys():
+            for dI in list(dest_dict.keys()):
                 t = re.sub(r'(?<=[,"\'`\s])' + dest_dict[dI].sourceFile.name + r'(?=[,"\'`\s])', dest_dict[dI].name, t, flags=re.IGNORECASE)
 
-            for pr in sorted(pict_dict.keys(), key=lambda x: -len(x)):
+            for pr in sorted(list(pict_dict.keys()), key=lambda x: -len(x)):
                 # Replacing images
                 t = re.sub(r'(?<=[,"\'`\s])' + pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo + ')',
                            pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
@@ -2795,7 +2808,7 @@ def processOneXML(inData):
         if isinstance(section, etree._Element) and 'path' in section.attrib:
             path = os.path.basename(section.attrib['path']).upper()
             if path:
-                n = next((pict_dict[p].relPath for p in pict_dict.keys() if
+                n = next((pict_dict[p].relPath for p in list(pict_dict.keys()) if
                           os.path.basename(pict_dict[p].sourceFile.relPath).upper() == path), None)
                 if n:
                     section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n)  # Not os.path.join!
@@ -2835,7 +2848,7 @@ def processOneXML(inData):
     for m in mdp.findall("./Ancestry/" + dest.sourceFile.ID):
         guid = m.text
         if guid.upper() in id_dict:
-            print "ANCESTRY: %s" % guid
+            print("ANCESTRY: %s" % guid)
             par = m.getparent()
             par.remove(m)
 

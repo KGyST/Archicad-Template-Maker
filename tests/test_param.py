@@ -31,7 +31,7 @@ class TestSuiteParam(unittest.TestSuite):
         dirName = dir_prefix + "_items"
         for testFileName in os.listdir(dirName):
             if os.path.isfile(os.path.join(dirName, testFileName)) and testFileName[0] != '_':
-                print testFileName
+                print(testFileName)
                 tp = TestParam(testFileName, dir_prefix)
                 self.addTest(tp)
             elif os.path.isfile(os.path.join(dirName, testFileName)) and testFileName[0] == '_':

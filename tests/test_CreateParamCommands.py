@@ -45,9 +45,9 @@ class TestSuite_CreateParamCommands(unittest.TestSuite):
                 value = parsedXML.find("./Value").text
                 embeddedXML = etree.tostring(parsedXML.find("./ParamSection"), encoding="UTF-8")
                 if parsedXML.find("./Note") is not None:
-                    print parsedXML.find("./Note").text
+                    print(parsedXML.find("./Note").text)
                 else:
-                    print fileName
+                    print(fileName)
                 with open(meta.attrib['OriginalXML'], "r") as testFile:
                     if 'TestCSV' in meta.attrib:
                         aVals = [aR for aR in csv.reader(open(os.path.join(dir_baseName  + "_items", meta.attrib['TestCSV']), "r"))]
@@ -87,7 +87,7 @@ class TestCase_CreateParamCommands(unittest.TestCase):
                 else:
                     inObj.assertEqual(open(testFileName, "r").read(), resultXMLasString)
             except AssertionError:
-                print inParams[2]
+                print(inParams[2])
                 with open(outFileName, "w") as outputXMLFile:
                     outputXMLFile.write(resultXMLasString)
                 raise

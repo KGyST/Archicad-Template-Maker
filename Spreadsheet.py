@@ -1,9 +1,9 @@
 # Author: Miguel Martinez Lopez
 # Version: 0.20
 
-from Tkinter import Frame, Label, Message, StringVar, Canvas
-from ttk import Scrollbar
-from Tkconstants import *
+from tkinter import Frame, Label, Message, StringVar, Canvas
+from tkinter.ttk import Scrollbar
+from tkinter.constants import *
 
 import platform
 
@@ -515,7 +515,7 @@ class Table(Frame):
         self._on_change_data = callback
 
 if __name__ == "__main__":
-    from Tkinter import Tk
+    from tkinter import Tk
 
 
     root = Tk()
