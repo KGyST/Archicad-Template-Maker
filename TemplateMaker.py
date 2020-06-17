@@ -585,7 +585,6 @@ class ReszieableGDLDict(dict):
         else:
             super(ReszieableGDLDict, self).__init__(inObj)
 
-
     def __getitem__(self, item):
         if item not in self:
             dict.__setitem__(self, item, ReszieableGDLDict({}))
@@ -802,15 +801,15 @@ class Param(object):
         self.text = inETree.text
         self.tail = inETree.tail
         if not isinstance(inETree, etree._Comment):
-            self.__eTree = inETree
+            # self.__eTree = inETree
             self.flags = set()
-            self.iType = self.getTypeFromString(self.__eTree.tag)
+            self.iType = self.getTypeFromString(inETree.tag)
 
-            self.name       = self.__eTree.attrib["Name"]
-            self.desc       = self.__eTree.find("Description").text
-            self.descTail   = self.__eTree.find("Description").tail
+            self.name       = inETree.attrib["Name"]
+            self.desc       = inETree.find("Description").text
+            self.descTail   = inETree.find("Description").tail
 
-            val = self.__eTree.find("Value")
+            val = inETree.find("Value")
             if val is not None:
                 self.value = self.__toFormat(val.text)
                 self.valTail = val.tail
@@ -818,11 +817,11 @@ class Param(object):
                 self.value = None
                 self.valTail = None
 
-            self.aVals = self.__eTree.find("ArrayValues")
+            self.aVals = inETree.find("ArrayValues")
 
-            if self.__eTree.find("Flags") is not None:
-                self.flagsTail = self.__eTree.find("Flags").tail
-                for f in self.__eTree.find("Flags"):
+            if inETree.find("Flags") is not None:
+                self.flagsTail = inETree.find("Flags").tail
+                for f in inETree.find("Flags"):
                     if f.tag == "ParFlg_Child":     self.flags |= {PARFLG_CHILD}
                     if f.tag == "ParFlg_Unique":    self.flags |= {PARFLG_UNIQUE}
                     if f.tag == "ParFlg_Hidden":    self.flags |= {PARFLG_HIDDEN}
