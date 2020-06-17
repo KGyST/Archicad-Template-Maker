@@ -1678,7 +1678,7 @@ class ListboxWithRefresh(tk.Listbox):
         for f in sorted([self.dict[k] for k in list(self.dict.keys())]):
             try:
                 if _prevObj and _prevObj.dirName != f.dirName:
-                    self.insert(tk.END, LISTBOX_SEPARATOR + f.dirName)
+                    self.insert(tk.END, LISTBOX_SEPARATOR + os.path.basename(os.path.normpath(f.dirName)))
                 _prevObj = f
                 if f.warnings:
                     self.insert(tk.END, "* " + f.name)
