@@ -563,37 +563,44 @@ class ParamSection:
                      inAVals=arrayValues)
 
 
-class ReszieableGDLDict(dict):
+class ResizeableGDLDict(dict):
     """
     List child with incexing from 1 instead of 0
     writing outside of list size resizes list
     """
+    def __new__(cls, *args, **kwargs):
+        res = super().__new__(ResizeableGDLDict, *args, **kwargs)
+        res.firstLevel = True
+        res.size = 0
+
+        return res
+
     def __init__(self, inObj=None, firstLevel = True):
         self.size = 0
         self.firstLevel = firstLevel    #For determining first or second level
         if not inObj:
-            super(ReszieableGDLDict, self).__init__(self)
+            super(ResizeableGDLDict, self).__init__(self)
         elif isinstance(inObj, list):
             _d = {}
             for i in range(len(inObj)):
                 if isinstance(inObj[i], list):
-                    _d[i+1] = ReszieableGDLDict(inObj[i], firstLevel=False)
+                    _d[i+1] = ResizeableGDLDict(inObj[i], firstLevel=False)
                 else:
                     _d[i+1] = inObj[i]
                 self.size = max(self.size, i+1)
-            super(ReszieableGDLDict, self).__init__(_d)
+            super(ResizeableGDLDict, self).__init__(_d)
         else:
-            super(ReszieableGDLDict, self).__init__(inObj)
+            super(ResizeableGDLDict, self).__init__(inObj)
 
     def __getitem__(self, item):
         if item not in self:
-            dict.__setitem__(self, item, ReszieableGDLDict({}))
+            dict.__setitem__(self, item, ResizeableGDLDict({}))
             self.size = max(self.size, item)
         return dict.__getitem__(self, item)
 
     def __setitem__(self, key, value, firstLevel=True):
         if self.firstLevel and isinstance(value, list):
-            dict.__setitem__(self, key, ReszieableGDLDict(value))
+            dict.__setitem__(self, key, ResizeableGDLDict(value))
         else:
             dict.__setitem__(self, key, value)
         self.size = max(self.size, key)
@@ -718,11 +725,11 @@ class Param(object):
                     inVal = '"' + inVal
                 if not inVal.endswith('"') or len(inVal) == 1:
                     inVal += '"'
-                try:
-                    #FIXME
-                    return etree.CDATA(inVal.decode('UTF8'))
-                except UnicodeEncodeError:
-                    return etree.CDATA(inVal)
+                # try:
+                #     FIXME
+                #     return etree.CDATA(inVal.decode('UTF8'))
+                # except UnicodeEncodeError:
+                return etree.CDATA(inVal)
             else:
                 return etree.CDATA('""')
         elif self.iType in (PAR_REAL, PAR_LENGTH, PAR_ANGLE):
@@ -866,13 +873,13 @@ class Param(object):
             self.__fd = int(inValues.attrib["FirstDimension"])
             self.__sd = int(inValues.attrib["SecondDimension"])
             if self.__sd > 0:
-                self._aVals = ReszieableGDLDict()
+                self._aVals = ResizeableGDLDict()
                 for v in inValues.iter("AVal"):
                     x = int(v.attrib["Column"])
                     y = int(v.attrib["Row"])
                     self._aVals[y][x] = self.__toFormat(v.text)
             else:
-                self._aVals = ReszieableGDLDict()
+                self._aVals = ResizeableGDLDict()
                 for v in inValues.iter("AVal"):
                     y = int(v.attrib["Row"])
                     self._aVals[y][1] = self.__toFormat(v.text)
@@ -882,7 +889,7 @@ class Param(object):
             self.__sd = len(inValues[0]) if isinstance(inValues[0], list) and len (inValues[0]) > 1 else 0
 
             _v = list(map(self.__toFormat, inValues))
-            self._aVals = ReszieableGDLDict(_v)
+            self._aVals = ResizeableGDLDict(_v)
             self.aValsTail = '\n' + 2 * '\t'
         else:
             self._aVals = None
@@ -2782,7 +2789,7 @@ def processOneXML(inData):
         for m in mdp.findall("./CalledMacros/Macro"):
             for dI in list(dest_dict.keys()):
                 d = dest_dict[dI]
-                if string.strip(m.find("MName").text, "'" + '"') == d.sourceFile.name:
+                if m.find("MName").text.strip("'" + '"') == d.sourceFile.name:
                     m.find("MName").text = etree.CDATA('"' + d.name + '"')
                     m.find(dest.sourceFile.ID).text = d.guid
 
@@ -2859,7 +2866,7 @@ def processOneXML(inData):
         os.makedirs(destDir)
     except WindowsError:
         pass
-    with open(destPath, "w") as file_handle:
+    with open(destPath, "wb") as file_handle:
         mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
 
 
