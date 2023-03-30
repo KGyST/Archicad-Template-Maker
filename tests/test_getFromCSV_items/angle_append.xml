@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Root Command="aTest" OriginalXML="original.xml">
-<Description>Appending aTest, only name and value</Description>
+<Note>Appending aTest, only name and value</Note>
 <Value>1.5</Value>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>

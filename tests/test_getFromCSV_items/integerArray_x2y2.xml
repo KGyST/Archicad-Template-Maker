@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Root Command="iNtegerArray2d -1 3 -2 2" OriginalXML="original2.xml">
-<Description>Integer array test, to be tested against ARCHICAD</Description>
+<Note>Integer array test, to be tested against ARCHICAD</Note>
 <Value>33</Value>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>

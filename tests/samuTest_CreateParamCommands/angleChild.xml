@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='UTF-8'?>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>
 		<Version>22</Version>
@@ -38,5 +39,13 @@
 			</Flags>
 			<Value>-1</Value>
 		</Integer>
+		<Angle Name="TestAngle">
+			<Description><![CDATA[""]]></Description>
+			<Flags>
+				<ParFlg_Child/>
+			</Flags>
+			<Value>1.5</Value>
+		</Angle>
 	</Parameters>
 </ParamSection>
+

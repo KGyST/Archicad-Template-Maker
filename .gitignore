@@ -2,3 +2,5 @@
 /.idea/*
 /*.bak.ini
 /*.pyc 
+/tests/*_errors/*
+/venv/*

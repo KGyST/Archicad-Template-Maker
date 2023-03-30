@@ -3,6 +3,7 @@ from TemplateMaker import Param
 from lxml import etree
 import os
 import os.path
+import pytest
 
 PAR_UNKNOWN     = 0
 PAR_LENGTH      = 1
@@ -88,3 +89,65 @@ class TestParam(unittest.TestCase):
 
         func.__name__ = "test_" + inFileName[:-4]
         return func
+
+
+#---------------------pytest---------------------
+
+
+def getTests():
+    _tests = []
+    dir_prefix = 'test_param'
+    dirName = dir_prefix + "_items"
+    for testFileName in os.listdir(dirName):
+        if os.path.isfile(os.path.join(dirName, testFileName)) and testFileName[0] != '_':
+            print(testFileName)
+            _tests.append(testFileName)
+        elif os.path.isfile(os.path.join(dirName, testFileName)) and testFileName[0] == '_':
+            # FIXME expected failures to be here
+            pass
+    return _tests
+
+
+class Test_File:
+    dirPrefix = 'test_param'
+
+    @pytest.mark.parametrize(
+        'inFileName', getTests()
+    )
+    def test_file(self, inFileName):
+        with open(os.path.join(Test_File.dirPrefix + "_items", inFileName), "r") as testFile:
+            testNode = testFile.read()
+            par = Param(inETree=etree.XML(testNode))
+            out_file_name = os.path.join(Test_File.dirPrefix + "_errors", inFileName)
+            if os.path.isfile(out_file_name):
+                os.remove(out_file_name)
+            try:
+                assert testNode == etree.tostring(par.eTree).decode("utf-8")
+
+                fChild = False
+                fUnique = False
+                fHidden = False
+                fBold = False
+
+                if par.iType not in (PAR_COMMENT,):
+                    if PARFLG_CHILD in par.flags: fChild = True
+                    if PARFLG_UNIQUE in par.flags: fUnique = True
+                    if PARFLG_HIDDEN in par.flags: fHidden = True
+                    if PARFLG_BOLDNAME in par.flags: fBold = True
+
+                par2 = Param(
+                    inType=par.iType,
+                    inName=par.name,
+                    inDesc=par.desc,
+                    inValue=par.value,
+                    inAVals=par.aVals,
+                    inChild=fChild,
+                    inUnique=fUnique,
+                    inHidden=fHidden,
+                    inBold=fBold)
+
+                assert testNode == etree.tostring(par2.eTree).decode("utf-8")
+            except AssertionError:
+                with open(out_file_name, "w") as of:
+                    of.write(etree.tostring(par.eTree)).decode("utf-8")
+                raise

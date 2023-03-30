@@ -99,7 +99,7 @@ PARFLG_HIDDEN   = 4
 
 app = None
 
-dest_sourcenames    = {}   #source name     -> DestXMLs, idx by original filename #FIXME could be a set
+dest_sourcenames    = {}   #source name     -> DestXMLs, idx by original filename #☺FIXME could be a set
 dest_guids          = {}   #dest guid       -> DestXMLs, idx by
 source_guids        = {}   #Source GUID     -> Source XMLs, idx by
 id_dict             = {}   #Source GUID     -> dest GUID

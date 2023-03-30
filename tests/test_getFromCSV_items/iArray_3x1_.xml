@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Root Command="iNtegerTest -a iFamily -t Integer -y" OriginalXML="original.xml" TestCSV="iArray_3x1.csv">
-<Description>1 dim array with csv with spaces</Description>
+<Note>1 dim array with csv with spaces</Note>
 <Value></Value>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>

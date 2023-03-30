@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Root Command="iNtegerArray2d -1 5 -2 4" OriginalXML="original2.xml">
-<Description>Integer array test, indexing out of the original size of an array</Description>
+<Note>Integer array test, indexing out of the original size of an array</Note>
 <Value>5544</Value>
 <ParamSection SectVersion="22" SectionFlags="0" SubIdent="0">
 	<ParamSectHeader>
