@@ -1,0 +1,7 @@
+{
+  "parName": "TestMaterial -c detlevel -t Material",
+  "originalXML": "original.xml",
+  "resultXML": "materialChild.xml",
+  "value": "1",
+  "result": 1.0
+}

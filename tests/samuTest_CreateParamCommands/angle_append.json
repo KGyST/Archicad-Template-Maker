@@ -1,0 +1,7 @@
+{
+  "parName": "aTest",
+  "originalXML": "original.xml",
+  "resultXML": "angle_append.xml",
+  "value": "1.5",
+  "result": 1.0
+}

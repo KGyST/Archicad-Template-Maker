@@ -1,0 +1,7 @@
+{
+  "parName": "TestPenColor -c detlevel -t PenColor",
+  "originalXML": "original.xml",
+  "resultXML": "pencolorChild.xml",
+  "value": "1",
+  "result": 1.0
+}

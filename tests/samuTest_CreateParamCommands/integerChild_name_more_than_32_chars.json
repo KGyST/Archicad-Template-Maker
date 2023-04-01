@@ -1,0 +1,7 @@
+{
+  "parName": "iNtegerTestWithMoreThan32CharactersLong -c detlevel -d Teszt \u00e1rv\u00edzt\u0171r\u0151 t\u00fck\u00f6rf\u00far\u00f3g\u00e9p",
+  "originalXML": "original.xml",
+  "resultXML": "integerChild_name_more_than_32_chars.xml",
+  "value": "1",
+  "result": 1.0
+}

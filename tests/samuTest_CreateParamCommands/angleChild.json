@@ -1,12 +1,7 @@
 {
-  "args": [
-    "TestAngle -c detlevel -t Angle",
-    "original.xml",
-	"angleChild.xml",
-	1.5
-  ],
-  "kwargs": {},
-  "result": 1.0,
-  "function": null,
-  "module": null
+  "parName": "TestAngle -c detlevel -t Angle",
+  "originalXML": "original.xml",
+  "resultXML": "angleChild.xml",
+  "value": "1.5",
+  "result": 1.0
 }

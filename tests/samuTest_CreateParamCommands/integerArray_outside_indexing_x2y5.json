@@ -1,0 +1,7 @@
+{
+  "parName": "iNtegerArray2d -1 5 -2 4",
+  "originalXML": "original2.xml",
+  "resultXML": "integerArray_outside_indexing_x2y5.xml",
+  "value": "5544",
+  "result": 1.0
+}

@@ -1,0 +1,7 @@
+{
+  "parName": "TestLength -c detlevel -t Length",
+  "originalXML": "original.xml",
+  "resultXML": "lengthChild.xml",
+  "value": "1.05",
+  "result": 1.0
+}

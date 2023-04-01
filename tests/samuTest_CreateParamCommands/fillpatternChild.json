@@ -1,0 +1,7 @@
+{
+  "parName": "TestFillPattern -c detlevel -t FillPattern",
+  "originalXML": "original.xml",
+  "resultXML": "fillpatternChild.xml",
+  "value": "1",
+  "result": 1.0
+}

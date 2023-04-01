@@ -1,0 +1,7 @@
+{
+  "parName": "TestRealNum -c detlevel -t RealNum",
+  "originalXML": "original.xml",
+  "resultXML": "realnumChild.xml",
+  "value": "1.00",
+  "result": 1.0
+}

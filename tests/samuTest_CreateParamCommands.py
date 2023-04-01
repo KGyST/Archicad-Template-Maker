@@ -3,31 +3,28 @@ import os
 from TemplateMaker import ParamSection
 from lxml import etree
 import shutil
+import csv
 
 def XMLComparer(p_Dir):      #p_working_directory
     def func(p_Obj, p_function, p_TestData) :
-        originalXML = os.path.join(p_TestData["args"][1])
-        expectedXML = os.path.join(p_Dir, p_TestData["args"][2])
-        resultXML = os.path.join(p_Dir + "_errors", p_TestData["args"][2])
+        originalXML = os.path.join(p_TestData["originalXML"])
+        expectedXML = os.path.join(p_Dir, p_TestData["resultXML"])
+        resultXML = os.path.join(p_Dir + "_errors", p_TestData["resultXML"])
 
-        try:
-            shutil.rmtree(p_Dir + "_errors")
-        except OSError:
-            pass
-
-        try:
-            os.mkdir(p_Dir + "_errors")
-        except PermissionError:
-            #FIXME handling
-            pass
+        if "testCSV" in p_TestData:
+            with open(os.path.join(p_Dir, p_TestData["testCSV"]), "r") as _testCSV:
+                lArrayValS = [aR for aR in csv.reader(_testCSV)]
+        else:
+            lArrayValS = None
 
         with open(originalXML, "r") as testFile:
             ps = ParamSection(inETree=etree.XML(testFile.read()))
-            ps.createParamfromCSV(p_TestData["args"][0], p_TestData["args"][3], None)
+            ps.createParamfromCSV(p_TestData["parName"], p_TestData["value"], lArrayValS)
 
             resultXMLasString = etree.tostring(ps.toEtree(), pretty_print=True, xml_declaration=True, encoding='UTF-8').decode("UTF-8")
             try:
-                parsedXML = open(expectedXML, "r").read()
+                with open(expectedXML, "r") as _expectedXML:
+                    parsedXML = _expectedXML.read()
                 p_Obj.assertEqual(parsedXML, resultXMLasString)
             except AssertionError:
                 with open(resultXML, "w") as outputXMLFile:

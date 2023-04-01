@@ -1,0 +1,7 @@
+{
+  "parName": "TestBoolean -c detlevel -t Boolean",
+  "originalXML": "original.xml",
+  "resultXML": "booleanChildFalse.xml",
+  "value": "0",
+  "result": 1.0
+}
