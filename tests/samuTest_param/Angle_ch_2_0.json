@@ -1,0 +1,11 @@
+{
+    "type": 2,
+    "name": "ac_angles",
+    "desc": null,
+    "child": true,
+    "unique": true,
+    "hidden": false,
+    "bold": false,
+    "aVals": "Angle_ch_2_0.csv",
+    "result": null
+}

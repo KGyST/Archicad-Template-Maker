@@ -1,0 +1,10 @@
+{
+    "type": 1,
+    "name": "ac_wall_height",
+    "desc": 2.7,
+    "child": true,
+    "unique": true,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

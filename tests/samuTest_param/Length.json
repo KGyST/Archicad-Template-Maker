@@ -1,0 +1,10 @@
+{
+    "type": 1,
+    "name": "A",
+    "desc": 1.0,
+    "child": false,
+    "unique": false,
+    "hidden": true,
+    "bold": false,
+    "result": null
+}

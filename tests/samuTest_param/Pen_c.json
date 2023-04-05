@@ -1,0 +1,10 @@
+{
+    "type": 10,
+    "name": "gs_cont_pen",
+    "desc": 2,
+    "child": true,
+    "unique": false,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

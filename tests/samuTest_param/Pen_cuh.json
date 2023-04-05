@@ -1,0 +1,10 @@
+{
+    "type": 10,
+    "name": "ac_cont_pen",
+    "desc": 0,
+    "child": true,
+    "unique": true,
+    "hidden": true,
+    "bold": false,
+    "result": null
+}

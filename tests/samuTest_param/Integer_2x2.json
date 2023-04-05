@@ -1,0 +1,11 @@
+{
+    "type": 4,
+    "name": "iVersionNumber",
+    "desc": null,
+    "child": false,
+    "unique": false,
+    "hidden": true,
+    "bold": false,
+    "aVals": "Integer_2x2.csv",
+    "result": null
+}

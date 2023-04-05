@@ -1,0 +1,10 @@
+{
+    "type": 4,
+    "name": "ac_wall_resol",
+    "desc": 0,
+    "child": true,
+    "unique": true,
+    "hidden": true,
+    "bold": false,
+    "result": null
+}

@@ -1,0 +1,10 @@
+{
+    "type": 12,
+    "name": "beamParams",
+    "desc": null,
+    "child": false,
+    "unique": false,
+    "hidden": true,
+    "bold": false,
+    "result": null
+}

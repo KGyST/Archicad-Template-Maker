@@ -2,11 +2,10 @@ from unitTest.test_runner import JSONTestSuite, JSONTestCase
 import os
 from TemplateMaker import ParamSection
 from lxml import etree
-import shutil
 import csv
 
 def XMLComparer(p_Dir):      #p_working_directory
-    def func(p_Obj, p_function, p_TestData) :
+    def func(p_Obj, p_function, p_TestData, **kwargs) :
         originalXML = os.path.join(p_TestData["originalXML"])
         expectedXML = os.path.join(p_Dir, p_TestData["resultXML"])
         resultXML = os.path.join(p_Dir + "_errors", p_TestData["resultXML"])
@@ -41,7 +40,11 @@ class testSuite_CreateParamCommands(JSONTestSuite):
     def __init__(self):
         #FIXME import as variable
 
-        super(testSuite_CreateParamCommands, self).__init__(folder=self.targetDir, case_only=self.testOnly, comparer=XMLComparer(testSuite_CreateParamCommands.targetDir) )
+        super(testSuite_CreateParamCommands, self).__init__(
+            folder=self.targetDir,
+            case_only=self.testOnly,
+            comparer=XMLComparer(testSuite_CreateParamCommands.targetDir) )
+
 
 
 

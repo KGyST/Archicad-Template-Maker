@@ -1,0 +1,11 @@
+{
+    "type": 1,
+    "name": "ac_wd_poly",
+    "desc": null,
+    "child": true,
+    "unique": true,
+    "hidden": false,
+    "bold": false,
+    "aVals": "Length_cuh_2_5.csv",
+    "result": null
+}

@@ -1,0 +1,10 @@
+{
+    "type": 9,
+    "name": "fillTypePanel",
+    "desc": "24",
+    "child": true,
+    "unique": false,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

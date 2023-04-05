@@ -1,0 +1,10 @@
+{
+    "type": 7,
+    "name": "ac_left_mat",
+    "desc": 0,
+    "child": true,
+    "unique": false,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

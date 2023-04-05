@@ -1,0 +1,10 @@
+{
+    "type": 12,
+    "name": "detlevel",
+    "desc": null,
+    "child": false,
+    "unique": false,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

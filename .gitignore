@@ -4,3 +4,6 @@
 /*.pyc 
 /tests/*_errors/*
 /venv/*
+code.txt
+token_type.txt
+*.pyc
