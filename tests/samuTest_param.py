@@ -5,6 +5,26 @@ from lxml import etree
 import shutil
 import csv
 
+PAR_UNKNOWN     = 0
+PAR_LENGTH      = 1
+PAR_ANGLE       = 2
+PAR_REAL        = 3
+PAR_INT         = 4
+PAR_BOOL        = 5
+PAR_STRING      = 6
+PAR_MATERIAL    = 7
+PAR_LINETYPE    = 8
+PAR_FILL        = 9
+PAR_PEN         = 10
+PAR_SEPARATOR   = 11
+PAR_TITLE       = 12
+PAR_COMMENT     = 13
+
+PARFLG_CHILD    = 1
+PARFLG_BOLDNAME = 2
+PARFLG_UNIQUE   = 3
+PARFLG_HIDDEN   = 4
+
 def XMLComparer(p_Dir):      #p_working_directory
     def func(p_Obj, p_function, p_TestData, *args, **kwargs):
         sFile = kwargs["file_name"][:-5]
@@ -12,20 +32,39 @@ def XMLComparer(p_Dir):      #p_working_directory
         expectedXML = os.path.join(p_Dir, sFile + ".xml")
         resultXML = os.path.join(p_Dir + "_errors", sFile + ".xml")
 
-        # if "aVals" in p_TestData:
-        #     with open(os.path.join(p_Dir, p_TestData["aVals"]), "r") as _testCSV:
-        #         lArrayValS = [aR for aR in csv.reader(_testCSV)]
-        # else:
-        #     lArrayValS = None
-
         with open(originalXML, "r") as testFile:
-            param = Param(inETree=etree.XML(testFile.read()))
+            par = Param(inETree=etree.XML(testFile.read()))
 
-            resultXMLasString = etree.tostring(param.eTree, pretty_print=True, ).decode("UTF-8")
+            resultXMLasString = etree.tostring(par.eTree, pretty_print=True, ).decode("UTF-8")
             try:
                 with open(expectedXML, "r") as _expectedXML:
                     parsedXML = _expectedXML.read()
                 p_Obj.assertEqual(parsedXML, resultXMLasString)
+
+                fChild = False
+                fUnique = False
+                fHidden = False
+                fBold = False
+
+                if par.iType not in (PAR_COMMENT,):
+                    if PARFLG_CHILD     in par.flags: fChild  = True
+                    if PARFLG_UNIQUE    in par.flags: fUnique = True
+                    if PARFLG_HIDDEN    in par.flags: fHidden = True
+                    if PARFLG_BOLDNAME  in par.flags: fBold   = True
+
+                par2 = Param(
+                    inType = par.iType,
+                    inName = par.name,
+                    inDesc = par.desc,
+                    inValue = par.value,
+                    inAVals = par.aVals,
+                    inChild=fChild,
+                    inUnique=fUnique,
+                    inHidden=fHidden,
+                    inBold=fBold)
+
+                p_Obj.assertEqual(parsedXML, etree.tostring(par2.eTree, pretty_print=True, ).decode("UTF-8"))
+
             except AssertionError:
                 with open(resultXML, "w") as outputXMLFile:
                     outputXMLFile.write(resultXMLasString)
