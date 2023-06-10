@@ -2,7 +2,7 @@ def determine_function_type(func):
     if isinstance(func, classmethod):
         # Decorated function is a class method
         def wrapper(cls, *args, **kwargs):
-            print("Start CLASS method:", func.__name__)
+            print("Start CLASS method: ", func.__name__)
             cls_ = func.__get__(None, cls)(*args, **kwargs)
             print("End CLASS method\n\n")
             return cls_
@@ -10,7 +10,7 @@ def determine_function_type(func):
     elif isinstance(func, staticmethod):
         # Decorated function is a static method
         def wrapper(*args, **kwargs):
-            print("Start STATIC method:", func.__name__)
+            print("Start STATIC method: ", func.__name__)
             func1 = func(*args, **kwargs)
             print("End STATIC method\n\n")
             return func1
@@ -18,7 +18,7 @@ def determine_function_type(func):
     elif hasattr(func, '__self__'):
         # Decorated function is an instance method
         def wrapper(self, *args, **kwargs):
-            print("Start INSTANCE method:", func.__name__)
+            print("Start INSTANCE method: ", func.__name__)
             self_ = func.__get__(self, type(self))(*args, **kwargs)
             print("End INSTANCE method\n\n")
             return self_
@@ -26,7 +26,7 @@ def determine_function_type(func):
     else:
         # Decorated function is a standalone function
         def wrapper(*args, **kwargs):
-            print("Start function:", func.__name__)
+            print("Start function: ", func.__name__)
             func1 = func(*args, **kwargs)
             print("End function\n\n")
             return func1
