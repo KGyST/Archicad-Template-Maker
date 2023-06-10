@@ -2089,7 +2089,7 @@ class GUIApp(tk.Frame):
         CreateToolTip(self.entryTextNameFrom, "FromSting: WARNING: this is Regex")
         CreateToolTip(self.entryTextNameTo, "If 'Always add strings' is set add to the end of every file if FromSting cannot be replaced, if not, only replace FromSting Regex pattern")
         CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
-        CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
+        CreateToolTip(self.buttonAID, __tooltipIDPT6)
 
     def createDestItems(self, inList):
         firstRow = inList[0]
