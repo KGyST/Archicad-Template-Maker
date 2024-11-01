@@ -12,7 +12,7 @@
 #FIXME UI process messages
 #FIXME MigrationTable progressing
 #FIXME GDLPict progressing
-
+# TODO When there is nothing to replace at the beginning of the source names, many unwanted things are renamed in the code
 import os.path
 from os import listdir
 import uuid
@@ -2608,6 +2608,7 @@ def scanDirs(inFile, inRootFolder, inAcceptedFormatS = (".XML",)):
     :param outFile:
     :return:
     """
+    # FIXME rewrite into a stateless form
     try:
         for f in listdir(inFile):
             try:
