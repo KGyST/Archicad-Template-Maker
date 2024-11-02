@@ -2,3 +2,7 @@ google-api-python-client
 google_auth_oauthlib
 google
 lxml
+xmltodict
+jsonpickle
+docutils
+pillow
