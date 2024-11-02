@@ -4,39 +4,31 @@
 #HOTFIXREQ ImportError: No module named googleapiclient.discovery
 #HOTFIXREQ unicode error when running ac command in path with native characters
 #HOTFIXREQ SOURCE_IMAGE_DIR_NAME images are not renamed at all
-#FIXME renaming errors and param csv parameter overwriting
-#FIXME append param to the end when no argument for position
-#FIXME library_images copy always as temporary folder; instead junction
-#FIXME param editor should offer auto param inserting from Listing Parameters Google Spreadsheet
-#FIXME automatic checking and warning of (collected) old project's names
-#FIXME UI process messages
-#FIXME MigrationTable progressing
-#FIXME GDLPict progressing
+# FIXME renaming errors and param csv parameter overwriting
+# FIXME append param to the end when no argument for position
+# FIXME library_images copy always as temporary folder; instead junction
+# FIXME param editor should offer auto param inserting from Listing Parameters Google Spreadsheet
+# FIXME automatic checking and warning of (collected) old project's names
+# FIXME UI process messages
+# FIXME MigrationTable progressing
+# FIXME GDLPict progressing
+# FIXME when adding files, the renaming shouldtn't be done at the moment of adding but when being processed
 # TODO When there is nothing to replace at the beginning of the source names, many unwanted things are renamed in the code
+from dataclasses import dataclass
 import os.path
 from os import listdir
-import uuid
-import re
 import tempfile
 from subprocess import check_output
 import shutil
 
-import string
-
-import tkinter as tk
 import tkinter.filedialog
-# import urllib, httplib
-import copy
-import argparse
 
 from configparser import *  #FIXME not *
 import csv
 
-import http.client, urllib.request, urllib.parse, urllib.error, json, webbrowser, urllib.parse, os, hashlib, base64
-from http.server import BaseHTTPRequestHandler, HTTPServer
 import pip
 import multiprocessing as mp
-from functools import reduce
+from Config import *
 
 try:
     import googleapiclient.errors
@@ -62,15 +54,13 @@ except ImportError:
     pip.main(['install', '--user', 'lxml'])
     from lxml import etree
 
-from GSMParamLib import *
 from GSMXMLLib import *
 from SamUITools import *
-
-PERSONAL_ID = "ac4e5af2-7544-475c-907d-c7d91c810039"    #FIXME to be deleted after BO API v1 is removed
+from samuTeszt import Recorder
 
 ID = ''
 LISTBOX_SEPARATOR = '--------'
-AC_18   = 28
+
 SCRIPT_NAMES_LIST = ["Script_1D",
                      "Script_2D",
                      "Script_3D",
@@ -79,6 +69,7 @@ SCRIPT_NAMES_LIST = ["Script_1D",
                      "Script_VL",
                      "Script_FWM",
                      "Script_BWM",]
+LP_XML_CONVERTER = 'LP_XMLConverter.exe'
 
 PAR_UNKNOWN     = 0
 PAR_LENGTH      = 1
@@ -102,17 +93,6 @@ PARFLG_HIDDEN   = 4
 
 app = None
 
-dest_sourcenames    = {}   #source name     -> DestXMLs, idx by original filename #☺FIXME could be a set
-dest_guids          = {}   #dest guid       -> DestXMLs, idx by
-source_guids        = {}   #Source GUID     -> Source XMLs, idx by
-id_dict             = {}   #Source GUID     -> dest GUID
-dest_dict           = {}   #dest name       -> DestXML
-replacement_dict    = {}   #source filename -> SourceXMLs
-pict_dict           = {}
-source_pict_dict    = {}
-
-all_keywords = set()
-
 # ------------------- Google Spreadsheet API connectivity --------------------------------------------------------------
 
 class NoGoogleCredentialsException(Exception):
@@ -121,7 +101,7 @@ class NoGoogleCredentialsException(Exception):
 class GoogleSpreadsheetConnector(object):
     GOOGLE_SPREADSHEET_SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
 
-    def __init__(self, inCurrentConfig, inSpreadsheetID):
+    def __init__(self, inCurrentConfig:'Config', inSpreadsheetID):
         #FIXME renaming/filling out these
         client_config = {"installed": {
             "client_id": "224241213692-7gafn34d4heprhps1rod3clt1b8j07j6.apps.googleusercontent.com",
@@ -136,21 +116,21 @@ class GoogleSpreadsheetConnector(object):
         }}
 
         try:
-            if  inCurrentConfig.has_option("GoogleSpreadsheetAPI", "access_token") and \
-                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "refresh_token") and \
-                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "token_type") and \
-                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "id_token") and \
-                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "token_uri") and \
-                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "client_id")and \
-                inCurrentConfig.has_option("GoogleSpreadsheetAPI", "client_secret"):
+            if  "access_token" in inCurrentConfig \
+            and "refresh_token" in inCurrentConfig \
+            and "token_type" in inCurrentConfig \
+            and "id_token" in inCurrentConfig \
+            and "token_uri" in inCurrentConfig \
+            and "client_id" in inCurrentConfig\
+            and "client_secret" in inCurrentConfig:
 
                 self.googleCreds = Credentials(
-                    token=          inCurrentConfig.get("GoogleSpreadsheetAPI", "access_token"),
-                    refresh_token=  inCurrentConfig.get("GoogleSpreadsheetAPI", "refresh_token"),
-                    id_token=       inCurrentConfig.get("GoogleSpreadsheetAPI", "id_token"),
-                    token_uri=      inCurrentConfig.get("GoogleSpreadsheetAPI", "token_uri"),
-                    client_id=      inCurrentConfig.get("GoogleSpreadsheetAPI", "client_id"),
-                    client_secret=  inCurrentConfig.get("GoogleSpreadsheetAPI", "client_secret"),
+                    token=          inCurrentConfig["access_token"],
+                    refresh_token=  inCurrentConfig["refresh_token"],
+                    id_token=       inCurrentConfig["id_token"],
+                    token_uri=      inCurrentConfig["token_uri"],
+                    client_id=      inCurrentConfig["client_id"],
+                    client_secret=  inCurrentConfig["client_secret"],
                     scopes=         GoogleSpreadsheetConnector.GOOGLE_SPREADSHEET_SCOPES
                 )
 
@@ -200,7 +180,6 @@ class InputWithListBox():
         self.frame.grid({"row": row, "column": column})
         # self.frame.grid_columnconfigure(0, weight=1)
 
-
         self.inDirFrame = tk.Frame(self.frame)
         self.inDirFrame.grid({"row": 0, "column": 0, "sticky": tk.W + tk.E, })
         self.inDirFrame.grid_columnconfigure(1, weight=1)
@@ -225,28 +204,14 @@ class InputWithListBox():
 
 
 class ListboxWithRefresh(tk.Listbox):
-    def __init__(self, top, _dict):
-        if "target" in _dict:
-            self.target = _dict["target"]
-            del _dict["target"]
-        if "imgTarget" in _dict:
-            self.imgTarget = _dict["imgTarget"]
-            del _dict["imgTarget"]
-        if "dict" in _dict:
-            self.dict = _dict["dict"]
-            del _dict["dict"]
-        tk.Listbox.__init__(self, top, _dict, selectmode=tk.EXTENDED)
+    def __init__(self, top, data: dict):
+        self.data = data
+        tk.Listbox.__init__(self, top, data, selectmode=tk.EXTENDED)
 
     def refresh(self, *_):
-        if self.dict == replacement_dict:
-            try:
-                scanDirs(self.target.get(), SourceXMLDirName.get())
-                scanDirs(self.imgTarget.get(), SourceImageDirName.get())
-            except AttributeError:
-                return
         self.delete(0, tk.END)
         _prevObj = None
-        for f in sorted([self.dict[k] for k in list(self.dict.keys())]):
+        for f in sorted([self.data[k] for k in list(self.data.keys())]):
             try:
                 if _prevObj and _prevObj.dirName != f.dirName:
                     self.insert(tk.END, LISTBOX_SEPARATOR + os.path.basename(os.path.normpath(f.dirName)))
@@ -263,75 +228,43 @@ class GUIApp(tk.Frame):
         tk.Frame.__init__(self)
         self.top = self.winfo_toplevel()
 
-        self.currentConfig = ConfigParser()
-        self.appDataDir  = os.getenv('APPDATA')
-        if os.path.isfile(self.appDataDir  + r"\TemplateMarker.ini"):
-            self.currentConfig.read(self.appDataDir  + r"\TemplateMarker.ini")
-        else:
-            self.currentConfig.read("TemplateMarker.ini")    #TODO into a different class or stg
+        self.currentConfig = Config("TemplateMarker", "ArchiCAD")
 
-        self.SourceXMLDirName   = tk.StringVar()
-        self.SourceGDLDirName   = tk.StringVar()
-        self.TargetXMLDirName   = tk.StringVar()
-        self.TargetGDLDirName   = tk.StringVar()
-        self.SourceImageDirName = tk.StringVar()
-        self.TargetImageDirName = tk.StringVar()
-        self.AdditionalImageDir = tk.StringVar()
+        self.SourceXMLDirName   = tk.StringVar(self.top, self.currentConfig["SourceXMLDirName"])
+        self.SourceGDLDirName   = tk.StringVar(self.top, self.currentConfig["SourceGDLDirName"])
+        self.TargetXMLDirName   = tk.StringVar(self.top, self.currentConfig["TargetXMLDirName"])
+        self.TargetGDLDirName   = tk.StringVar(self.top, self.currentConfig["TargetGDLDirName"])
+        self.SourceImageDirName = tk.StringVar(self.top, self.currentConfig["SourceImageDirName"])
+        self.TargetImageDirName = tk.StringVar(self.top, self.currentConfig["TargetImageDirName"])
+        self.AdditionalImageDir = tk.StringVar(self.top, self.currentConfig["AdditionalImageDir"])
 
-        self.ImgStringFrom      = tk.StringVar()
-        self.ImgStringTo        = tk.StringVar()
+        self.StringFrom         = tk.StringVar(self.top, self.currentConfig["StringFrom"])
+        self.StringTo           = tk.StringVar(self.top, self.currentConfig["StringTo"])
 
-        self.StringFrom         = tk.StringVar()
-        self.StringTo           = tk.StringVar()
+        self.ImgStringFrom      = tk.StringVar(self.top, self.currentConfig["ImgStringFrom"])
+        self.ImgStringTo        = tk.StringVar(self.top, self.currentConfig["ImgStringTo"])
 
-        self.fileName           = tk.StringVar()
-        self.proDatURL          = tk.StringVar()
+        self.fileName           = tk.StringVar(self.top, self.currentConfig["fileName"])
         self.DestItem           = None
 
-        self.ACLocation         = tk.StringVar()
+        self.ACLocation         = tk.StringVar(self.top, self.currentConfig["ACLocation"])
 
-        self.bCheckParams       = tk.BooleanVar()
-        self.bDebug             = tk.BooleanVar()
-        self.bCleanup           = tk.BooleanVar()
-        self.bOverWrite         = tk.BooleanVar()
-        self.bAddStr            = tk.BooleanVar()
-        self.doBOUpdate         = tk.BooleanVar()
+        self.bCheckParams       = tk.BooleanVar(self.top, self.currentConfig["bCheckParams"] != "False")
+        self.bDebug             = tk.BooleanVar(self.top, self.currentConfig["bDebug"] != "False")
+        self.bCleanup           = tk.BooleanVar(self.top, self.currentConfig["bCleanup"] != "False")
+        self.bOverWrite         = tk.BooleanVar(self.top, self.currentConfig["bOverWrite"] != "False")
+        self.bAddStr            = tk.BooleanVar(self.top, self.currentConfig["bAddStr"] != "False")
 
-        self.bXML               = tk.BooleanVar()
-        self.bGDL               = tk.BooleanVar()
-        self.isSourceGDL        = tk.BooleanVar()
+        self.bXML               = tk.BooleanVar(self.top, self.currentConfig["bXML"] != "False")
+        self.bGDL               = tk.BooleanVar(self.top, self.currentConfig["bGDL"] != "False")
+        self.isSourceGDL        = tk.BooleanVar(self.top, self.currentConfig["isSourceGDL"] != "False")
 
         self.observer  = None
 
         self.warnings = []
 
-        self.bo                 = None
         self.googleSpreadsheet  = None
         self.bWriteToSelf       = False             # Whether to write back to the file itself
-
-        global \
-            SourceXMLDirName, SourceGDLDirName, TargetXMLDirName, TargetGDLDirName, SourceImageDirName, TargetImageDirName, \
-            AdditionalImageDir, bDebug, bCleanup, bCheckParams, ACLocation, bGDL, bXML, dest_dict, dest_guids, replacement_dict, id_dict, \
-            pict_dict, source_pict_dict, source_guids, bAddStr, bOverWrite, all_keywords, StringTo, doBOUpdate, bWriteToSelf
-
-        SourceXMLDirName    = self.SourceXMLDirName
-        SourceGDLDirName    = self.SourceGDLDirName
-        TargetXMLDirName    = self.TargetXMLDirName
-        TargetGDLDirName    = self.TargetGDLDirName
-        SourceImageDirName  = self.SourceImageDirName
-        TargetImageDirName  = self.TargetImageDirName
-        AdditionalImageDir  = self.AdditionalImageDir
-        bCheckParams        = self.bCheckParams
-        bDebug              = self.bDebug
-        bCleanup            = self.bCleanup
-        bXML                = self.bXML
-        bGDL                = self.bGDL
-        doBOUpdate          = self.doBOUpdate
-        ACLocation          = self.ACLocation
-        bAddStr             = self.bAddStr
-        bOverWrite          = self.bOverWrite
-        StringTo            = self.StringTo
-        bWriteToSelf        = self.bWriteToSelf
 
         __tooltipIDPT1 = "Something like E:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
         __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
@@ -340,39 +273,6 @@ class GUIApp(tk.Frame):
         __tooltipIDPT5 = "If set, copy project specific pictures here, too, for endcoded images. Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library_images"
         __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
         __tooltipIDPT7 = "Source GDL folder name"
-
-        try:
-            for cName, cValue in self.currentConfig.items('ArchiCAD'):
-                try:
-                    if   cName == 'bgdl':               self.bGDL.set(cValue)
-                    elif cName == 'bxml':               self.bXML.set(cValue)
-                    elif cName == 'bdebug':             self.bDebug.set(cValue)
-                    elif cName == 'additionalimagedir': self.AdditionalImageDir.set(cValue)
-                    elif cName == 'aclocation':         self.ACLocation.set(cValue)
-                    elif cName == 'stringto':           self.StringTo.set(cValue)
-                    elif cName == 'stringfrom':         self.StringFrom.set(cValue)
-                    elif cName == 'inputimagesource':   self.SourceImageDirName.set(cValue)
-                    elif cName == 'inputimagetarget':   self.TargetImageDirName.set(cValue)
-                    elif cName == 'imgstringfrom':      self.ImgStringFrom.set(cValue)
-                    elif cName == 'imgstringto':        self.ImgStringTo.set(cValue)
-                    elif cName == 'sourcedirname':      self.SourceXMLDirName.set(cValue)
-                    elif cName == 'xmltargetdirname':   self.TargetXMLDirName.set(cValue)
-                    elif cName == 'gdltargetdirname':   self.TargetGDLDirName.set(cValue)
-                    elif cName == 'baddstr':            self.bAddStr.set(cValue)
-                    elif cName == 'boverwrite':         self.bOverWrite.set(cValue)
-                    elif cName == 'allkeywords':
-                        all_keywords |= set(v.strip() for v in cValue.split(',') if v !='')
-                except NoOptionError:
-                    print("NoOptionError")
-                    continue
-                except NoSectionError:
-                    print("NoSectionError")
-                    continue
-                except ValueError:
-                    print("ValueError")
-                    continue
-        except NoSectionError:
-            print("NoSectionError")
 
         self.observerXML = self.bXML.trace_variable("w", self.targetXMLModified)
         self.observerGDL = self.bGDL.trace_variable("w", self.targetGDLModified)
@@ -414,10 +314,8 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        self.listBox = ListboxWithRefresh(self.InputFrameS[iF], {"target": self.SourceXMLDirName, "imgTarget": self.SourceImageDirName, "dict": replacement_dict})
+        self.listBox = ListboxWithRefresh(self.InputFrameS[iF], SourceXML.replacement_dict)
         self.listBox.grid({"row": 0, "column": 0, "sticky": tk.E + tk.W + tk.N + tk.S})
-        self.observerLB1 = self.SourceXMLDirName.trace_variable("w", self.listBox.refresh)
-        self.observerLB2 = self.SourceGDLDirName.trace_variable("w", self.processGDLDir)
 
         self.ListBoxScrollbar = tk.Scrollbar(self.InputFrameS[iF])
         self.ListBoxScrollbar.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
@@ -427,11 +325,17 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        self.listBox2 = ListboxWithRefresh(self.InputFrameS[iF], {"target": self.SourceXMLDirName, "dict": source_pict_dict})
+        self.listBox2 = ListboxWithRefresh(self.InputFrameS[iF], SourceResource.source_pict_dict)
         self.listBox2.grid({"row": 0, "column": 0, "sticky": tk.NE + tk.SW})
-        self.observerLB2 = self.SourceXMLDirName.trace_variable("w", self.listBox2.refresh)
 
-        if SourceXMLDirName:
+        if self.isSourceGDL.get():
+            self.observerLB1 = self.SourceGDLDirName.trace_variable("w", self.processGDLDir)
+        else:
+            self.observerLB1 = self.SourceXMLDirName.trace_variable("w", self._listBoxCodeRefresh)
+
+        self.observerLB2 = self.SourceXMLDirName.trace_variable("w", self._listBoxResourceRefresh)
+
+        if self.SourceXMLDirName:
             self.listBox.refresh()
             self.listBox2.refresh()
 
@@ -444,7 +348,7 @@ class GUIApp(tk.Frame):
         iF += 1
 
         self.sourceImageDir = InputDirPlusText(self.InputFrameS[iF], "Images' source folder", self.SourceImageDirName, __tooltipIDPT2)
-        if SourceXMLDirName:
+        if self.SourceImageDirName:
             self.listBox.refresh()
             self.listBox2.refresh()
 
@@ -477,7 +381,7 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        self.listBox3 = ListboxWithRefresh(self.outputFrameS[iF], {'dict': dest_dict})
+        self.listBox3 = ListboxWithRefresh(self.outputFrameS[iF], DestXML.dest_dict)
         self.listBox3.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
 
         self.ListBoxScrollbar3 = tk.Scrollbar(self.outputFrameS[iF])
@@ -490,7 +394,7 @@ class GUIApp(tk.Frame):
 
         iF += 1
 
-        self.listBox4 = ListboxWithRefresh(self.outputFrameS[iF], {'dict': pict_dict})
+        self.listBox4 = ListboxWithRefresh(self.outputFrameS[iF], DestResource.pict_dict)
         self.listBox4.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
 
         self.ListBoxScrollbar4 = tk.Scrollbar(self.outputFrameS[iF])
@@ -540,7 +444,6 @@ class GUIApp(tk.Frame):
         self.OverWriteCheckButton   = tk.Checkbutton(self.bottomFrame, {"text": "Overwrite", "variable": self.bOverWrite})
         self.OverWriteCheckButton.grid({"row": 0, "column": iF}); iF += 1
 
-        self.BOUpdateCheckButton    = tk.Checkbutton(self.bottomFrame, {"text": "BO_update", "variable": self.doBOUpdate})
         self.OverWriteCheckButton.grid({"row": 0, "column": iF}); iF += 1
 
         self.startButton        = tk.Button(self.bottomFrame, {"text": "Start", "command": self.start})
@@ -574,7 +477,7 @@ class GUIApp(tk.Frame):
 
         _i += 1
 
-        self.resetButton         = tk.Button(self.buttonFrame, {"text": "Reset", "command": self.resetAll })
+        self.resetButton         = tk.Button(self.buttonFrame, {"text": "Reset", "command": self._resetAll})
         self.resetButton.grid({"row": _i, "sticky": tk.W + tk.E})
 
         _i += 1
@@ -592,7 +495,7 @@ class GUIApp(tk.Frame):
         self.ParamWriteButton    = tk.Button(self.buttonFrame, {"text": "Write params", "command": self.paramWrite, })
         self.ParamWriteButton.grid({"row": _i, "sticky": tk.W + tk.E})
 
-        #FIXME
+        # FIXME
         #
         #_i += 1
         #
@@ -622,12 +525,6 @@ class GUIApp(tk.Frame):
         tk.Label(self.propertyFrame, {"width": iNameW, "text": "Version"}).grid({"row": iCurRow, "column": 0})
         self.versionEntry       = tk.Entry(self.propertyFrame, {"width": 3, "state": tk.DISABLED})
         self.versionEntry.grid({"row": iCurRow, "column": 1, })
-
-        iCurRow += 1
-
-        tk.Label(self.propertyFrame, {"width": iNameW, "text": "prodatURL"}).grid({"row": iCurRow, "column": 0})
-        self.proDatURLEntry     = tk.Entry(self.propertyFrame, {"textvariable": self.proDatURL})
-        self.proDatURLEntry.grid({"row": iCurRow, "column": 1, "sticky": tk.W + tk.E, })
 
         iCurRow += 1
 
@@ -661,6 +558,22 @@ class GUIApp(tk.Frame):
         CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
         CreateToolTip(self.buttonAID, __tooltipIDPT6)
 
+        # self._listBoxCodeRefresh()
+
+    def _listBoxCodeRefresh(self, *_):
+        # try:
+        SourceXML.sSourceXMLDir = self.SourceXMLDirName.get()
+        SourceResource.sSourceResourceDir = self.SourceImageDirName.get()
+        self.scanDirs(self.SourceXMLDirName.get())
+        self.scanDirs(self.SourceImageDirName.get())
+        # except AttributeError:
+        #     return
+        self.listBox.refresh()
+        self.listBox2.refresh()
+
+    def _listBoxResourceRefresh(self, *_):
+        self.listBox2.refresh()
+
     def createDestItems(self, inList):
         firstRow = inList[0]
 
@@ -671,10 +584,9 @@ class GUIApp(tk.Frame):
 
             else:
                 #no destitem so write to itself
-                destItem = DestXML(row[0], targetFileName=row[0])
-                dest_dict[destItem.name.upper()] = destItem
-                dest_guids[destItem.guid] = destItem
-                dest_sourcenames[destItem.sourceFile.name] = destItem
+                destItem = DestXML(row[0], dest_file_name=row[0])
+                DestXML.dest_dict[destItem.name.upper()] = destItem
+                [destItem.sourceFile.name] = destItem
             if len(row) > 2 and next((c for c in row[2:] if c != ""), ""):
                 for parName, col in zip(firstRow[2:], row[2:]):
                     destItem.parameters.createParamfromCSV(parName, col)
@@ -715,17 +627,17 @@ class GUIApp(tk.Frame):
         """
         SRC_NAME    = 0
         TARG_NAME   = 1
-        PRODATURL   = 2
-        VALUES      = 3
+        # PRODATURL   = 2
+        VALUES      = 2
         csvFileName = tkinter.filedialog.askopenfilename(initialdir="/", title="Select folder", filetypes=(("CSV files", "*.csv"), ("all files","*.*")))
         if csvFileName:
             with open(csvFileName, "r") as csvFile:
                 firstRow = next(csv.reader(csvFile))
                 for row in csv.reader(csvFile):
                     destItem = self.addFileRecursively(row[SRC_NAME], row[TARG_NAME])
-                    if row[PRODATURL]:
-                        destItem.parameters.BO_update(row[PRODATURL])
-                    if len(row) > 3 and next((c for c in row[PRODATURL:] if c != ""), ""):
+                    # if row[PRODATURL]:
+                    #     destItem.parameters.BO_update(row[PRODATURL])
+                    if len(row) > 3 and next((c for c in row[VALUES-1:] if c != ""), ""):
                         for parName, col in zip(firstRow[VALUES:], row[VALUES:]):
                             if "-y" in parName or "-array" in parName:
                                 arrayValues = []
@@ -751,7 +663,7 @@ class GUIApp(tk.Frame):
         """
         self.showGoogleSpreadsheetEntry()
 
-    def getFromGoogleSpreadsheet(self, *args):
+    def getFromGoogleSpreadsheet(self):
         self.GoogleSSBbutton.config(cnf={'state': tk.NORMAL})
         SSIDRegex = "/spreadsheets/d/([a-zA-Z0-9-_]+)"
         findall = re.findall(SSIDRegex, self.GoogleSSInfield.GoogleSSURL.get())
@@ -793,6 +705,7 @@ class GUIApp(tk.Frame):
     def setACLoc(self):
         ACLoc = tkinter.filedialog.askdirectory(initialdir="/", title="Select ArchiCAD folder")
         self.ACLocation.set(ACLoc)
+        self.currentConfig['ACLocation'] = ACLoc
 
     def setAdditionalImageDir(self):
         AIDLoc = tkinter.filedialog.askdirectory(initialdir="/", title="Select additional images' folder")
@@ -803,25 +716,22 @@ class GUIApp(tk.Frame):
         When self.SourceGDLDirName is modified, convert files to xml and set ui accordingly
         :return:
         '''
-        global SourceXMLDirName, SourceImageDirName
         if not self.SourceGDLDirName.get():
             return
-        self.tempXMLDir = tempfile.mkdtemp()
-        self.tempImgDir = tempfile.mkdtemp()
-        print("tempXMLDir: %s" % self.tempXMLDir)
-        print("tempImgDir: %s" % self.tempImgDir)
+        _tempXMLDir = tempfile.mkdtemp()
+        _tempImgDir = tempfile.mkdtemp()
+        print("tempXMLDir: %s" % _tempXMLDir)
+        print("tempImgDir: %s" % _tempImgDir)
         print("SourceGDLDirName %s" % self.SourceGDLDirName.get())
-        l2xCommand = '"%s" l2x -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), self.tempImgDir, self.SourceGDLDirName.get(), self.tempXMLDir)
+        l2xCommand = '"%s" l2x -img "%s" "%s" "%s"' % (os.path.join(self.ACLocation.get(), 'LP_XMLConverter.exe'), _tempImgDir, self.SourceGDLDirName.get(), _tempXMLDir)
         print("l2xCommand: %s" % l2xCommand)
         check_output(l2xCommand, shell=True)
-        self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.NORMAL})
-        self.sourceImageDir.entryDirName.config(cnf={'state': tk.NORMAL})
-        self.sourceImageDir.buttonDirName.config(cnf={'state': tk.NORMAL})
-        self.SourceXMLDirName.set(self.tempXMLDir)
-        self.SourceImageDirName.set(self.tempImgDir)
-        self.inputXMLDir.idpt.entryDirName.config(cnf={'state': tk.DISABLED})
-        self.sourceImageDir.entryDirName.config(cnf={'state': tk.DISABLED})
-        self.sourceImageDir.buttonDirName.config(cnf={'state': tk.DISABLED})
+        self.inputXMLDir.idpt.entryName.config(cnf={'state': tk.NORMAL})
+        self.sourceImageDir.reset()
+        self.SourceXMLDirName.set(_tempXMLDir)
+        self.SourceImageDirName.set(_tempImgDir)
+        self.inputXMLDir.idpt.entryName.config(cnf={'state': tk.DISABLED})
+        self.sourceImageDir.reset()
         self.listBox.refresh()
         self.listBox2.refresh()
 
@@ -845,9 +755,8 @@ class GUIApp(tk.Frame):
             self.XMLDir.idpt.entryDirName.config(state=tk.DISABLED)
         else:   self.XMLDir.idpt.entryDirName.config(state=tk.NORMAL)
 
-    @staticmethod
-    def start():
-        main2()
+    def start(self):
+        self._start()
         # print "Starting conversion"
 
     def addFile(self, sourceFileName='', targetFileName=''):
@@ -856,14 +765,13 @@ class GUIApp(tk.Frame):
         if sourceFileName.startswith(LISTBOX_SEPARATOR):
             self.listBox.select_clear(tk.ACTIVE)
             return
-        if sourceFileName.upper() in replacement_dict:
+        if sourceFileName.upper() in SourceXML.replacement_dict:
             if targetFileName:
-                destItem = DestXML(replacement_dict[sourceFileName.upper()], targetFileName=targetFileName)
+                destItem = DestXML(SourceXML.replacement_dict[sourceFileName.upper()], dest_file_name=targetFileName)
             else:
-                destItem = DestXML(replacement_dict[sourceFileName.upper()], self.StringFrom.get(), self.StringTo.get())
-            dest_dict[destItem.name.upper()] = destItem
-            dest_guids[destItem.guid] = destItem
-            dest_sourcenames[destItem.sourceFile.name] = destItem
+                destItem = DestXML(SourceXML.replacement_dict[sourceFileName.upper()], self.StringFrom.get(), self.StringTo.get())
+            DestXML.dest_dict[destItem.name.upper()] = destItem
+            DestXML.dest_sourcenames.add(destItem.sourceFile.name)
         else:
             #File should be in library_additional, possibly worth of checking it or add a warning
             return
@@ -877,9 +785,9 @@ class GUIApp(tk.Frame):
     def addImageFile(self, fileName=''):
         if not fileName:
             fileName = self.listBox2.get(tk.ACTIVE)
-        if not fileName.upper() in pict_dict and not fileName.startswith(LISTBOX_SEPARATOR):
-            destItem = DestResource(source_pict_dict[fileName.upper()], self.StringFrom.get(), self.StringTo.get())
-            pict_dict[destItem.fileNameWithExt.upper()] = destItem
+        if not fileName.upper() in DestResource.pict_dict and not fileName.startswith(LISTBOX_SEPARATOR):
+            destItem = DestResource(SourceResource.source_pict_dict[fileName.upper()], self.StringFrom.get(), self.StringTo.get())
+            DestResource.pict_dict[destItem.fileNameWithExt.upper()] = destItem
         self.refreshDestItem()
 
     def addAllFiles(self):
@@ -897,22 +805,22 @@ class GUIApp(tk.Frame):
 
         destItem = self.addFile(sourceFileName, targetFileName)
 
-        if sourceFileName.upper() not in replacement_dict:
+        if sourceFileName.upper() not in SourceXML.replacement_dict:
             #should be in library_additional
             return
 
-        x = replacement_dict[sourceFileName.upper()]
+        x = SourceXML.replacement_dict[sourceFileName.upper()]
 
         for k, v in x.calledMacros.items():
-            if v not in dest_sourcenames:
+            if v not in DestXML.dest_sourcenames:
                 self.addFileRecursively(v)
 
         for parentGUID in x.parentSubTypes:
-            if parentGUID not in id_dict:
-                if parentGUID in source_guids:
-                    self.addFileRecursively(source_guids[parentGUID])
+            if parentGUID not in DestXML.id_dict:
+                if parentGUID in SourceXML.source_guids:
+                    self.addFileRecursively(SourceXML.source_guids[parentGUID])
 
-        for pict in list(source_pict_dict.values()):
+        for pict in list(SourceResource.source_pict_dict.values()):
             for script in list(x.scripts.values()):
                 if pict.fileNameWithExt.upper() in script or pict.fileNameWithOutExt.upper() in script.upper():
                     self.addImageFile(pict.fileNameWithExt)
@@ -938,38 +846,39 @@ class GUIApp(tk.Frame):
             return
 
         fN = self.__unmarkFileName(fileName).upper()
-        del dest_sourcenames [ dest_dict[fN].sourceFile.name ]
-        del dest_guids[ dest_dict[fN].guid ]
-        del dest_dict[fN]
+        del DestXML.dest_sourcenames[ DestXML.dest_dict[fN].sourceFile.name ]
+        del DestXML.dest_dict[fN]
         self.listBox3.refresh()
-        if not dest_dict and not pict_dict:
+        if not DestXML.dest_dict and not DestResource.pict_dict:
             self.addAllButton.config({"state": tk.NORMAL})
         self.fileName.set('')
 
-    def resetAll(self):
-        self.XMLDir.config(state=tk.NORMAL)
-        self.GDLDir.config(state=tk.NORMAL)
-
-        dest_dict.clear()
-        dest_guids.clear()
-        dest_sourcenames.clear()
-        replacement_dict.clear()
-        id_dict.clear()
-        source_guids.clear()
-        pict_dict.clear()
-        source_pict_dict.clear()
-
+    def _refreshAll(self):
         self.listBox.refresh()
         self.listBox2.refresh()
         self.listBox3.refresh()
         self.listBox4.refresh()
 
+    def _resetAll(self):
+        self.XMLDir.config(state=tk.NORMAL)
+        self.GDLDir.config(state=tk.NORMAL)
+
+        SourceXML.replacement_dict.clear()
+        SourceXML.source_guids.clear()
+        DestXML.dest_dict.clear()
+        DestXML.dest_sourcenames.clear()
+        DestXML.id_dict.clear()
+
+        SourceResource.source_pict_dict.clear()
+        DestResource.pict_dict.clear()
+
+        self._refreshAll()
+
         for w in self.warnings:
             w.destroy()
 
         self.addAllButton.config({"state": tk.NORMAL})
-        self.sourceImageDir.entryDirName.config(cnf={'state': tk.NORMAL})
-        self.sourceImageDir.buttonDirName.config(cnf={'state': tk.NORMAL})
+        self.sourceImageDir.reset()
 
     def listboxselect(self, event, ):
         if not event.widget.get(0):
@@ -980,7 +889,7 @@ class GUIApp(tk.Frame):
         currentSelection = event.widget.get(int(event.widget.curselection()[0])).upper()
         if currentSelection[:2] == "* ":
             currentSelection = currentSelection[2:]
-        self.destItem = dest_dict[currentSelection]
+        self.destItem = DestXML.dest_dict[currentSelection]
         self.selectedName = currentSelection
 
         if self.observer:
@@ -1014,7 +923,7 @@ class GUIApp(tk.Frame):
             #FIXME wrong
 
     def listboxImageSelect(self, event):
-        self.destItem = pict_dict[event.widget.get(int(event.widget.curselection()[0])).upper()]
+        self.destItem = DestResource.pict_dict[event.widget.get(int(event.widget.curselection()[0])).upper()]
         self.selectedName = event.widget.get(int(event.widget.curselection()[0])).upper()
 
         if self.observer:
@@ -1037,9 +946,9 @@ class GUIApp(tk.Frame):
     def modifyDestImageItem(self, *_):
         self.destItem.fileNameWithExt = self.fileName.get()
         self.destItem.name = self.destItem.fileNameWithExt
-        pict_dict[self.destItem.fileNameWithExt.upper()] = self.destItem
+        DestResource.pict_dict[self.destItem.fileNameWithExt.upper()] = self.destItem
 
-        del pict_dict[self.selectedName.upper()]
+        del DestResource.pict_dict[self.selectedName.upper()]
         self.selectedName = self.destItem.fileNameWithExt
 
         self.destItem.refreshFileNames()
@@ -1047,10 +956,10 @@ class GUIApp(tk.Frame):
 
     def modifyDestItem(self, *_):
         fN = self.fileName.get().upper()
-        if fN and fN not in dest_dict:
+        if fN and fN not in DestXML.dest_dict:
             self.destItem.name = self.fileName.get()
-            dest_dict[fN] = self.destItem
-            del dest_dict[self.selectedName.upper()]
+            DestXML.dest_dict[fN] = self.destItem
+            del DestXML.dest_dict[self.selectedName.upper()]
             self.selectedName = self.destItem.name
 
             self.destItem.refreshFileNames()
@@ -1060,70 +969,223 @@ class GUIApp(tk.Frame):
         self.listBox3.refresh()
         self.listBox4.refresh()
 
-    def writeConfigBack(self, ):
+    def _start(self):
+        """
+        :return:
+        """
+        if self.bXML.get():
+            targXMLDir = self.TargetXMLDirName.get()
+        else:
+            targXMLDir = tempfile.mkdtemp()
+
+        if self.bWriteToSelf:
+            targGDLDir = tempfile.mkdtemp()
+        else:
+            targGDLDir = self.TargetGDLDirName.get()
+
+        targPicDir = self.TargetImageDirName.get()  # For target library's encoded images
+        tempPicDir = tempfile.mkdtemp()  # For every image file, collected
+
+        print("targXMLDir: %s" % targXMLDir)
+        print("tempPicDir: %s" % tempPicDir)
+
+        pool_map = [{"dest": DestXML.dest_dict[k],
+                     "targXMLDir": targXMLDir,
+                     "bOverWrite": self.bOverWrite.get(),
+                     "StringTo": self.StringTo.get(),
+                     "pict_dict": DestResource.pict_dict,
+                     "dest_dict": DestXML.dest_dict,
+                     } for k in list(DestXML.dest_dict.keys()) if isinstance(DestXML.dest_dict[k], DestXML)]
+        cpuCount = max(mp.cpu_count() - 1, 1)
+
+        p = mp.Pool(processes=cpuCount)
+        p.map(processOneXML, pool_map)
+
+        _picdir = self.AdditionalImageDir.get()  # Like IMAGES_GENERIC
+
+        if _picdir:
+            for f in listdir(_picdir):
+                shutil.copytree(os.path.join(_picdir, f), os.path.join(tempPicDir, f))
+
+        for f in list(DestResource.pict_dict.keys()):
+            if DestResource.pict_dict[f].sourceFile.isEncodedImage:
+                try:
+                    shutil.copyfile(os.path.join(self.SourceImageDirName.get(), DestResource.pict_dict[f].sourceFile.relPath),
+                                    os.path.join(tempPicDir, DestResource.pict_dict[f].relPath))
+                except IOError:
+                    os.makedirs(os.path.join(tempPicDir, DestResource.pict_dict[f].dirName))
+                    shutil.copyfile(os.path.join(self.SourceImageDirName.get(), DestResource.pict_dict[f].sourceFile.relPath),
+                                    os.path.join(tempPicDir, DestResource.pict_dict[f].relPath))
+
+                if targPicDir:
+                    try:
+                        shutil.copyfile(os.path.join(self.SourceImageDirName.get(), DestResource.pict_dict[f].sourceFile.relPath),
+                                        os.path.join(targPicDir, DestResource.pict_dict[f].relPath))
+                    except IOError:
+                        os.makedirs(os.path.join(targPicDir, DestResource.pict_dict[f].dirName))
+                        shutil.copyfile(os.path.join(self.SourceImageDirName.get(), DestResource.pict_dict[f].sourceFile.relPath),
+                                        os.path.join(targPicDir, DestResource.pict_dict[f].relPath))
+            else:
+                if targGDLDir:
+                    try:
+                        shutil.copyfile(DestResource.pict_dict[f].sourceFile.fullPath,
+                                        os.path.join(targGDLDir, DestResource.pict_dict[f].relPath))
+                    except IOError:
+                        os.makedirs(os.path.join(targGDLDir, DestResource.pict_dict[f].dirName))
+                        shutil.copyfile(DestResource.pict_dict[f].sourceFile.fullPath,
+                                        os.path.join(targGDLDir, DestResource.pict_dict[f].relPath))
+
+                if self.TargetXMLDirName.get():
+                    try:
+                        shutil.copyfile(DestResource.pict_dict[f].sourceFile.fullPath,
+                                        os.path.join(self.TargetXMLDirName.get(), DestResource.pict_dict[f].relPath))
+                    except IOError:
+                        os.makedirs(os.path.join(self.TargetXMLDirName.get(), DestResource.pict_dict[f].dirName))
+                        shutil.copyfile(DestResource.pict_dict[f].sourceFile.fullPath,
+                                        os.path.join(self.TargetXMLDirName.get(), DestResource.pict_dict[f].relPath))
+
+        if self.bWriteToSelf:
+            tempGDLArchiveDir = tempfile.mkdtemp()
+            print("GDL's archive dir: %s" % tempGDLArchiveDir)
+            for k in list(DestXML.dest_dict.keys()):
+                os.rename(k.sourceFile.fullPath, os.path.join(tempGDLArchiveDir, k.sourceFile.relPath))
+                os.rename(os.path.join(targGDLDir, k.sourceFile.relPath), k.sourceFile.fullPath)
+
+        if self.bDebug.get():
+            with open(targXMLDir + "\dict.txt", "w") as d:
+                for k in list(DestXML.dest_dict.keys()):
+                    d.write(k + " " + DestXML.dest_dict[k].sourceFile.name + "->" + DestXML.dest_dict[k].name + " " + DestXML.dest_dict[
+                        k].sourceFile.guid + " -> " + DestXML.dest_dict[k].guid + "\n")
+
+            with open(targXMLDir + "\pict_dict.txt", "w") as d:
+                for k in list(DestResource.pict_dict.keys()):
+                    d.write(DestResource.pict_dict[k].sourceFile.fullPath + "->" + DestResource.pict_dict[k].relPath + "\n")
+
+            with open(targXMLDir + "\id_dict.txt", "w") as d:
+                for k in list(DestXML.id_dict.keys()):
+                    d.write(DestXML.id_dict[k] + "\n")
+
+        if self.bGDL.get():
+            self.run_converter("x2l", targXMLDir, targGDLDir, tempPicDir)
+
+        # cleanup ops
+        if not self.bCleanup.get():
+            shutil.rmtree(tempPicDir)
+            if not self.bXML:
+                shutil.rmtree(targXMLDir)
+        else:
+            print("targXMLDir: %s" % targXMLDir)
+            print("tempPicDir: %s" % tempPicDir)
+
+        print("*****FINISHED SUCCESFULLY******")
+
+    def run_converter(self, command: str, source_dir: str, target_dir: str, img_dir: str = ''):
+        assert os.path.exists(target_dir)
+        assert os.path.exists(source_dir)
+        assert os.path.exists(_sConverterPath := (os.path.join(self.ACLocation.get(), LP_XML_CONVERTER)))
+
+        lImgCommand = ['-img ', img_dir] if img_dir else []
+        import subprocess
+        result = subprocess.run(
+            [_sConverterPath, command, *lImgCommand,
+             source_dir, target_dir], capture_output=True, text=True, encoding="utf-8")
+        output = result.stdout
+        print(output)
+
+    def destroyApp(self, ):
+        self.currentConfig["SourceXMLDirName"] = self.SourceXMLDirName.get()
+        self.currentConfig["SourceGDLDirName"] = self.SourceGDLDirName.get()
+        self.currentConfig["TargetXMLDirName"] = self.TargetXMLDirName.get()
+        self.currentConfig["TargetGDLDirName"] = self.TargetGDLDirName.get()
+        self.currentConfig["SourceImageDirName"] = self.SourceImageDirName.get()
+        self.currentConfig["TargetImageDirName"] =self.TargetImageDirName.get()
+        self.currentConfig["AdditionalImageDir"] = self.AdditionalImageDir.get()
+
+        self.currentConfig["StringFrom"] = self.StringFrom.get()
+        self.currentConfig["StringTo"] = self.StringTo.get()
+
+        self.currentConfig["ImgStringFrom"] = self.ImgStringFrom.get()
+        self.currentConfig["ImgStringTo"] = self.ImgStringTo.get()
+
+        self.currentConfig["fileName"] = self.fileName.get()
+
+        self.currentConfig["ACLocation"] = self.ACLocation.get()
+
+        self.currentConfig["bCheckParams"] = str(self.bCheckParams.get())
+        self.currentConfig["bDebug"]= str(self.bDebug.get())
+        self.currentConfig["bCleanup"] = str(self.bCleanup.get())
+        self.currentConfig["bOverWrite"]= str(self.bOverWrite.get())
+        self.currentConfig["bAddStr"] = str(self.bAddStr.get())
+
+        self.currentConfig["bXML"] = str(self.bXML.get())
+        self.currentConfig["bGDL"] = str(self.bGDL.get())
+        self.currentConfig["isSourceGDL"] = str(self.isSourceGDL.get())
+
+        if self.bDebug.get():
+            self.currentConfig.writeConfigBack(default=True, exclude_list=['bDebug'])
+        else:
+            self.currentConfig.writeConfigBack(default=False)
         # FIXME encrypting of sensitive data
 
-        currentConfig = RawConfigParser()
-        currentConfig.add_section("ArchiCAD")
-        currentConfig.set("ArchiCAD", "aclocation",         self.ACLocEntry.get())
-        currentConfig.set("ArchiCAD", "additionalimagedir", self.AdditionalImageDirEntry.get())
-
-        currentConfig.set("ArchiCAD", "bdebug",             self.bDebug.get())
-        currentConfig.set("ArchiCAD", "bxml",               self.bXML.get())
-        currentConfig.set("ArchiCAD", "bgdl",               self.bGDL.get())
-        if not self.isSourceGDL.get():
-            currentConfig.set("ArchiCAD", "sourcedirname",      self.SourceXMLDirName.get())
-            currentConfig.set("ArchiCAD", "inputimagesource",   self.SourceImageDirName.get())
-        currentConfig.set("ArchiCAD", "xmltargetdirname",   self.TargetXMLDirName.get())
-        currentConfig.set("ArchiCAD", "gdltargetdirname",   self.TargetGDLDirName.get())
-        currentConfig.set("ArchiCAD", "inputimagetarget",   self.TargetImageDirName.get())
-        currentConfig.set("ArchiCAD", "stringfrom",         self.StringFrom.get())
-        currentConfig.set("ArchiCAD", "stringto",           self.StringTo.get())
-        currentConfig.set("ArchiCAD", "imgstringfrom",      self.ImgStringFrom.get())
-        currentConfig.set("ArchiCAD", "imgstringto",        self.ImgStringTo.get())
-        currentConfig.set("ArchiCAD", "baddstr",            self.bAddStr.get())
-        currentConfig.set("ArchiCAD", "boverwrite",         self.bOverWrite.get())
-        currentConfig.set("ArchiCAD", "allkeywords",        ', '.join(sorted(list(all_keywords))))
-
-        if self.bo:
-            currentConfig.add_section("BOAPIv2")
-            currentConfig.set("BOAPIv2", "token_type",          self.bo.token_type)
-            currentConfig.set("BOAPIv2", "refresh_token",       self.bo.refresh_token)
-            if self.bo.brands:
-                currentConfig.set("BOAPIv2", "brands", ', '.join(list(reduce(lambda x, y: x+y, iter(self.bo.brands.items())))))
-
-        if self.googleSpreadsheet:
-            currentConfig.add_section("GoogleSpreadsheetAPI")
-            currentConfig.set("GoogleSpreadsheetAPI", "access_token",   self.googleSpreadsheet.googleCreds.token)
-            currentConfig.set("GoogleSpreadsheetAPI", "refresh_token",  self.googleSpreadsheet.googleCreds.refresh_token)
-            currentConfig.set("GoogleSpreadsheetAPI", "id_token",       self.googleSpreadsheet.googleCreds.id_token)
-            currentConfig.set("GoogleSpreadsheetAPI", "token_uri",      self.googleSpreadsheet.googleCreds.token_uri)
-            currentConfig.set("GoogleSpreadsheetAPI", "client_id",      self.googleSpreadsheet.googleCreds.client_id)
-            currentConfig.set("GoogleSpreadsheetAPI", "client_secret",  self.googleSpreadsheet.googleCreds.client_secret)
-
-        with open(os.path.join(self.appDataDir, "TemplateMarker.ini"), 'w') as configFile:
-            #FIXME proper config place
-            try:
-                currentConfig.write(configFile)
-            except UnicodeEncodeError:
-                #FIXME
-                pass
         self.top.destroy()
 
     def reconnect(self):
-        #FIXME
-        '''Meaningful when overwriting XMLs:
-        '''
+        # FIXME
+        """Meaningful when overwriting XMLs:
+        """
         pass
 
     @staticmethod
     def __unmarkFileName(inFileName):
-        '''removes remarks form on the GUI displayed filenames, like * at the beginning'''
-        if inFileName.upper() in dest_dict:
+        """removes remarks form on the GUI displayed filenames, like * at the beginning"""
+        if inFileName.upper() in DestXML.dest_dict:
             return inFileName
         elif inFileName[:2] == '* ':
-            if inFileName[2:].upper() in dest_dict:
+            if inFileName[2:].upper() in DestXML.dest_dict:
                 return inFileName [2:]
+
+    def scanDirs(self, actual_folder: str, root_folder: str = None, inAcceptedFormatS = (".XML",)):
+        """
+        only scanning input dir recursively to set up xml and image files' list
+        :param actual_folder:
+        :param root_folder:
+        :param inAcceptedFormatS:
+        :return:
+        """
+        if not root_folder:
+            root_folder = actual_folder
+        assert os.path.exists(actual_folder)
+        assert os.path.exists(root_folder)
+
+        # FIXME rewrite into a stateless form
+        try:
+            for f in listdir(actual_folder):
+                try:
+                    src = os.path.join(actual_folder, f)
+                    # if it's NOT a directory
+                    if not os.path.isdir(src):
+                        if os.path.splitext(os.path.basename(f))[1].upper() in inAcceptedFormatS:
+                            sf = SourceXML(os.path.relpath(src, root_folder))
+                        else:
+                            # set up replacement dict for other files
+                            if os.path.splitext(os.path.basename(f))[0].upper() not in SourceResource.source_pict_dict:
+                                sI = SourceResource(os.path.relpath(src, root_folder), base_path=root_folder)
+                                SIDN = self.SourceImageDirName.get()
+                                if SIDN in sI.fullPath and SIDN:
+                                    sI.isEncodedImage = True
+                    else:
+                        self.scanDirs(src, root_folder)
+
+                except KeyError:
+                    print("KeyError %s" % f)
+                    continue
+                except AttributeError as e:
+                    print("AttributeError %s" % e)
+                except etree.XMLSyntaxError:
+                    print("XMLSyntaxError %s" % f)
+                    continue
+        except WindowsError:
+            pass
 
 # ------------------- Google SpreadSheet infield window ------
 
@@ -1147,160 +1209,14 @@ class GoogleSSInfield(tk.Frame):
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
 
-def scanDirs(inFile, inRootFolder, inAcceptedFormatS = (".XML",)):
-    """
-    only scanning input dir recursively to set up xml and image files' list
-    :param inFile:
-    :param outFile:
-    :return:
-    """
-    # FIXME rewrite into a stateless form
-    try:
-        for f in listdir(inFile):
-            try:
-                src = os.path.join(inFile, f)
-                # if it's NOT a directory
-                if not os.path.isdir(src):
-                    if os.path.splitext(os.path.basename(f))[1].upper() in inAcceptedFormatS:
-                        sf = SourceXML(os.path.relpath(src, inRootFolder))
-                        replacement_dict[sf._name.upper()] = sf
-                        # id_dict[sf.guid.upper()] = ""
-                    else:
-                        # set up replacement dict for other files
-                        if os.path.splitext(os.path.basename(f))[0].upper() not in source_pict_dict:
-                            sI = SourceResource(os.path.relpath(src, inRootFolder), base_path=inRootFolder)
-                            SIDN = SourceImageDirName.get()
-                            if SIDN in sI.fullDirName and SIDN:
-                                sI.isEncodedImage = True
-                            source_pict_dict[sI.fileNameWithExt.upper()] = sI
-                else:
-                    scanDirs(src, inRootFolder)
 
-            except KeyError:
-                print("KeyError %s" % f)
-                continue
-            except etree.XMLSyntaxError:
-                print("XMLSyntaxError %s" % f)
-                continue
-    except WindowsError:
-        pass
-
-
-def main2():
-    """
-    :return:
-    """
-    if bXML.get():
-        tempdir = TargetXMLDirName.get()
-    else:
-        tempdir = tempfile.mkdtemp()
-
-    if not bWriteToSelf:
-        targGDLDir = TargetGDLDirName.get()
-    else:
-        targGDLDir = tempfile.mkdtemp()
-
-    targPicDir = TargetImageDirName.get()   # For target library's encoded images
-    tempPicDir = tempfile.mkdtemp()         # For every image file, collected
-
-    print("tempdir: %s" % tempdir)
-    print("tempPicDir: %s" % tempPicDir)
-
-    pool_map = [{"dest": dest_dict[k],
-                 "tempdir": tempdir,
-                 "bOverWrite": bOverWrite.get(),
-                 "StringTo": StringTo.get(),
-                 "pict_dict": pict_dict,
-                 "dest_dict": dest_dict,
-                 } for k in list(dest_dict.keys()) if isinstance(dest_dict[k], DestXML)]
-    cpuCount = max(mp.cpu_count() - 1, 1)
-
-    p = mp.Pool(processes=cpuCount)
-    p.map(processOneXML, pool_map)
-
-    _picdir =  AdditionalImageDir.get() # Like IMAGES_GENERIC
-
-    if _picdir:
-        for f in listdir(_picdir):
-            shutil.copytree(os.path.join(_picdir, f), os.path.join(tempPicDir, f))
-
-    for f in list(pict_dict.keys()):
-        if pict_dict[f].sourceFile.isEncodedImage:
-            try:
-                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(tempPicDir, pict_dict[f].relPath))
-            except IOError:
-                os.makedirs(os.path.join(tempPicDir, pict_dict[f].dirName))
-                shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath), os.path.join(tempPicDir, pict_dict[f].relPath))
-
-            if targPicDir:
-                try:
-                    shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath),
-                                    os.path.join(targPicDir, pict_dict[f].relPath))
-                except IOError:
-                    os.makedirs(os.path.join(targPicDir, pict_dict[f].dirName))
-                    shutil.copyfile(os.path.join(SourceImageDirName.get(), pict_dict[f].sourceFile.relPath),
-                                    os.path.join(targPicDir, pict_dict[f].relPath))
-        else:
-            if targGDLDir:
-                try:
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(targGDLDir, pict_dict[f].relPath))
-                except IOError:
-                    os.makedirs(os.path.join(targGDLDir, pict_dict[f].dirName))
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(targGDLDir, pict_dict[f].relPath))
-
-            if TargetXMLDirName.get():
-                try:
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetXMLDirName.get(), pict_dict[f].relPath))
-                except IOError:
-                    os.makedirs(os.path.join(TargetXMLDirName.get(), pict_dict[f].dirName))
-                    shutil.copyfile(pict_dict[f].sourceFile.fullPath, os.path.join(TargetXMLDirName.get(), pict_dict[f].relPath))
-
-    x2lCommand = '"%s" x2l -img "%s" "%s" "%s"' % (os.path.join(ACLocation.get(), 'LP_XMLConverter.exe'), tempPicDir, tempdir, targGDLDir)
-    print("x2l Command being executed...")
-    print(x2lCommand)
-
-    if bWriteToSelf:
-        tempGDLArchiveDir = tempfile.mkdtemp()
-        print("GDL's archive dir: %s" % tempGDLArchiveDir)
-        for k in list(dest_dict.keys()):
-            os.rename(k.sourceFile.fullPath, os.path.join(tempGDLArchiveDir, k.sourceFile.relPath))
-            os.rename(os.path.join(targGDLDir, k.sourceFile.relPath), k.sourceFile.fullPath)
-
-    if bDebug.get():
-        print("ac command:")
-        print(x2lCommand)
-        with open(tempdir + "\dict.txt", "w") as d:
-            for k in list(dest_dict.keys()):
-                d.write(k + " " + dest_dict[k].sourceFile.name + "->" + dest_dict[k].name + " " + dest_dict[k].sourceFile.guid + " -> " + dest_dict[k].guid + "\n")
-
-        with open(tempdir + "\pict_dict.txt", "w") as d:
-            for k in list(pict_dict.keys()):
-                d.write(pict_dict[k].sourceFile.fullPath + "->" + pict_dict[k].relPath+ "\n")
-
-        with open(tempdir + "\id_dict.txt", "w") as d:
-            for k in list(id_dict.keys()):
-                d.write(id_dict[k] + "\n")
-
-    if bGDL.get():
-        check_output(x2lCommand, shell=True)
-
-    # cleanup ops
-    if not bCleanup.get():
-        shutil.rmtree(tempPicDir)
-        if not bXML:
-            shutil.rmtree(tempdir)
-    else:
-        print("tempdir: %s" % tempdir)
-        print("tempPicDir: %s" % tempPicDir)
-
-    print("*****FINISHED SUCCESFULLY******")
 
 
 def processOneXML(inData):
     dest = inData['dest']
     tempdir = inData["tempdir"]
-    dest_dict = inData["dest_dict"]
-    pict_dict = inData["pict_dict"]
+    _dest_dict = inData["dest_dict"]
+    _pict_dict = inData["DestResource.pict_dict"]
     bOverWrite = inData["bOverWrite"]
     StringTo = inData["StringTo"]
 
@@ -1334,8 +1250,8 @@ def processOneXML(inData):
             cmRoot.append(macro)
     else:
         for m in mdp.findall("./CalledMacros/Macro"):
-            for dI in list(dest_dict.keys()):
-                d = dest_dict[dI]
+            for dI in list(_dest_dict.keys()):
+                d = _dest_dict[dI]
                 if m.find("MName").text.strip("'" + '"') == d.sourceFile.name:
                     m.find("MName").text = etree.CDATA('"' + d.name + '"')
                     m.find(dest.sourceFile.ID).text = d.guid
@@ -1344,25 +1260,16 @@ def processOneXML(inData):
                  "./Script_FWM", "./Script_BWM", ]:
         section = mdp.find(sect)
         if section is not None:
-            t = section.text
+            section.text = replace_filenames(StringTo, _dest_dict, _pict_dict, section.text)
 
-            for dI in list(dest_dict.keys()):
-                t = re.sub(r'(?<=[,"\'`\s])' + dest_dict[dI].sourceFile.name + r'(?=[,"\'`\s])', dest_dict[dI].name, t, flags=re.IGNORECASE)
-
-            for pr in sorted(list(pict_dict.keys()), key=lambda x: -len(x)):
-                # Replacing images
-                t = re.sub(r'(?<=[,"\'`\s])' + pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo + ')',
-                           pict_dict[pr].fileNameWithOutExt, t, flags=re.IGNORECASE)
-
-            section.text = etree.CDATA(t)
     # ---------------------Prevpict-------------------------------------------------------
     if dest.bPlaceable:
         section = mdp.find('Picture')
         if isinstance(section, etree._Element) and 'path' in section.attrib:
             path = os.path.basename(section.attrib['path']).upper()
             if path:
-                n = next((pict_dict[p].relPath for p in list(pict_dict.keys()) if
-                          os.path.basename(pict_dict[p].sourceFile.relPath).upper() == path), None)
+                n = next((_pict_dict[p].relPath for p in list(_pict_dict.keys()) if
+                          os.path.basename(_pict_dict[p].sourceFile.relPath).upper() == path), None)
                 if n:
                     section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n)  # Not os.path.join!
     # ---------------------AC18 and over: adding licensing statically---------------------
@@ -1400,13 +1307,13 @@ def processOneXML(inData):
     # FIXME this is unclear what id does
     for m in mdp.findall("./Ancestry/" + dest.sourceFile.ID):
         guid = m.text
-        if guid.upper() in id_dict:
+        if guid.upper() in DestXML.id_dict:
             print("ANCESTRY: %s" % guid)
             par = m.getparent()
             par.remove(m)
 
             element = etree.Element(dest.sourceFile.ID)
-            element.text = id_dict[guid]
+            element.text = DestXML.id_dict[guid]
             element.tail = '\n'
             par.append(element)
     try:
@@ -1417,11 +1324,23 @@ def processOneXML(inData):
         mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
 
 
+@Recorder()
+def replace_filenames(StringTo:str, dest_dict, pict_dict, text:str):
+    for dI in list(dest_dict.keys()):
+        text = re.sub(r'(?<=[,"\'`\s])' + dest_dict[dI].sourceFile.name + r'(?=[,"\'`\s])', dest_dict[dI].name, text,
+                   flags=re.IGNORECASE)
+    for pr in sorted(list(pict_dict.keys()), key=lambda x: -len(x)):
+        # Replacing images
+        text = re.sub(r'(?<=[,"\'`\s])' + pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo + ')',
+                   pict_dict[pr].fileNameWithOutExt, text, flags=re.IGNORECASE)
+    return etree.CDATA(text)
+
+
 def main():
     global app
 
     app = GUIApp()
-    app.top.protocol("WM_DELETE_WINDOW", app.writeConfigBack)
+    app.top.protocol("WM_DELETE_WINDOW", app.destroyApp)
     app.top.mainloop()
 
 
