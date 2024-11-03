@@ -611,7 +611,7 @@ class GUIApp(tk.Frame):
 
     def paramWrite(self):
         """
-        This method should write params directly into selected .GSMs/.XLSs
+        This method should write params from a Google SpreadSheet directly into selected .GSMs/.XLSs
         (source and destination is the same)
         :return:
         """
@@ -716,20 +716,19 @@ class GUIApp(tk.Frame):
         When self.SourceGDLDirName is modified, convert files to xml and set ui accordingly
         :return:
         '''
+        # FIXME check all this
         if not self.SourceGDLDirName.get():
             return
         _tempXMLDir = tempfile.mkdtemp()
         _tempImgDir = tempfile.mkdtemp()
-        print("tempXMLDir: %s" % _tempXMLDir)
-        print("tempImgDir: %s" % _tempImgDir)
-        print("SourceGDLDirName %s" % self.SourceGDLDirName.get())
-        l2xCommand = '"%s" l2x -img "%s" "%s" "%s"' % (os.path.join(self.ACLocation.get(), 'LP_XMLConverter.exe'), _tempImgDir, self.SourceGDLDirName.get(), _tempXMLDir)
-        print("l2xCommand: %s" % l2xCommand)
-        check_output(l2xCommand, shell=True)
+
+        self.run_converter("l2x", self.SourceGDLDirName.get(), _tempXMLDir, _tempImgDir)
+
         self.inputXMLDir.idpt.entryName.config(cnf={'state': tk.NORMAL})
         self.sourceImageDir.reset()
         self.SourceXMLDirName.set(_tempXMLDir)
         self.SourceImageDirName.set(_tempImgDir)
+
         self.inputXMLDir.idpt.entryName.config(cnf={'state': tk.DISABLED})
         self.sourceImageDir.reset()
         self.listBox.refresh()
@@ -1144,12 +1143,12 @@ class GUIApp(tk.Frame):
             if inFileName[2:].upper() in DestXML.dest_dict:
                 return inFileName [2:]
 
-    def scanDirs(self, actual_folder: str, root_folder: str = None, inAcceptedFormatS = (".XML",)):
+    def scanDirs(self, actual_folder: str, root_folder: str = None, accepted_formats: [list, tuple] = (".XML",)):
         """
-        only scanning input dir recursively to set up xml and image files' list
+        Scanning input dir recursively to set up xml and image files' list
         :param actual_folder:
         :param root_folder:
-        :param inAcceptedFormatS:
+        :param accepted_formats:
         :return:
         """
         if not root_folder:
@@ -1164,7 +1163,7 @@ class GUIApp(tk.Frame):
                     src = os.path.join(actual_folder, f)
                     # if it's NOT a directory
                     if not os.path.isdir(src):
-                        if os.path.splitext(os.path.basename(f))[1].upper() in inAcceptedFormatS:
+                        if os.path.splitext(os.path.basename(f))[1].upper() in accepted_formats:
                             sf = SourceXML(os.path.relpath(src, root_folder))
                         else:
                             # set up replacement dict for other files
@@ -1175,7 +1174,6 @@ class GUIApp(tk.Frame):
                                     sI.isEncodedImage = True
                     else:
                         self.scanDirs(src, root_folder)
-
                 except KeyError:
                     print("KeyError %s" % f)
                     continue
