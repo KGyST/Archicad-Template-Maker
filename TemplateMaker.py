@@ -231,34 +231,35 @@ class GUIApp(GUIAppBase):
 
     self.currentConfig = Config("TemplateMarker", "ArchiCAD")
 
-    self.SourceXMLDirName   = tk.StringVar(self.top, self.currentConfig["SourceXMLDirName"])
-    self.SourceGDLDirName   = tk.StringVar(self.top, self.currentConfig["SourceGDLDirName"])
-    self.TargetXMLDirName   = tk.StringVar(self.top, self.currentConfig["TargetXMLDirName"])
-    self.TargetGDLDirName   = tk.StringVar(self.top, self.currentConfig["TargetGDLDirName"])
-    self.SourceImageDirName = tk.StringVar(self.top, self.currentConfig["SourceImageDirName"])
-    self.TargetImageDirName = tk.StringVar(self.top, self.currentConfig["TargetImageDirName"])
-    self.AdditionalImageDir = tk.StringVar(self.top, self.currentConfig["AdditionalImageDir"])
+    self.SourceXMLDirName   = self.currentConfig.register("SourceXMLDirName", tk.StringVar(self.top))
+    
+    self.SourceGDLDirName   = self.currentConfig.register("SourceGDLDirName", tk.StringVar(self.top))
+    self.TargetXMLDirName   = self.currentConfig.register("TargetXMLDirName", tk.StringVar(self.top))
+    self.TargetGDLDirName   = self.currentConfig.register("TargetGDLDirName", tk.StringVar(self.top))
+    self.SourceImageDirName = self.currentConfig.register("SourceImageDirName", tk.StringVar(self.top))
+    self.TargetImageDirName = self.currentConfig.register("TargetImageDirName", tk.StringVar(self.top))
+    self.AdditionalImageDir = self.currentConfig.register("AdditionalImageDir", tk.StringVar(self.top))
 
-    self.StringFrom         = tk.StringVar(self.top, self.currentConfig["StringFrom"])
-    self.StringTo           = tk.StringVar(self.top, self.currentConfig["StringTo"])
+    self.StringFrom         = self.currentConfig.register("StringFrom", tk.StringVar(self.top))
+    self.StringTo           = self.currentConfig.register("StringTo", tk.StringVar(self.top))
 
-    self.ImgStringFrom      = tk.StringVar(self.top, self.currentConfig["ImgStringFrom"])
-    self.ImgStringTo        = tk.StringVar(self.top, self.currentConfig["ImgStringTo"])
+    self.ImgStringFrom      = self.currentConfig.register("ImgStringFrom", tk.StringVar(self.top))
+    self.ImgStringTo        = self.currentConfig.register("ImgStringTo", tk.StringVar(self.top))
 
-    self.fileName           = tk.StringVar(self.top, self.currentConfig["fileName"])
+    self.fileName           = self.currentConfig.register("fileName", tk.StringVar(self.top))
     self.DestItem           = None
 
-    self.ACLocation         = tk.StringVar(self.top, self.currentConfig["ACLocation"])
+    self.ACLocation         = self.currentConfig.register("ACLocation", tk.StringVar(self.top))
 
-    self.bCheckParams       = tk.BooleanVar(self.top, self.currentConfig["bCheckParams"] != "False")
-    self.bDebug             = tk.BooleanVar(self.top, self.currentConfig["bDebug"] != "False")
-    self.bCleanup           = tk.BooleanVar(self.top, self.currentConfig["bCleanup"] != "False")
-    self.bOverWrite         = tk.BooleanVar(self.top, self.currentConfig["bOverWrite"] != "False")
-    self.bAddStr            = tk.BooleanVar(self.top, self.currentConfig["bAddStr"] != "False")
+    self.bCheckParams       = self.currentConfig.register("bCheckParams", tk.BooleanVar(self.top))
+    self.bDebug             = self.currentConfig.register("bDebug", tk.BooleanVar(self.top))
+    self.bCleanup           = self.currentConfig.register("bCleanup", tk.BooleanVar(self.top))
+    self.bOverWrite         = self.currentConfig.register("bOverWrite", tk.BooleanVar(self.top))
+    self.bAddStr            = self.currentConfig.register("bAddStr", tk.BooleanVar(self.top))
 
-    self.bXML               = tk.BooleanVar(self.top, self.currentConfig["bXML"] != "False")
-    self.bGDL               = tk.BooleanVar(self.top, self.currentConfig["bGDL"] != "False")
-    self.isSourceGDL        = tk.BooleanVar(self.top, self.currentConfig["isSourceGDL"] != "False")
+    self.bXML               = self.currentConfig.register("bXML", tk.BooleanVar(self.top))
+    self.bGDL               = self.currentConfig.register("bGDL", tk.BooleanVar(self.top))
+    self.isSourceGDL        = self.currentConfig.register("isSourceGDL", tk.BooleanVar(self.top))
 
     self.observer  = None
 
@@ -811,6 +812,7 @@ class GUIApp(GUIAppBase):
 
     if sourceFileName.upper() not in SourceXML.replacement_dict:
       #should be in library_additional
+      # FIXME build a filelist of that dict and check against it
       return
 
     x = SourceXML.replacement_dict[sourceFileName.upper()]
@@ -979,6 +981,7 @@ class GUIApp(GUIAppBase):
     """
     if self.bXML.get():
       targXMLDir = self.TargetXMLDirName.get()
+      assert not len(os.listdir(targXMLDir)) or self.bOverWrite.get()
     else:
       targXMLDir = tempfile.mkdtemp()
 
@@ -986,20 +989,21 @@ class GUIApp(GUIAppBase):
       targGDLDir = tempfile.mkdtemp()
     else:
       targGDLDir = self.TargetGDLDirName.get()
+      assert not len(os.listdir(targGDLDir)) or self.bOverWrite.get()
 
-    targPicDir = self.TargetImageDirName.get()  # For target library's encoded images
     tempPicDir = tempfile.mkdtemp()  # For every image file, collected
+    targPicDir = self.TargetImageDirName.get()  # For target library's encoded images
+    assert not len(os.listdir(targPicDir)) or self.bOverWrite.get()
 
     print("targXMLDir: %s" % targXMLDir)
     print("tempPicDir: %s" % tempPicDir)
 
-    pool_map = [{"dest": DestXML.dest_dict[k],
-                 "targXMLDir": targXMLDir,
-                 "bOverWrite": self.bOverWrite.get(),
-                 "StringTo": self.StringTo.get(),
-                 "pict_dict": DestResource.pict_dict,
-                 "dest_dict": DestXML.dest_dict,
-                 } for k in list(DestXML.dest_dict.keys()) if isinstance(DestXML.dest_dict[k], DestXML)]
+    pool_map = [ProcessData (
+      dest_xml=DestXML.dest_dict[k],
+      tempdir=targXMLDir,
+      overwrite=self.bOverWrite.get(),
+      string_to=self.StringTo.get(),) for k in list(DestXML.dest_dict.keys()) if isinstance(DestXML.dest_dict[k], DestXML)]
+
     cpuCount = max(mp.cpu_count() - 1, 1)
 
     p = mp.Pool(processes=cpuCount)
@@ -1097,38 +1101,38 @@ class GUIApp(GUIAppBase):
     print(output)
 
   def _destroyApp(self, ):
-    self.currentConfig["SourceXMLDirName"] = self.SourceXMLDirName.get()
-    self.currentConfig["SourceGDLDirName"] = self.SourceGDLDirName.get()
-    self.currentConfig["TargetXMLDirName"] = self.TargetXMLDirName.get()
-    self.currentConfig["TargetGDLDirName"] = self.TargetGDLDirName.get()
-    self.currentConfig["SourceImageDirName"] = self.SourceImageDirName.get()
-    self.currentConfig["TargetImageDirName"] =self.TargetImageDirName.get()
-    self.currentConfig["AdditionalImageDir"] = self.AdditionalImageDir.get()
-
-    self.currentConfig["StringFrom"] = self.StringFrom.get()
-    self.currentConfig["StringTo"] = self.StringTo.get()
-
-    self.currentConfig["ImgStringFrom"] = self.ImgStringFrom.get()
-    self.currentConfig["ImgStringTo"] = self.ImgStringTo.get()
-
-    self.currentConfig["fileName"] = self.fileName.get()
-
-    self.currentConfig["ACLocation"] = self.ACLocation.get()
-
-    self.currentConfig["bCheckParams"] = str(self.bCheckParams.get())
-    self.currentConfig["bDebug"]= str(self.bDebug.get())
-    self.currentConfig["bCleanup"] = str(self.bCleanup.get())
-    self.currentConfig["bOverWrite"]= str(self.bOverWrite.get())
-    self.currentConfig["bAddStr"] = str(self.bAddStr.get())
-
-    self.currentConfig["bXML"] = str(self.bXML.get())
-    self.currentConfig["bGDL"] = str(self.bGDL.get())
-    self.currentConfig["isSourceGDL"] = str(self.isSourceGDL.get())
-
-    if self.bDebug.get():
-      self.currentConfig.writeConfigBack(default=True, exclude_list=['bDebug'])
-    else:
-      self.currentConfig.writeConfigBack(default=False)
+    # self.currentConfig["SourceXMLDirName"] = self.SourceXMLDirName.get()
+    # self.currentConfig["SourceGDLDirName"] = self.SourceGDLDirName.get()
+    # self.currentConfig["TargetXMLDirName"] = self.TargetXMLDirName.get()
+    # self.currentConfig["TargetGDLDirName"] = self.TargetGDLDirName.get()
+    # self.currentConfig["SourceImageDirName"] = self.SourceImageDirName.get()
+    # self.currentConfig["TargetImageDirName"] =self.TargetImageDirName.get()
+    # self.currentConfig["AdditionalImageDir"] = self.AdditionalImageDir.get()
+    #
+    # self.currentConfig["StringFrom"] = self.StringFrom.get()
+    # self.currentConfig["StringTo"] = self.StringTo.get()
+    #
+    # self.currentConfig["ImgStringFrom"] = self.ImgStringFrom.get()
+    # self.currentConfig["ImgStringTo"] = self.ImgStringTo.get()
+    #
+    # self.currentConfig["fileName"] = self.fileName.get()
+    #
+    # self.currentConfig["ACLocation"] = self.ACLocation.get()
+    #
+    # self.currentConfig["bCheckParams"] = str(self.bCheckParams.get())
+    # self.currentConfig["bDebug"]= str(self.bDebug.get())
+    # self.currentConfig["bCleanup"] = str(self.bCleanup.get())
+    # self.currentConfig["bOverWrite"]= str(self.bOverWrite.get())
+    # self.currentConfig["bAddStr"] = str(self.bAddStr.get())
+    #
+    # self.currentConfig["bXML"] = str(self.bXML.get())
+    # self.currentConfig["bGDL"] = str(self.bGDL.get())
+    # self.currentConfig["isSourceGDL"] = str(self.isSourceGDL.get())
+    #
+    # if self.bDebug.get():
+    #   self.currentConfig.writeConfigBack(default=True, exclude_list=['bDebug'])
+    # else:
+    self.currentConfig.writeConfigBack(default=False)
     # FIXME encrypting of sensitive data
 
     self.top.destroy()
@@ -1212,18 +1216,25 @@ class GoogleSSInfield(tk.Frame):
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
 
-def processOneXML(inData):
-  dest = inData['dest']
-  tempdir = inData["tempdir"]
-  _dest_dict = inData["dest_dict"]
-  _pict_dict = inData["DestResource.pict_dict"]
-  bOverWrite = inData["bOverWrite"]
-  StringTo = inData["StringTo"]
+from dataclasses import dataclass
+@dataclass
+class ProcessData:
+  dest_xml: DestXML
+  tempdir: str
+  overwrite: bool
+  string_to: str
+
+def processOneXML(data: ProcessData):
+  dest = data.dest_xml
 
   src = dest.sourceFile
   srcPath = src.fullPath
-  destPath = os.path.join(tempdir, dest.relPath)
+  destPath = os.path.join(data.tempdir, dest.relPath)
   destDir = os.path.dirname(destPath)
+
+  assert os.path.exists(data.tempdir)
+  assert os.path.exists(srcPath)
+  assert not os.path.exists(destPath) or os.access(destPath, os.W_OK)
 
   print("%s -> %s" % (srcPath, destPath,))
 
@@ -1231,7 +1242,7 @@ def processOneXML(inData):
   mdp = etree.parse(srcPath, etree.XMLParser(strip_cdata=False))
   mdp.getroot().attrib[dest.sourceFile.ID] = dest.guid
   # FIXME what if calledmacros are not overwritten?
-  if bOverWrite and dest.retainedCalledMacros:
+  if data.overwrite and dest.retainedCalledMacros:
     cmRoot = mdp.find("./CalledMacros")
     for m in mdp.findall("./CalledMacros/Macro"):
       cmRoot.remove(m)
@@ -1250,8 +1261,8 @@ def processOneXML(inData):
       cmRoot.append(macro)
   else:
     for m in mdp.findall("./CalledMacros/Macro"):
-      for dI in list(_dest_dict.keys()):
-        d = _dest_dict[dI]
+      for dI in list(DestXML.dest_dict.keys()):
+        d = DestXML.dest_dict[dI]
         if m.find("MName").text.strip("'" + '"') == d.sourceFile.name:
           m.find("MName").text = etree.CDATA('"' + d.name + '"')
           m.find(dest.sourceFile.ID).text = d.guid
@@ -1260,7 +1271,7 @@ def processOneXML(inData):
                "./Script_FWM", "./Script_BWM", ]:
     section = mdp.find(sect)
     if section is not None:
-      section.text = etree.CDATA(replace_filenames(StringTo, _dest_dict, _pict_dict, section.text))
+      section.text = etree.CDATA(replace_filenames(data.string_to, DestXML.dest_dict, DestResource.pict_dict, section.text))
 
   # ---------------------Prevpict-------------------------------------------------------
   if dest.bPlaceable:
@@ -1268,8 +1279,8 @@ def processOneXML(inData):
     if isinstance(section, etree._Element) and 'path' in section.attrib:
       path = os.path.basename(section.attrib['path']).upper()
       if path:
-        n = next((_pict_dict[p].relPath for p in list(_pict_dict.keys()) if
-                  os.path.basename(_pict_dict[p].sourceFile.relPath).upper() == path), None)
+        n = next((DestResource.pict_dict[p].relPath for p in list(DestResource.pict_dict.keys()) if
+                  os.path.basename(DestResource.pict_dict[p].sourceFile.relPath).upper() == path), None)
         if n:
           section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n)  # Not os.path.join!
   # ---------------------AC18 and over: adding licensing statically---------------------
