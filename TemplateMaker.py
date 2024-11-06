@@ -247,7 +247,6 @@ class GUIApp(GUIAppBase):
     self.ImgStringTo        = self.currentConfig.register("ImgStringTo", tk.StringVar(self.top))
 
     self.fileName           = self.currentConfig.register("fileName", tk.StringVar(self.top))
-    self.DestItem           = None
 
     self.ACLocation         = self.currentConfig.register("ACLocation", tk.StringVar(self.top))
 
@@ -1101,37 +1100,6 @@ class GUIApp(GUIAppBase):
     print(output)
 
   def _destroyApp(self, ):
-    # self.currentConfig["SourceXMLDirName"] = self.SourceXMLDirName.get()
-    # self.currentConfig["SourceGDLDirName"] = self.SourceGDLDirName.get()
-    # self.currentConfig["TargetXMLDirName"] = self.TargetXMLDirName.get()
-    # self.currentConfig["TargetGDLDirName"] = self.TargetGDLDirName.get()
-    # self.currentConfig["SourceImageDirName"] = self.SourceImageDirName.get()
-    # self.currentConfig["TargetImageDirName"] =self.TargetImageDirName.get()
-    # self.currentConfig["AdditionalImageDir"] = self.AdditionalImageDir.get()
-    #
-    # self.currentConfig["StringFrom"] = self.StringFrom.get()
-    # self.currentConfig["StringTo"] = self.StringTo.get()
-    #
-    # self.currentConfig["ImgStringFrom"] = self.ImgStringFrom.get()
-    # self.currentConfig["ImgStringTo"] = self.ImgStringTo.get()
-    #
-    # self.currentConfig["fileName"] = self.fileName.get()
-    #
-    # self.currentConfig["ACLocation"] = self.ACLocation.get()
-    #
-    # self.currentConfig["bCheckParams"] = str(self.bCheckParams.get())
-    # self.currentConfig["bDebug"]= str(self.bDebug.get())
-    # self.currentConfig["bCleanup"] = str(self.bCleanup.get())
-    # self.currentConfig["bOverWrite"]= str(self.bOverWrite.get())
-    # self.currentConfig["bAddStr"] = str(self.bAddStr.get())
-    #
-    # self.currentConfig["bXML"] = str(self.bXML.get())
-    # self.currentConfig["bGDL"] = str(self.bGDL.get())
-    # self.currentConfig["isSourceGDL"] = str(self.isSourceGDL.get())
-    #
-    # if self.bDebug.get():
-    #   self.currentConfig.writeConfigBack(default=True, exclude_list=['bDebug'])
-    # else:
     self.currentConfig.writeConfigBack(default=False)
     # FIXME encrypting of sensitive data
 
