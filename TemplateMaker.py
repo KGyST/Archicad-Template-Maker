@@ -1,9 +1,9 @@
 #!C:\Program Files\Python27amd64\python.exe
 # -*- coding: utf-8 -*-
-#HOTFIXREQ if image dest folder is retained, remove common images from it
-#HOTFIXREQ ImportError: No module named googleapiclient.discovery
-#HOTFIXREQ unicode error when running ac command in path with native characters
-#HOTFIXREQ SOURCE_IMAGE_DIR_NAME images are not renamed at all
+# HOTFIXREQ if image dest folder is retained, remove common images from it
+# HOTFIXREQ ImportError: No module named googleapiclient.discovery
+# HOTFIXREQ unicode error when running ac command in path with native characters
+# HOTFIXREQ SOURCE_IMAGE_DIR_NAME images are not renamed at all
 # FIXME renaming errors and param csv parameter overwriting
 # FIXME append param to the end when no argument for position
 # FIXME library_images copy always as temporary folder; instead junction
@@ -22,31 +22,12 @@ import tempfile
 import shutil
 
 import tkinter.filedialog
+from tkinter import scrolledtext
 
-from configparser import *  #FIXME not *
 import csv
 
 import pip
 import multiprocessing as mp
-from Config import *
-
-try:
-  import googleapiclient.errors
-  from googleapiclient.discovery import build
-  from google_auth_oauthlib.flow import InstalledAppFlow, Flow
-  from google.auth.transport.requests import Request
-  from google.oauth2.credentials import Credentials
-
-except ImportError:
-  pip.main(['install', '--user', 'google-api-python-client'])
-  pip.main(['install', '--user', 'google-auth-httplib2'])
-  pip.main(['install', '--user', 'google-auth-oauthlib'])
-
-  import googleapiclient.errors
-  from googleapiclient.discovery import build
-  from google_auth_oauthlib.flow import InstalledAppFlow
-  from google.auth.transport.requests import Request
-  from google.oauth2.credentials import Credentials
 
 try:
   from lxml import etree
@@ -54,85 +35,15 @@ except ImportError:
   pip.main(['install', '--user', 'lxml'])
   from lxml import etree
 
-from GSMXMLLib import *
+from GSMParamLib.GSMXMLLib import *
 from SamUITools import *
 from samuTeszt import Recorder
-from GSMParamLib.GUIAppSingletonBase import GUIAppBase
+from GSMParamLib.GUIAppSingletonBase import XMLProcessorBase
+from GSMParamLib.Async import Loop
+from GSMParamLib.GoogleSpreadsheetConnector import GoogleSpreadsheetConnector
 
 LISTBOX_SEPARATOR = '--------'
-
 LP_XML_CONVERTER = 'LP_XMLConverter.exe'
-
-# ------------------- Google Spreadsheet API connectivity --------------------------------------------------------------
-
-class NoGoogleCredentialsException(Exception):
-  pass
-
-class GoogleSpreadsheetConnector(object):
-  GOOGLE_SPREADSHEET_SCOPES = ['https://www.googleapis.com/auth/spreadsheets.readonly']
-
-  def __init__(self, inCurrentConfig:'Config', inSpreadsheetID):
-    #FIXME renaming/filling out these
-    client_config = {"installed": {
-      "client_id": "224241213692-7gafn34d4heprhps1rod3clt1b8j07j6.apps.googleusercontent.com",
-      "project_id": "quickstart-1558854893881",
-      "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-      "token_uri": "https://oauth2.googleapis.com/token",
-      "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-      "client_secret": "PHWQx7k6ldF73rDkqJE2Cedl",
-      "redirect_uris": {
-        "urn:ietf:wg:oauth:2.0:oob",
-        "http://localhost"}
-    }}
-
-    try:
-      if  "access_token" in inCurrentConfig \
-      and "refresh_token" in inCurrentConfig \
-      and "token_type" in inCurrentConfig \
-      and "id_token" in inCurrentConfig \
-      and "token_uri" in inCurrentConfig \
-      and "client_id" in inCurrentConfig \
-      and "client_secret" in inCurrentConfig:
-        self.googleCreds = Credentials(
-          token=          inCurrentConfig["access_token"],
-          refresh_token=  inCurrentConfig["refresh_token"],
-          id_token=       inCurrentConfig["id_token"],
-          token_uri=      inCurrentConfig["token_uri"],
-          client_id=      inCurrentConfig["client_id"],
-          client_secret=  inCurrentConfig["client_secret"],
-          scopes=         GoogleSpreadsheetConnector.GOOGLE_SPREADSHEET_SCOPES
-        )
-
-        if not self.googleCreds.valid:
-          if self.googleCreds.expired and self.googleCreds.refresh_token:
-            self.googleCreds.refresh(Request())
-          else:
-            raise NoGoogleCredentialsException
-      else:
-        raise NoGoogleCredentialsException
-
-    except (NoSectionError, NoOptionError, NoGoogleCredentialsException):
-      flow = InstalledAppFlow.from_client_config(client_config, GoogleSpreadsheetConnector.GOOGLE_SPREADSHEET_SCOPES)
-      self.googleCreds = flow.run_local_server()
-
-    service = build('sheets', 'v4', credentials=self.googleCreds)
-
-    sheet = service.spreadsheets()
-
-    sheetName = sheet.get(spreadsheetId=inSpreadsheetID,
-                          includeGridData=True).execute()['sheets'][0]['properties']['title']
-
-    result = list(sheet.values()).get(spreadsheetId=inSpreadsheetID,
-                                      range=sheetName).execute()
-
-    self.values = result.get('values', [])
-
-    if not self.values:
-      print('No data found.')
-    # else:
-    #     for row in self.values:
-    #         print('%s, %s' % (row[0], row[4]))
-
 
 # ------------------- GUI ------------------------------
 # ------------------- GUI ------------------------------
@@ -192,43 +103,40 @@ class ListboxWithRefresh(tk.Listbox):
         self.insert(tk.END, f.name)
 
 
-class GUIApp(GUIAppBase):
+class GUIApp(XMLProcessorBase):
   def __init__(self):
-    tk.Frame.__init__(self)
-    self.top = self.winfo_toplevel()
+    super().__init__("TemplateMarker")
 
-    self.currentConfig = Config("TemplateMarker", "ArchiCAD")
-    # Example usage of an encrypted param
+    # Example usage of an encrypted param:
     # from cryptography.fernet import Fernet
-    # self.SourceXMLDirName   = self.currentConfig.register("SourceXMLDirName", tk.StringVar(self.top), encrypt=Fernet)
-    self.SourceXMLDirName   = self.currentConfig.register("SourceXMLDirName", tk.StringVar(self.top))
+    # self.SourceXMLDirName   = self.currentConfig.register(tk.StringVar(self.top), "SourceXMLDirName", encrypt=Fernet)
+    # self.SourceXMLDirName   = self.currentConfig.register(tk.StringVar(self.top), "SourceXMLDirName")
 
-    self.SourceGDLDirName   = self.currentConfig.register("SourceGDLDirName", tk.StringVar(self.top))
-    self.TargetXMLDirName   = self.currentConfig.register("TargetXMLDirName", tk.StringVar(self.top))
-    self.TargetGDLDirName   = self.currentConfig.register("TargetGDLDirName", tk.StringVar(self.top))
-    self.SourceImageDirName = self.currentConfig.register("SourceImageDirName", tk.StringVar(self.top))
-    self.TargetImageDirName = self.currentConfig.register("TargetImageDirName", tk.StringVar(self.top))
-    self.AdditionalImageDir = self.currentConfig.register("AdditionalImageDir", tk.StringVar(self.top))
+    self.SourceGDLDirName   = self.currentConfig.register(tk.StringVar(self.top), "SourceGDLDirName")
+    self.TargetXMLDirName   = self.currentConfig.register(tk.StringVar(self.top), "TargetXMLDirName")
+    self.TargetGDLDirName   = self.currentConfig.register(tk.StringVar(self.top), "TargetGDLDirName")
+    self.TargetImageDirName = self.currentConfig.register(tk.StringVar(self.top), "TargetImageDirName")
+    self.AdditionalImageDir = self.currentConfig.register(tk.StringVar(self.top), "AdditionalImageDir")
 
-    self.StringFrom         = self.currentConfig.register("StringFrom", tk.StringVar(self.top))
-    self.StringTo           = self.currentConfig.register("StringTo", tk.StringVar(self.top))
+    self.StringFrom         = self.currentConfig.register(tk.StringVar(self.top), "StringFrom")
+    self.StringTo           = self.currentConfig.register(tk.StringVar(self.top), "StringTo")
 
-    self.ImgStringFrom      = self.currentConfig.register("ImgStringFrom", tk.StringVar(self.top))
-    self.ImgStringTo        = self.currentConfig.register("ImgStringTo", tk.StringVar(self.top))
+    self.ImgStringFrom      = self.currentConfig.register(tk.StringVar(self.top), "ImgStringFrom")
+    self.ImgStringTo        = self.currentConfig.register(tk.StringVar(self.top), "ImgStringTo")
 
-    self.fileName           = self.currentConfig.register("fileName", tk.StringVar(self.top))
+    self.fileName           = self.currentConfig.register(tk.StringVar(self.top), "fileName")
 
-    self.ACLocation         = self.currentConfig.register("ACLocation", tk.StringVar(self.top))
+    self.ACLocation         = self.currentConfig.register(tk.StringVar(self.top), "ACLocation")
 
-    self.bCheckParams       = self.currentConfig.register("bCheckParams", tk.BooleanVar(self.top))
-    self.bDebug             = self.currentConfig.register("bDebug", tk.BooleanVar(self.top))
-    self.bCleanup           = self.currentConfig.register("bCleanup", tk.BooleanVar(self.top))
-    self.bOverWrite         = self.currentConfig.register("bOverWrite", tk.BooleanVar(self.top))
-    self.bAddStr            = self.currentConfig.register("bAddStr", tk.BooleanVar(self.top))
+    self.bCheckParams       = self.currentConfig.register(tk.BooleanVar(self.top), "bCheckParams")
+    self.bDebug             = self.currentConfig.register(tk.BooleanVar(self.top), "bDebug")
+    self.bCleanup           = self.currentConfig.register(tk.BooleanVar(self.top), "bCleanup")
+    self.bOverWrite         = self.currentConfig.register(tk.BooleanVar(self.top), "bOverWrite")
+    self.bAddStr            = self.currentConfig.register(tk.BooleanVar(self.top), "bAddStr")
 
-    self.bXML               = self.currentConfig.register("bXML", tk.BooleanVar(self.top))
-    self.bGDL               = self.currentConfig.register("bGDL", tk.BooleanVar(self.top))
-    self.isSourceGDL        = self.currentConfig.register("isSourceGDL", tk.BooleanVar(self.top))
+    self.bXML               = self.currentConfig.register(tk.BooleanVar(self.top), "bXML")
+    self.bGDL               = self.currentConfig.register(tk.BooleanVar(self.top), "bGDL")
+    self.isSourceGDL        = self.currentConfig.register(tk.BooleanVar(self.top), "isSourceGDL")
 
     self.observer  = None
 
@@ -285,43 +193,43 @@ class GUIApp(GUIAppBase):
 
     iF += 1
 
-    self.listBox = ListboxWithRefresh(self.InputFrameS[iF], SourceXML.replacement_dict)
-    self.listBox.grid({"row": 0, "column": 0, "sticky": tk.E + tk.W + tk.N + tk.S})
+    self.lbSourceCode = ListboxWithRefresh(self.InputFrameS[iF], SourceXML.replacement_dict)
+    self.lbSourceCode.grid({"row": 0, "column": 0, "sticky": tk.E + tk.W + tk.N + tk.S})
 
     self.ListBoxScrollbar = tk.Scrollbar(self.InputFrameS[iF])
     self.ListBoxScrollbar.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
 
-    self.listBox.config(yscrollcommand=self.ListBoxScrollbar.set)
-    self.ListBoxScrollbar.config(command=self.listBox.yview)
+    self.lbSourceCode.config(yscrollcommand=self.ListBoxScrollbar.set)
+    self.ListBoxScrollbar.config(command=self.lbSourceCode.yview)
 
     iF += 1
 
-    self.listBox2 = ListboxWithRefresh(self.InputFrameS[iF], SourceResource.source_pict_dict)
-    self.listBox2.grid({"row": 0, "column": 0, "sticky": tk.NE + tk.SW})
+    self.lbSourceResource = ListboxWithRefresh(self.InputFrameS[iF], SourceResource.source_pict_dict)
+    self.lbSourceResource.grid({"row": 0, "column": 0, "sticky": tk.NE + tk.SW})
 
     if self.isSourceGDL.get():
       self.observerLB1 = self.SourceGDLDirName.trace_variable("w", self.processGDLDir)
     else:
-      self.observerLB1 = self.SourceXMLDirName.trace_variable("w", self._listBoxCodeRefresh)
+      self.observerLB1 = self.SourceXMLDirName.trace_variable("w", self._lbCodeRefresh)
 
     self.observerLB2 = self.SourceXMLDirName.trace_variable("w", self._listBoxResourceRefresh)
 
     if self.SourceXMLDirName:
-      self.listBox.refresh()
-      self.listBox2.refresh()
+      self.lbSourceCode.refresh()
+      self.lbSourceResource.refresh()
 
     self.ListBoxScrollbar2 = tk.Scrollbar(self.InputFrameS[iF])
     self.ListBoxScrollbar2.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
 
-    self.listBox2.config(yscrollcommand=self.ListBoxScrollbar2.set)
-    self.ListBoxScrollbar2.config(command=self.listBox2.yview)
+    self.lbSourceResource.config(yscrollcommand=self.ListBoxScrollbar2.set)
+    self.ListBoxScrollbar2.config(command=self.lbSourceResource.yview)
 
     iF += 1
 
     self.sourceImageDir = InputDirPlusText(self.InputFrameS[iF], "Images' source folder", self.SourceImageDirName, __tooltipIDPT2)
     if self.SourceImageDirName:
-      self.listBox.refresh()
-      self.listBox2.refresh()
+      self.lbSourceCode.refresh()
+      self.lbSourceResource.refresh()
 
     # ----output side--------------------------------
 
@@ -383,22 +291,26 @@ class GUIApp(GUIAppBase):
     # bottom row for project general settings
     # ------------------------------------
 
-    iF = 0
-
     self.bottomFrame        = tk.Frame(self.top, )
     self.bottomFrame.grid({"row":1, "column": 0, "columnspan": 7, "sticky":  tk.S + tk.N, })
 
-    self.buttonACLoc = tk.Button(self.bottomFrame, {"text": "ArchiCAD location", "command": self.setACLoc, })
-    self.buttonACLoc.grid({"row": 0, "column": iF, }); iF += 1
+    iF = 0
 
-    self.ACLocEntry = tk.Entry(self.bottomFrame, {"width": 40, "textvariable": self.ACLocation, })
-    self.ACLocEntry.grid({"row": 0, "column": iF}); iF += 1
+    self.progressInfo = tk.Label(self.bottomFrame, text=f"{self.iCurrent} / {self.iTotal}")
+    self.progressInfo.grid({"column": iF, "sticky": tk.W});
 
-    self.buttonAID = tk.Button(self.bottomFrame, {"text": "Additional images' folder", "command": self.setAdditionalImageDir, })
-    self.buttonAID.grid({"row": 0, "column": iF, }); iF += 1
+    iF += 1
 
-    self.AdditionalImageDirEntry = tk.Entry(self.bottomFrame, {"width": 40, "textvariable": self.AdditionalImageDir, })
-    self.AdditionalImageDirEntry.grid({"row": 0, "column": iF}); iF += 1
+    # self.scrolledText = scrolledtext.ScrolledText()
+    # self.scrolledText.grid(column=iF, sticky=tk.SE + tk.NW)
+
+    InputDirPlusText(self.bottomFrame, "ArchiCAD location",  self.ACLocation, column=iF)
+
+    iF += 1
+
+    InputDirPlusText(self.bottomFrame, "Additional images' folder",  self.AdditionalImageDir, column=iF, tooltip=__tooltipIDPT6)
+
+    iF += 1
 
     self.paramCheckButton   = tk.Checkbutton(self.bottomFrame, {"text": "Check Parameters", "variable": self.bCheckParams})
     self.paramCheckButton.grid({"row": 0, "column": iF}); iF += 1
@@ -526,24 +438,41 @@ class GUIApp(GUIAppBase):
 
     CreateToolTip(self.entryTextNameFrom, "FromSting: WARNING: this is Regex")
     CreateToolTip(self.entryTextNameTo, "If 'Always add strings' is set add to the end of every file if FromSting cannot be replaced, if not, only replace FromSting Regex pattern")
-    CreateToolTip(self.AdditionalImageDirEntry, __tooltipIDPT6)
-    CreateToolTip(self.buttonAID, __tooltipIDPT6)
 
-    # self._listBoxCodeRefresh()
+    self.loop = Loop(self.top)
+    self._iCurrent = 0
+    self._iTotal = 0
 
-  def _listBoxCodeRefresh(self, *_):
-    # try:
-    SourceXML.sSourceXMLDir = self.SourceXMLDirName.get()
-    SourceResource.sSourceResourceDir = self.SourceImageDirName.get()
-    self.scanDirs(self.SourceXMLDirName.get())
-    self.scanDirs(self.SourceImageDirName.get())
-    # except AttributeError:
-    #     return
-    self.listBox.refresh()
-    self.listBox2.refresh()
+  def setXMLRelatedInputs(self, state, text: str):
+    self.startButton.config(state=state, text=text)
+    self.inputXMLDir.config(state=state)
+
+  def _cancel_source_xml_processing(self):
+    if self.task:
+      self.task.cancel()
+    self.task = None
+    self._iCurrent = 0
+    self._iTotal = 0
+
+  def _lbCodeRefresh(self, *_):
+    def _lbCodeRefreshCallback(task):
+      self.startButton.config(state=tk.NORMAL, text="Start")
+      self.inputXMLDir.config(state=tk.NORMAL)
+      self.progressInfo.config(text=f"{self.iCurrent} / {self.iTotal} Scanning dirs took {self.tick:.2f} seconds")
+      self.lbSourceCode.refresh()
+      self.lbSourceResource.refresh()
+      print(id(SourceXML))
+
+    if _sSXD := self.SourceXMLDirName.get():
+      _ = self.tick
+      self.inputXMLDir.config(width=len(_sSXD))
+      self.startButton.config(state=tk.DISABLED, text="Processing...")
+      self.inputXMLDir.config(state=tk.DISABLED)
+      self.start_source_xml_processing(_lbCodeRefreshCallback)
+      print(id(SourceXML))
 
   def _listBoxResourceRefresh(self, *_):
-    self.listBox2.refresh()
+    self.lbSourceResource.refresh()
 
   def createDestItems(self, inList):
     firstRow = inList[0]
@@ -572,11 +501,8 @@ class GUIApp(GUIAppBase):
       SpreadsheetID = findall
     print(SpreadsheetID)
 
-    try:
-      self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
-    except googleapiclient.errors.HttpError:
-      print(("HttpError: Spreadsheet ID (%s) seems to be invalid" % SSIDRegex))
-      return
+    self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
+
     self.GoogleSSInfield.top.destroy()
     self.createDestItems(self.googleSpreadsheet.values)
 
@@ -647,11 +573,7 @@ class GUIApp(GUIAppBase):
       SpreadsheetID = findall
     print(SpreadsheetID)
 
-    try:
-      self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
-    except googleapiclient.errors.HttpError:
-      self.GoogleSSInfield.top.destroy()
-      return
+    self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
     #FIXME above here paramWrite uses the same
     #FIXME from here maybe to put into a method; same as in getFromCSV
     firstRow = self.googleSpreadsheet.values[0]
@@ -673,15 +595,6 @@ class GUIApp(GUIAppBase):
     self.GoogleSSInfield.top.protocol("WM_DELETE_WINDOW", inFunc)
     self.GoogleSSBbutton.config(cnf={'state': tk.DISABLED})
 
-  def setACLoc(self):
-    ACLoc = tkinter.filedialog.askdirectory(initialdir="/", title="Select ArchiCAD folder")
-    self.ACLocation.set(ACLoc)
-    self.currentConfig['ACLocation'] = ACLoc
-
-  def setAdditionalImageDir(self):
-    AIDLoc = tkinter.filedialog.askdirectory(initialdir="/", title="Select additional images' folder")
-    self.AdditionalImageDir.set(AIDLoc)
-
   def processGDLDir(self, *_):
     '''
     When self.SourceGDLDirName is modified, convert files to xml and set ui accordingly
@@ -702,8 +615,8 @@ class GUIApp(GUIAppBase):
 
     self.inputXMLDir.idpt.entryName.config(cnf={'state': tk.DISABLED})
     self.sourceImageDir.reset()
-    self.listBox.refresh()
-    self.listBox2.refresh()
+    self.lbSourceCode.refresh()
+    self.lbSourceResource.refresh()
 
   def targetGDLModified(self, *_):
     if not self.bGDL.get():
@@ -731,9 +644,9 @@ class GUIApp(GUIAppBase):
 
   def addFile(self, sourceFileName: str = '', targetFileName: str = '') -> DestXML | None:
     if not sourceFileName:
-      sourceFileName = self.listBox.get(tk.ACTIVE)
+      sourceFileName = self.lbSourceCode.get(tk.ACTIVE)
     if sourceFileName.startswith(LISTBOX_SEPARATOR):
-      self.listBox.select_clear(tk.ACTIVE)
+      self.lbSourceCode.select_clear(tk.ACTIVE)
       return
     if sourceFileName.upper() in SourceXML.replacement_dict:
       if targetFileName:
@@ -753,29 +666,29 @@ class GUIApp(GUIAppBase):
     return destItem
 
   def addMoreFiles(self):
-    for sourceFileIndex in self.listBox.curselection():
-      self.addFile(sourceFileName=self.listBox.get(sourceFileIndex))
+    for sourceFileIndex in self.lbSourceCode.curselection():
+      self.addFile(sourceFileName=self.lbSourceCode.get(sourceFileIndex))
 
   def addImageFile(self, fileName=''):
     if not fileName:
-      fileName = self.listBox2.get(tk.ACTIVE)
+      fileName = self.lbSourceResource.get(tk.ACTIVE)
     if not fileName.upper() in DestResource.pict_dict and not fileName.startswith(LISTBOX_SEPARATOR):
       destItem = DestResource(SourceResource.source_pict_dict[fileName.upper()], self.StringFrom.get(), self.StringTo.get())
       DestResource.pict_dict[destItem.fileNameWithExt.upper()] = destItem
     self.refreshDestItem()
 
   def addAllFiles(self):
-    for filename in self.listBox.get(0, tk.END):
+    for filename in self.lbSourceCode.get(0, tk.END):
       self.addFile(filename)
 
-    for imageFileName in self.listBox2.get(0, tk.END):
+    for imageFileName in self.lbSourceResource.get(0, tk.END):
       self.addImageFile(imageFileName)
 
     self.addAllButton.config({"state": tk.DISABLED})
 
   def addFileRecursively(self, sourceFileName: str = '', targetFileName: str = '') -> DestXML | None:
     if not sourceFileName:
-      sourceFileName = self.listBox.get(tk.ACTIVE)
+      sourceFileName = self.lbSourceCode.get(tk.ACTIVE)
 
     destItem = self.addFile(sourceFileName, targetFileName)
 
@@ -810,8 +723,8 @@ class GUIApp(GUIAppBase):
     return destItem
 
   def addMoreFilesRecursively(self):
-    for sourceFileIndex in self.listBox.curselection():
-      self.addFileRecursively(sourceFileName=self.listBox.get(sourceFileIndex))
+    for sourceFileIndex in self.lbSourceCode.curselection():
+      self.addFileRecursively(sourceFileName=self.lbSourceCode.get(sourceFileIndex))
 
   def delFile(self, fileName = ''):
     if not fileName:
@@ -829,8 +742,8 @@ class GUIApp(GUIAppBase):
     self.fileName.set('')
 
   def _refreshAll(self):
-    self.listBox.refresh()
-    self.listBox2.refresh()
+    self.lbSourceCode.refresh()
+    self.lbSourceResource.refresh()
     self.listBox3.refresh()
     self.listBox4.refresh()
 
@@ -1070,7 +983,12 @@ class GUIApp(GUIAppBase):
     print(output)
 
   def _destroyApp(self, ):
-    self.currentConfig.writeConfigBack(default=False)
+    if self.bDebug.get():
+      self.currentConfig.writeConfigBack(default=True, exclude_list=['bDebug'])
+    else:
+      self.currentConfig.update_current_vars()
+      self.currentConfig.writeConfigBack(default=False)
+    self.loop.stop()
     self.top.destroy()
 
   def reconnect(self):
@@ -1159,6 +1077,7 @@ class ProcessData:
   tempdir: str
   overwrite: bool
   string_to: str
+
 
 def processOneXML(data: ProcessData):
   dest = data.dest_xml
@@ -1283,12 +1202,7 @@ def replace_filenames(StringTo:str, dest_dict:dict, pict_dict:dict, text: str | 
   return text
 
 
-def main():
-  app = GUIApp()
-  app.top.protocol("WM_DELETE_WINDOW", app._destroyApp)
-  app.top.mainloop()
-
-
 if __name__ == "__main__":
-  main()
+  app = GUIApp()
+  app.mainloop()
 
