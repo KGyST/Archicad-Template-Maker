@@ -59,40 +59,9 @@ from SamUITools import *
 from samuTeszt import Recorder
 from GSMParamLib.GUIAppSingletonBase import GUIAppBase
 
-ID = ''
 LISTBOX_SEPARATOR = '--------'
 
-SCRIPT_NAMES_LIST = ["Script_1D",
-                     "Script_2D",
-                     "Script_3D",
-                     "Script_PR",
-                     "Script_UI",
-                     "Script_VL",
-                     "Script_FWM",
-                     "Script_BWM",]
 LP_XML_CONVERTER = 'LP_XMLConverter.exe'
-
-PAR_UNKNOWN     = 0
-PAR_LENGTH      = 1
-PAR_ANGLE       = 2
-PAR_REAL        = 3
-PAR_INT         = 4
-PAR_BOOL        = 5
-PAR_STRING      = 6
-PAR_MATERIAL    = 7
-PAR_LINETYPE    = 8
-PAR_FILL        = 9
-PAR_PEN         = 10
-PAR_SEPARATOR   = 11
-PAR_TITLE       = 12
-PAR_COMMENT     = 13
-
-PARFLG_CHILD    = 1
-PARFLG_BOLDNAME = 2
-PARFLG_UNIQUE   = 3
-PARFLG_HIDDEN   = 4
-
-app = None
 
 # ------------------- Google Spreadsheet API connectivity --------------------------------------------------------------
 
@@ -1102,8 +1071,6 @@ class GUIApp(GUIAppBase):
 
   def _destroyApp(self, ):
     self.currentConfig.writeConfigBack(default=False)
-    # FIXME encrypting of sensitive data
-
     self.top.destroy()
 
   def reconnect(self):
@@ -1317,8 +1284,6 @@ def replace_filenames(StringTo:str, dest_dict:dict, pict_dict:dict, text: str | 
 
 
 def main():
-  global app
-
   app = GUIApp()
   app.top.protocol("WM_DELETE_WINDOW", app._destroyApp)
   app.top.mainloop()
