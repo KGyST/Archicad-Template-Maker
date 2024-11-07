@@ -16,7 +16,6 @@
 # TODO When there is nothing to replace at the beginning of the source names, many unwanted things are renamed in the code
 # FIXME async + output screen + logging
 
-
 import os.path
 from os import listdir
 import tempfile
@@ -230,9 +229,11 @@ class GUIApp(GUIAppBase):
     self.top = self.winfo_toplevel()
 
     self.currentConfig = Config("TemplateMarker", "ArchiCAD")
-
+    # Example usage of an encrypted param
+    # from cryptography.fernet import Fernet
+    # self.SourceXMLDirName   = self.currentConfig.register("SourceXMLDirName", tk.StringVar(self.top), encrypt=Fernet)
     self.SourceXMLDirName   = self.currentConfig.register("SourceXMLDirName", tk.StringVar(self.top))
-    
+
     self.SourceGDLDirName   = self.currentConfig.register("SourceGDLDirName", tk.StringVar(self.top))
     self.TargetXMLDirName   = self.currentConfig.register("TargetXMLDirName", tk.StringVar(self.top))
     self.TargetGDLDirName   = self.currentConfig.register("TargetGDLDirName", tk.StringVar(self.top))
