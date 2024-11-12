@@ -250,6 +250,9 @@ class GUIApp(XMLProcessorBase):
     self.entryTextNameTo = tk.Entry(self.outputFrameS[iF], {"width": 20, "textvariable": self.StringTo, })
     self.entryTextNameTo.grid({"row":0, "column": 0, "sticky": tk.SE + tk.NW, })
 
+    self.bAddStrCheckButton = tk.Checkbutton(self.outputFrameS[iF], {"text": "Always add strings", "variable": self.bAddStr})
+    self.bAddStrCheckButton.grid({"row": 0, "column": 1})
+
     iF += 1
 
     self.XMLDir = InputDirPlusBool(self.outputFrameS[iF], "XML Destination folder",      self.TargetXMLDirName, self.bXML, __tooltipIDPT3)
@@ -320,9 +323,6 @@ class GUIApp(XMLProcessorBase):
 
     self.cleanupCheckButton   = tk.Checkbutton(self.bottomFrame, {"text": "Cleanup", "variable": self.bCleanup})
     self.cleanupCheckButton.grid({"row": 0, "column": iF}); iF += 1
-
-    self.bAddStrCheckButton = tk.Checkbutton(self.bottomFrame, {"text": "Always add strings", "variable": self.bAddStr})
-    self.bAddStrCheckButton.grid({"row": 0, "column": iF}); iF += 1
 
     self.OverWriteCheckButton   = tk.Checkbutton(self.bottomFrame, {"text": "Overwrite", "variable": self.bOverWrite})
     self.OverWriteCheckButton.grid({"row": 0, "column": iF}); iF += 1
