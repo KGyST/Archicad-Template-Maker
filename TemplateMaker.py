@@ -153,8 +153,8 @@ class GUIApp(XMLProcessorBase):
     __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
     __tooltipIDPT7 = "Source GDL folder name"
 
-    self.observerXML = self.bXML.trace_variable("w", self.targetXMLModified)
-    self.observerGDL = self.bGDL.trace_variable("w", self.targetGDLModified)
+    self.observerXML = self.bXML.trace_variable("w", self._targetXMLModified)
+    self.observerGDL = self.bGDL.trace_variable("w", self._targetGDLModified)
 
     self.warnings = []
 
@@ -193,14 +193,14 @@ class GUIApp(XMLProcessorBase):
 
     iF += 1
 
-    self.lbSourceCode = ListboxWithRefresh(self.InputFrameS[iF], SourceXML.replacement_dict)
-    self.lbSourceCode.grid({"row": 0, "column": 0, "sticky": tk.E + tk.W + tk.N + tk.S})
+    self.lbSourceXML = ListboxWithRefresh(self.InputFrameS[iF], SourceXML.replacement_dict)
+    self.lbSourceXML.grid({"row": 0, "column": 0, "sticky": tk.E + tk.W + tk.N + tk.S})
 
     self.ListBoxScrollbar = tk.Scrollbar(self.InputFrameS[iF])
     self.ListBoxScrollbar.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
 
-    self.lbSourceCode.config(yscrollcommand=self.ListBoxScrollbar.set)
-    self.ListBoxScrollbar.config(command=self.lbSourceCode.yview)
+    self.lbSourceXML.config(yscrollcommand=self.ListBoxScrollbar.set)
+    self.ListBoxScrollbar.config(command=self.lbSourceXML.yview)
 
     iF += 1
 
@@ -210,12 +210,12 @@ class GUIApp(XMLProcessorBase):
     if self.isSourceGDL.get():
       self.observerLB1 = self.SourceGDLDirName.trace_variable("w", self.processGDLDir)
     else:
-      self.observerLB1 = self.SourceXMLDirName.trace_variable("w", self._lbCodeRefresh)
+      self.observerLB1 = self.SourceXMLDirName.trace_variable("w", self._lbXMLRefresh)
 
     self.observerLB2 = self.SourceXMLDirName.trace_variable("w", self._listBoxResourceRefresh)
 
     if self.SourceXMLDirName:
-      self.lbSourceCode.refresh()
+      self.lbSourceXML.refresh()
       self.lbSourceResource.refresh()
 
     self.ListBoxScrollbar2 = tk.Scrollbar(self.InputFrameS[iF])
@@ -228,7 +228,7 @@ class GUIApp(XMLProcessorBase):
 
     self.sourceImageDir = InputDirPlusText(self.InputFrameS[iF], "Images' source folder", self.SourceImageDirName, __tooltipIDPT2)
     if self.SourceImageDirName:
-      self.lbSourceCode.refresh()
+      self.lbSourceXML.refresh()
       self.lbSourceResource.refresh()
 
     # ----output side--------------------------------
@@ -263,28 +263,28 @@ class GUIApp(XMLProcessorBase):
 
     iF += 1
 
-    self.listBox3 = ListboxWithRefresh(self.outputFrameS[iF], DestXML.dest_dict)
-    self.listBox3.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
+    self.lbDestXML = ListboxWithRefresh(self.outputFrameS[iF], DestXML.dest_dict)
+    self.lbDestXML.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
 
     self.ListBoxScrollbar3 = tk.Scrollbar(self.outputFrameS[iF])
     self.ListBoxScrollbar3.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
 
-    self.listBox3.config(yscrollcommand=self.ListBoxScrollbar3.set)
-    self.ListBoxScrollbar3.config(command=self.listBox3.yview)
+    self.lbDestXML.config(yscrollcommand=self.ListBoxScrollbar3.set)
+    self.ListBoxScrollbar3.config(command=self.lbDestXML.yview)
 
-    self.listBox3.bind("<<ListboxSelect>>", self.listboxselect)
+    self.lbDestXML.bind("<<ListboxSelect>>", self.listboxselect)
 
     iF += 1
 
-    self.listBox4 = ListboxWithRefresh(self.outputFrameS[iF], DestResource.pict_dict)
-    self.listBox4.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
+    self.lbDestResource = ListboxWithRefresh(self.outputFrameS[iF], DestResource.pict_dict)
+    self.lbDestResource.grid({"row": 0, "column": 0, "sticky": tk.SE + tk.NW})
 
     self.ListBoxScrollbar4 = tk.Scrollbar(self.outputFrameS[iF])
     self.ListBoxScrollbar4.grid(row=0, column=1, sticky=tk.E + tk.N + tk.S)
 
-    self.listBox4.config(yscrollcommand=self.ListBoxScrollbar4.set)
-    self.ListBoxScrollbar4.config(command=self.listBox4.yview)
-    self.listBox4.bind("<<ListboxSelect>>", self.listboxImageSelect)
+    self.lbDestResource.config(yscrollcommand=self.ListBoxScrollbar4.set)
+    self.ListBoxScrollbar4.config(command=self.lbDestResource.yview)
+    self.lbDestResource.bind("<<ListboxSelect>>", self.listboxImageSelect)
 
     iF += 1
 
@@ -344,7 +344,7 @@ class GUIApp(XMLProcessorBase):
 
     _i += 1
 
-    self.addRecursiveButton = tk.Button(self.buttonFrame, {"text": "Recursive >", "command": self.addMoreFilesRecursively})
+    self.addRecursiveButton = tk.Button(self.buttonFrame, {"text": "Recursive >", "command": self.addMoreXMLsRecursively})
     self.addRecursiveButton.grid({"row":_i, "column": 0, "sticky": tk.W + tk.E})
     CreateToolTip(self.addRecursiveButton, "Add macro, and all its called macro and subtypes recursively, if not added already")
 
@@ -355,7 +355,7 @@ class GUIApp(XMLProcessorBase):
 
     _i += 1
 
-    self.delButton          = tk.Button(self.buttonFrame, {"text": "X", "command": self.delFile})
+    self.delButton          = tk.Button(self.buttonFrame, {"text": "X", "command": self.delXML})
     self.delButton.grid({"row":_i, "column": 0, "sticky": tk.W + tk.E})
 
     _i += 1
@@ -434,7 +434,7 @@ class GUIApp(XMLProcessorBase):
     self.warningFrame      = tk.Frame(self.propertyFrame)
     self.warningFrame.grid({"row": iCurRow, "column": 1, "sticky": tk.W})
 
-    #FIXME to put in projectname field
+    # FIXME to put in projectname field
 
     CreateToolTip(self.entryTextNameFrom, "FromSting: WARNING: this is Regex")
     CreateToolTip(self.entryTextNameTo, "If 'Always add strings' is set add to the end of every file if FromSting cannot be replaced, if not, only replace FromSting Regex pattern")
@@ -442,15 +442,15 @@ class GUIApp(XMLProcessorBase):
     self.loop = Loop(self.top)
     self._iCurrent = 0
     self._iTotal = 0
-    self._lbCodeRefresh()
+    self._lbXMLRefresh()
     DestXML.sDestXMLDir = self.TargetXMLDirName.get()
 
-  def _lbCodeRefresh(self, *_):
-    def _lbCodeRefreshCallback(task):
+  def _lbXMLRefresh(self, *_):
+    def _lbXMLRefreshCallback(task):
       self.startButton.config(state=tk.NORMAL, text="Start")
       self.inputXMLDir.config(state=tk.NORMAL)
       self.progressInfo.config(text=f"{self.iCurrent} / {self.iTotal} Scanning dirs took {self.tick:.2f} seconds")
-      self.lbSourceCode.refresh()
+      self.lbSourceXML.refresh()
       self.lbSourceResource.refresh()
 
     if _sSXD := self.SourceXMLDirName.get():
@@ -458,7 +458,7 @@ class GUIApp(XMLProcessorBase):
       self.inputXMLDir.config(width=len(_sSXD))
       self.startButton.config(state=tk.DISABLED, text="Processing...")
       self.inputXMLDir.config(state=tk.DISABLED)
-      self.start_source_xml_processing(_lbCodeRefreshCallback)
+      self.start_source_xml_processing(_lbXMLRefreshCallback)
 
   def _listBoxResourceRefresh(self, *_):
     self.lbSourceResource.refresh()
@@ -468,11 +468,11 @@ class GUIApp(XMLProcessorBase):
 
     for row in inList[1:]:
       if firstRow[1] == "":
-        #empty header => row[1] is for destItem
-        destItem = self.addFileRecursively(row[0], row[1])
+        # empty header => row[1] is for destItem
+        destItem = self._addXMLRecursively(row[0], row[1])
 
       else:
-        #no destitem so write to itself
+        # no destitem so write to itself
         destItem = DestXML(row[0], dest_file_name=row[0])
         DestXML.dest_dict[destItem.name] = destItem
         [destItem.sourceFile.name] = destItem
@@ -520,7 +520,7 @@ class GUIApp(XMLProcessorBase):
       with open(csvFileName, "r") as csvFile:
         firstRow = next(csv.reader(csvFile))
         for row in csv.reader(csvFile):
-          destItem = self.addFileRecursively(row[SRC_NAME], row[TARG_NAME])
+          destItem = self._addXMLRecursively(row[SRC_NAME], row[TARG_NAME])
           # if row[PRODATURL]:
           #     destItem.parameters.BO_update(row[PRODATURL])
           if len(row) > 3 and next((c for c in row[VALUES-1:] if c != ""), ""):
@@ -568,7 +568,7 @@ class GUIApp(XMLProcessorBase):
     firstRow = self.googleSpreadsheet.values[0]
 
     for row in self.googleSpreadsheet.values[1:]:
-      destItem = self.addFileRecursively(row[0], row[1])
+      destItem = self._addXMLRecursively(row[0], row[1])
       if row[2]:
         destItem.parameters.BO_update(row[2])
       if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
@@ -604,14 +604,14 @@ class GUIApp(XMLProcessorBase):
 
     self.inputXMLDir.idpt.entryName.config(cnf={'state': tk.DISABLED})
     self.sourceImageDir.reset()
-    self.lbSourceCode.refresh()
+    self.lbSourceXML.refresh()
     self.lbSourceResource.refresh()
 
-  def targetGDLModified(self, *_):
+  def _targetGDLModified(self, *_):
     if not self.bGDL.get():
       self.bXML.set(True)
 
-  def targetXMLModified(self, *_):
+  def _targetXMLModified(self, *_):
     DestXML.sDestXMLDir = self.TargetXMLDirName.get()
     if not self.bXML.get():
       self.bGDL.set(True)
@@ -632,107 +632,132 @@ class GUIApp(XMLProcessorBase):
     self._start()
     # print "Starting conversion"
 
-  def addFile(self, sourceFileName: str = '', targetFileName: str = '') -> DestXML | None:
-    if not sourceFileName:
-      sourceFileName = self.lbSourceCode.get(tk.ACTIVE)
-    if sourceFileName.startswith(LISTBOX_SEPARATOR):
-      self.lbSourceCode.select_clear(tk.ACTIVE)
-      return
-    if sourceFileName in SourceXML.replacement_dict:
-      if targetFileName:
-        destItem = DestXML(SourceXML.replacement_dict[sourceFileName],
-                           dest_file_name=targetFileName)
-      else:
-        destItem = DestXML(SourceXML.replacement_dict[sourceFileName],
-                           name_from=self.StringFrom.get(),
-                           name_to=self.StringTo.get(),
-                           add_str=self.bAddStr.get())
-    else:
-      #File should be in library_additional, possibly worth of checking it or add a warning
-      return
+# ---- Adding/removing files------------------------------------------------------------------------------------------
+
+  def _addXML(self, source_file: str, target_file: str = "") -> DestXML | None:
+    """
+    :param source_file:
+    :param target_file:
+    :return:
+    """
+    assert source_file
+    assert source_file in SourceXML.replacement_dict
+
+    destItem = DestXML(SourceXML.replacement_dict[source_file],
+                       dest_file_name=target_file)
     self.refreshDestItem()
     return destItem
 
-  def addMoreFiles(self):
-    for sourceFileIndex in self.lbSourceCode.curselection():
-      self.addFile(sourceFileName=self.lbSourceCode.get(sourceFileIndex))
+  def _addXMLRecursively(self, source_file: str) -> DestXML | None:
+    """
+    Not to be called from UI as doesn't check for validity of source file name
+    :param source_file:
+    :param target_file:
+    :return:
+    """
+    assert source_file
+    assert source_file in SourceXML.replacement_dict
 
-  def addResourceFile(self, fileName=''):
-    if not fileName:
-      fileName = self.lbSourceResource.get(tk.ACTIVE)
-    if not fileName in DestResource.pict_dict and not fileName.startswith(LISTBOX_SEPARATOR):
-      destItem = DestResource(SourceResource.source_pict_dict[fileName], name_from=self.StringFrom.get(), name_to=self.StringTo.get())
-    self.refreshDestItem()
+    sTarget = DestXML.getValidName(source_file, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
+    destItem = self._addXML(source_file, sTarget)
 
-  def addAllFiles(self):
-    for filename in self.lbSourceCode.get(0, tk.END):
-      self.addFile(filename)
-
-    for imageFileName in self.lbSourceResource.get(0, tk.END):
-      self.addResourceFile(imageFileName)
-
-    self.addAllButton.config({"state": tk.DISABLED})
-
-  def addFileRecursively(self, sourceFileName: str = '', targetFileName: str = '') -> DestXML | None:
-    if not sourceFileName:
-      sourceFileName = self.lbSourceCode.get(tk.ACTIVE)
-
-    destItem = self.addFile(sourceFileName, targetFileName)
-
-    if sourceFileName not in SourceXML.replacement_dict:
-      #should be in library_additional
+    if source_file not in SourceXML.replacement_dict:
+      # should be in library_additional
       # FIXME build a filelist of that dict and check against it
       return
 
-    x = SourceXML.replacement_dict[sourceFileName]
+    _dSR = SourceXML.replacement_dict[source_file]
 
-    for k, v in x.calledMacros.items():
+    for k, v in _dSR.calledMacros.items():
       if v not in DestXML.dest_sourcenames:
-        self.addFileRecursively(v)
+        self._addXMLRecursively(v)
 
-    for parentGUID in x.parentSubTypes:
+    for parentGUID in _dSR.parentSubTypes:
       if parentGUID not in DestXML.id_dict:
         if parentGUID in SourceXML.source_guids:
-          self.addFileRecursively(SourceXML.source_guids[parentGUID])
+          self._addXMLRecursively(SourceXML.source_guids[parentGUID])
 
     for pict in list(SourceResource.source_pict_dict.values()):
-      for script in list(x.scripts.values()):
-        if pict.fileNameWithExt.upper() in script.upper() or pict.fileNameWithOutExt.upper() in script.upper():
-          self.addResourceFile(pict.fileNameWithExt)
-      if pict.fileNameWithExt.upper() in x.gdlPicts:
-        self.addResourceFile(pict.fileNameWithExt)
+      for script in list(_dSR.scripts.values()):
+        if pict.fileNameWithOutExt.upper() in script.upper():
+          sTarget = DestXML.getValidName(pict.fileNameWithExt, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
+          self._addResourceFile(pict.fileNameWithExt, sTarget)
+      if pict.fileNameWithExt.upper() in _dSR.gdlPicts:
+        self._addResourceFile(pict.fileNameWithExt)
 
-    if x.prevPict:
-      _sBase = os.path.basename(x.prevPict)
-      self.addResourceFile(_sBase)
+    if _dSR.prevPict:
+      _sBase = os.path.basename(_dSR.prevPict)
+      self._addResourceFile(_sBase)
 
     self.refreshDestItem()
     return destItem
 
-  def addMoreFilesRecursively(self):
-    for sourceFileIndex in self.lbSourceCode.curselection():
-      self.addFileRecursively(sourceFileName=self.lbSourceCode.get(sourceFileIndex))
+  def _addResourceFile(self, source_file: str, target_file: str = ""):
+    """
+    Not to be called from UI as doesn't check for validity of source file name
+    :param source_file:
+    :param target_file:
+    :return:
+    """
+    assert source_file
+    assert source_file in SourceResource.source_pict_dict
 
-  def delFile(self, fileName = ''):
-    if not fileName:
-      fileName = self.listBox3.get(tk.ACTIVE)
+    _sr = SourceResource.source_pict_dict[source_file]
+    if _sr.isEncodedImage:
+      _dir = self.SourceImageDirName.get()
+    else:
+      _dir = DestXML.sDestXMLDir
+    DestResource(SourceResource.source_pict_dict[source_file], dest_dir_name=_dir,
+                            dest_file_name=target_file)
+    self.refreshDestItem()
+
+  def addMoreFiles(self):
+    for sourceFileIndex in self.lbSourceXML.curselection():
+      sTargetXML = DestXML.getValidName(sSourceXML := self.lbSourceXML.get(sourceFileIndex), self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
+      self._addXML(sSourceXML, sTargetXML)
+
+    for sourceResourceIndex in self.lbSourceResource.curselection():
+      sTargetRes = DestResource.getValidName(sSourceRes := self.lbSourceResource.get(sourceResourceIndex), self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
+      self._addResourceFile(sSourceRes, sTargetRes)
+
+  def addAllFiles(self):
+    for sSourceXML in self.lbSourceXML.get(0, tk.END):
+      sTargetXML = DestXML.getValidName(sSourceXML, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
+      self._addXML(sSourceXML, sTargetXML)
+
+    for sSourceRes in self.lbSourceResource.get(0, tk.END):
+      sTargetRes = DestResource.getValidName(sSourceRes, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
+      self._addResourceFile(sSourceRes, sTargetRes)
+
+    self.addAllButton.config({"state": tk.DISABLED})
+
+  def addMoreXMLsRecursively(self):
+    for sourceFileIndex in self.lbSourceXML.curselection():
+      self._addXMLRecursively(self.lbSourceXML.get(sourceFileIndex))
+
+  def delXML(self):
+    fileName = self.lbDestXML.get(tk.ACTIVE)
     if fileName.startswith(LISTBOX_SEPARATOR):
-      self.listBox3.select_clear(tk.ACTIVE)
+      self.lbDestXML.select_clear(tk.ACTIVE)
       return
 
-    fN = self.__unmarkFileName(fileName).upper()
+    fN = self.__unmarkFileName(fileName)
+    assert fN in DestXML.dest_dict
+    assert DestXML.dest_dict[fN].sourceFile.name in DestXML.dest_sourcenames
+
     del DestXML.dest_sourcenames[ DestXML.dest_dict[fN].sourceFile.name ]
     del DestXML.dest_dict[fN]
-    self.listBox3.refresh()
+    self.lbDestXML.refresh()
+
     if not DestXML.dest_dict and not DestResource.pict_dict:
       self.addAllButton.config({"state": tk.NORMAL})
     self.fileName.set('')
 
   def _refreshAll(self):
-    self.lbSourceCode.refresh()
+    self.lbSourceXML.refresh()
     self.lbSourceResource.refresh()
-    self.listBox3.refresh()
-    self.listBox4.refresh()
+    self.lbDestXML.refresh()
+    self.lbDestResource.refresh()
 
   def _resetAll(self):
     self.XMLDir.config(state=tk.NORMAL)
@@ -754,6 +779,8 @@ class GUIApp(XMLProcessorBase):
 
     self.addAllButton.config({"state": tk.NORMAL})
     self.sourceImageDir.reset()
+
+# ---- Adding/removing files------------------------------------------------------------------------------------------
 
   def listboxselect(self, event, ):
     if not event.widget.get(0):
@@ -783,12 +810,12 @@ class GUIApp(XMLProcessorBase):
     self.versionEntry.insert(0, self.destItem.iVersion)
     self.versionEntry.config({"state": tk.DISABLED})
 
-    self.authorEntry.delete(0, tk.END)
-    self.authorEntry.insert(0, self.destItem.author)
-    self.licenseEntry.delete(0, tk.END)
-    self.licenseEntry.insert(0, self.destItem.license)
-    self.licenseVersionEntry.delete(0, tk.END)
-    self.licenseVersionEntry.insert(0, self.destItem.licneseVersion)
+    # self.authorEntry.delete(0, tk.END)
+    # self.authorEntry.insert(0, self.destItem.author)
+    # self.licenseEntry.delete(0, tk.END)
+    # self.licenseEntry.insert(0, self.destItem.license)
+    # self.licenseVersionEntry.delete(0, tk.END)
+    # self.licenseVersionEntry.insert(0, self.destItem.licneseVersion)
 
     for w in self.warnings:
       w.destroy()
@@ -841,8 +868,8 @@ class GUIApp(XMLProcessorBase):
       self.refreshDestItem()
 
   def refreshDestItem(self):
-    self.listBox3.refresh()
-    self.listBox4.refresh()
+    self.lbDestXML.refresh()
+    self.lbDestResource.refresh()
 
   def _start(self):
     """
@@ -869,6 +896,7 @@ class GUIApp(XMLProcessorBase):
 
     pool_map = [ProcessData (
       dest_xml=DestXML.dest_dict[k],
+      dest_dir=DestXML.sDestXMLDir,
       overwrite=self.bOverWrite.get(),
       string_to=self.StringTo.get(),) for k in list(DestXML.dest_dict.keys()) if isinstance(DestXML.dest_dict[k], DestXML)]
 
@@ -907,20 +935,6 @@ class GUIApp(XMLProcessorBase):
       for k in list(DestXML.dest_dict.keys()):
         os.rename(k.sourceFile.fullPath, os.path.join(tempGDLArchiveDir, k.sourceFile.relPath))
         os.rename(os.path.join(targGDLDir, k.sourceFile.relPath), k.sourceFile.fullPath)
-
-    if self.bDebug.get():
-      with open(DestXML.sDestXMLDir + "\dict.txt", "w") as d:
-        for k in list(DestXML.dest_dict.keys()):
-          d.write(k + " " + DestXML.dest_dict[k].sourceFile.name + "->" + DestXML.dest_dict[k].name + " " + DestXML.dest_dict[
-            k].sourceFile.guid + " -> " + DestXML.dest_dict[k].guid + "\n")
-
-      with open(DestXML.sDestXMLDir + "\pict_dict.txt", "w") as d:
-        for k in list(DestResource.pict_dict.keys()):
-          d.write(DestResource.pict_dict[k].sourceFile.fullPath + "->" + DestResource.pict_dict[k].relPath + "\n")
-
-      with open(DestXML.sDestXMLDir + "\id_dict.txt", "w") as d:
-        for k in list(DestXML.id_dict.keys()):
-          d.write(DestXML.id_dict[k] + "\n")
 
     if self.bGDL.get():
       self.run_converter("x2l", DestXML.sDestXMLDir, targGDLDir, tempPicDir)
@@ -973,49 +987,6 @@ class GUIApp(XMLProcessorBase):
       if inFileName[2:] in DestXML.dest_dict:
         return inFileName [2:]
 
-  def scanDirs(self, actual_folder: str, root_folder: str = None, accepted_formats: [list, tuple] = (".XML",)):
-    """
-    Scanning input dir recursively to set up xml and image files' list
-    :param actual_folder:
-    :param root_folder:
-    :param accepted_formats:
-    :return:
-    """
-    if not root_folder:
-      root_folder = actual_folder
-    assert os.path.exists(actual_folder)
-    assert os.path.exists(root_folder)
-
-    # FIXME rewrite into a stateless form
-    # FIXME rewrite to root_folder + sub_folder parametrization
-    try:
-      for f in listdir(actual_folder):
-        try:
-          src = os.path.join(actual_folder, f)
-          # if it's NOT a directory
-          if not os.path.isdir(src):
-            if os.path.splitext(os.path.basename(f))[1].upper() in accepted_formats:
-              sf = SourceXML(os.path.relpath(src, root_folder))
-            else:
-              # set up replacement dict for other files
-              if os.path.splitext(os.path.basename(f))[0] not in SourceResource.source_pict_dict:
-                sI = SourceResource(os.path.relpath(src, root_folder), base_path=root_folder)
-                SIDN = self.SourceImageDirName.get()
-                if SIDN in sI.fullPath and SIDN:
-                  sI.isEncodedImage = True
-          else:
-            self.scanDirs(src, root_folder)
-        except KeyError:
-          print("KeyError %s" % f)
-          continue
-        except AttributeError as e:
-          print("AttributeError %s" % e)
-        except etree.XMLSyntaxError:
-          print("XMLSyntaxError %s" % f)
-          continue
-    except WindowsError:
-      pass
-
 # ------------------- Google SpreadSheet infield window ------
 
 class GoogleSSInfield(tk.Frame):
@@ -1041,19 +1012,19 @@ from dataclasses import dataclass
 @dataclass
 class ProcessData:
   dest_xml: DestXML
+  dest_dir: str
   overwrite: bool
   string_to: str
-
 
 def processOneXML(data: ProcessData):
   dest = data.dest_xml
 
   src = dest.sourceFile
   srcPath = src.fullPath
-  destPath = os.path.join(DestXML.sDestXMLDir, dest.relPath)
+  destPath = os.path.join(data.dest_dir, dest.relPath)
   destDir = os.path.dirname(destPath)
 
-  assert os.path.exists(DestXML.sDestXMLDir)
+  assert os.path.exists(data.dest_dir)
   assert os.path.exists(srcPath)
   assert not os.path.exists(destPath) or os.access(destPath, os.W_OK)
 
