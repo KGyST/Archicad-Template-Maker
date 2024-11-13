@@ -643,12 +643,11 @@ class GUIApp(XMLProcessorBase):
     assert source_file
     assert source_file in SourceXML.replacement_dict
 
-    destItem = DestXML(SourceXML.replacement_dict[source_file],
-                       dest_file_name=target_file)
+    destItem = DestXML(SourceXML.replacement_dict[source_file], target_file,  self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
     self.refreshDestItem()
     return destItem
 
-  def _addXMLRecursively(self, source_file: str) -> DestXML | None:
+  def _addXMLRecursively(self, source_file: str, target_file: str = "") -> DestXML | None:
     """
     Not to be called from UI as doesn't check for validity of source file name
     :param source_file:
@@ -658,8 +657,7 @@ class GUIApp(XMLProcessorBase):
     assert source_file
     assert source_file in SourceXML.replacement_dict
 
-    sTarget = DestXML.getValidName(source_file, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
-    destItem = self._addXML(source_file, sTarget)
+    destItem = self._addXML(source_file, target_file)
 
     if source_file not in SourceXML.replacement_dict:
       # should be in library_additional
@@ -704,11 +702,9 @@ class GUIApp(XMLProcessorBase):
 
     _sr = SourceResource.source_pict_dict[source_file]
     if _sr.isEncodedImage:
-      _dir = self.SourceImageDirName.get()
+      DestResource(_sr, self.SourceImageDirName.get(), _sr.name)
     else:
-      _dir = DestXML.sDestXMLDir
-    DestResource(SourceResource.source_pict_dict[source_file], dest_dir_name=_dir,
-                            dest_file_name=target_file)
+      DestResource(_sr, DestXML.sDestXMLDir, target_file)
     self.refreshDestItem()
 
   def addMoreFiles(self):
@@ -733,7 +729,10 @@ class GUIApp(XMLProcessorBase):
 
   def addMoreXMLsRecursively(self):
     for sourceFileIndex in self.lbSourceXML.curselection():
-      self._addXMLRecursively(self.lbSourceXML.get(sourceFileIndex))
+      sTargetXML = DestXML.getValidName(sSourceXML := self.lbSourceXML.get(sourceFileIndex), self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
+      self._addXMLRecursively(sSourceXML, sTargetXML)
+
+  # ---- Adding/removing files------------------------------------------------------------------------------------------
 
   def delXML(self):
     fileName = self.lbDestXML.get(tk.ACTIVE)
@@ -752,6 +751,8 @@ class GUIApp(XMLProcessorBase):
     if not DestXML.dest_dict and not DestResource.pict_dict:
       self.addAllButton.config({"state": tk.NORMAL})
     self.fileName.set('')
+
+  # ---- Adding/removing files------------------------------------------------------------------------------------------
 
   def _refreshAll(self):
     self.lbSourceXML.refresh()
@@ -779,8 +780,6 @@ class GUIApp(XMLProcessorBase):
 
     self.addAllButton.config({"state": tk.NORMAL})
     self.sourceImageDir.reset()
-
-# ---- Adding/removing files------------------------------------------------------------------------------------------
 
   def listboxselect(self, event, ):
     if not event.widget.get(0):
@@ -951,15 +950,23 @@ class GUIApp(XMLProcessorBase):
     print("*****FINISHED SUCCESFULLY******")
 
   def run_converter(self, command: str, source_dir: str, target_dir: str, img_dir: str = ''):
+    assert command
     assert os.path.exists(target_dir)
     assert os.path.exists(source_dir)
     assert os.path.exists(_sConverterPath := (os.path.join(self.ACLocation.get(), LP_XML_CONVERTER)))
+    assert os.path.exists(img_dir) or not img_dir
 
-    lImgCommand = ['-img ', img_dir] if img_dir else []
+    lImgCommand = ['-img', img_dir] if img_dir else []
+    # sImgCommand = f' -img "{img_dir}" ' if img_dir else ''
+
+
+    print("Command:")
+    print(" ".join([_sConverterPath, command, *lImgCommand, source_dir, target_dir]))
+
     import subprocess
     result = subprocess.run(
-      [_sConverterPath, command, *lImgCommand,
-       source_dir, target_dir], capture_output=True, text=True, encoding="utf-8")
+      [_sConverterPath, command, *lImgCommand, source_dir, target_dir],
+      capture_output=True, text=True, encoding="utf-8")
     output = result.stdout
     print(output)
 
@@ -1076,28 +1083,28 @@ def processOneXML(data: ProcessData):
         if n:
           section.attrib['path'] = os.path.dirname(n) + "/" + os.path.basename(n)  # Not os.path.join!
   # ---------------------AC18 and over: adding licensing statically---------------------
-  if dest.iVersion >= AC_18:
-    for cr in mdp.getroot().findall("Copyright"):
-      mdp.getroot().remove(cr)
-
-    eCopyright = etree.Element("Copyright", SectVersion="1", SectionFlags="0", SubIdent="0")
-    eAuthor = etree.Element("Author")
-    eCopyright.append(eAuthor)
-    eAuthor.text = dest.author
-
-    eLicense = etree.Element("License")
-    eCopyright.append(eLicense)
-
-    eLType = etree.Element("Type")
-    eLicense.append(eLType)
-    eLType.text = dest.license
-
-    eLVersion = etree.Element("Version")
-    eLicense.append(eLVersion)
-
-    eLVersion.text = dest.licneseVersion
-
-    mdp.getroot().append(eCopyright)
+  # if dest.iVersion >= AC_18:
+  #   for cr in mdp.getroot().findall("Copyright"):
+  #     mdp.getroot().remove(cr)
+  #
+  #   eCopyright = etree.Element("Copyright", SectVersion="1", SectionFlags="0", SubIdent="0")
+  #   eAuthor = etree.Element("Author")
+  #   eCopyright.append(eAuthor)
+  #   eAuthor.text = dest.author
+  #
+  #   eLicense = etree.Element("License")
+  #   eCopyright.append(eLicense)
+  #
+  #   eLType = etree.Element("Type")
+  #   eLicense.append(eLType)
+  #   eLType.text = dest.license
+  #
+  #   eLVersion = etree.Element("Version")
+  #   eLicense.append(eLVersion)
+  #
+  #   eLVersion.text = dest.licneseVersion
+  #
+  #   mdp.getroot().append(eCopyright)
   # ---------------------BO_update---------------------
   parRoot = mdp.find("./ParamSection")
   parPar = parRoot.getparent()
@@ -1127,7 +1134,7 @@ def processOneXML(data: ProcessData):
     mdp.write(file_handle, pretty_print=True, encoding="UTF-8", )
 
 
-@Recorder()
+# @Recorder()
 def replace_filenames(StringTo:str, dest_dict:dict, pict_dict:dict, text: str | etree.CDATA) -> str:
   for dI in list(dest_dict.keys()):
     text = re.sub(r'(?<=[,"\'`\s])' + dest_dict[dI].sourceFile.name + r'(?=[,"\'`\s])', dest_dict[dI].name, text,
