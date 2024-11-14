@@ -680,12 +680,12 @@ class GUIApp(XMLProcessorBase):
         if pict.fileNameWithOutExt.upper() in script.upper():
           sTarget = DestXML.getValidName(pict.fileNameWithExt, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
           self._addResourceFile(pict.fileNameWithExt, sTarget)
-      if pict.fileNameWithExt.upper() in _dSR.gdlPicts:
-        self._addResourceFile(pict.fileNameWithExt)
+      if pict.relPath.upper() in _dSR.gdlPicts:
+        self._addResourceFile(pict.relPath)
 
     if _dSR.prevPict:
-      _sBase = os.path.basename(_dSR.prevPict)
-      self._addResourceFile(_sBase)
+      # _sBase = os.path.basename(_dSR.prevPict)
+      self._addResourceFile(_dSR.prevPict)
 
     self.refreshDestItem()
     return destItem
