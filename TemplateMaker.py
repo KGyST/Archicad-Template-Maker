@@ -683,9 +683,9 @@ class GUIApp(XMLProcessorBase):
       if pict.relPath.upper() in _dSR.gdlPicts:
         self._addResourceFile(pict.relPath)
 
-    if _dSR.prevPict:
-      # _sBase = os.path.basename(_dSR.prevPict)
-      self._addResourceFile(_dSR.prevPict)
+    # if _dSR.prevPict:
+    #   # _sBase = os.path.basename(_dSR.prevPict)
+    #   self._addResourceFile(_dSR.prevPict)
 
     self.refreshDestItem()
     return destItem
@@ -701,10 +701,7 @@ class GUIApp(XMLProcessorBase):
     assert source_file in SourceResource.source_pict_dict
 
     _sr = SourceResource.source_pict_dict[source_file]
-    if _sr.isEncodedImage:
-      DestResource(_sr, self.SourceImageDirName.get(), _sr.name)
-    else:
-      DestResource(_sr, DestXML.sDestXMLDir, target_file)
+    DestResource(_sr, DestXML.sDestXMLDir, target_file)
     self.refreshDestItem()
 
   def addMoreFiles(self):
@@ -887,16 +884,18 @@ class GUIApp(XMLProcessorBase):
       assert not len(os.listdir(targGDLDir)) or self.bOverWrite.get()
 
     tempPicDir = tempfile.mkdtemp()  # For every image file, collected
-    targPicDir = self.TargetImageDirName.get()  # For target library's encoded images
-    assert not len(os.listdir(targPicDir)) or self.bOverWrite.get()
 
     print("targXMLDir: %s" % DestXML.sDestXMLDir)
     print("tempPicDir: %s" % tempPicDir)
 
     pool_map = [ProcessData (
-      dest_xml=DestXML.dest_dict[k],
+      key=k,
       dest_dir=DestXML.sDestXMLDir,
+      dest_dict=DestXML.dest_dict,
+      temp_pic_dir=tempPicDir,
+      pict_dict=DestResource.pict_dict,
       overwrite=self.bOverWrite.get(),
+      image_dir=self.SourceImageDirName.get(),
       string_to=self.StringTo.get(),) for k in list(DestXML.dest_dict.keys()) if isinstance(DestXML.dest_dict[k], DestXML)]
 
     cpuCount = max(mp.cpu_count() - 1, 1)
@@ -904,11 +903,14 @@ class GUIApp(XMLProcessorBase):
     p = mp.Pool(processes=cpuCount)
     p.map(processOneXML, pool_map)
 
-    _picdir = self.AdditionalImageDir.get()  # Like IMAGES_GENERIC
-
-    if _picdir:
-      for f in listdir(_picdir):
-        shutil.copytree(os.path.join(_picdir, f), os.path.join(tempPicDir, f))
+    import subprocess
+    if _additionalPicdir := self.AdditionalImageDir.get():  # Like IMAGES_GENERIC
+      for f in listdir(_additionalPicdir):
+        assert os.path.exists(_fSource := os.path.join(_additionalPicdir, f))
+        assert not os.path.exists(_fTarget := os.path.join(tempPicDir, f))
+        # shutil.copytree(_fSource, _fTarget)
+        print(" ".join(["cmd", "/c", "mklink", "/J", '"' + os.path.join(tempPicDir, f) + '"', '"' + _fSource + '"']))
+        subprocess.run(["cmd", "/c", "mklink", "/J", _fTarget, _fSource])
 
     def _copyFile(dest: DestResource, dir_to: str):
       assert os.path.exists(dir_to)
@@ -917,16 +919,10 @@ class GUIApp(XMLProcessorBase):
       shutil.copyfile(os.path.join(dest.sourceFile.fullPath), os.path.join(dir_to, dest.relPath))
 
     for f in list(DestResource.pict_dict.keys()):
-      if DestResource.pict_dict[f].sourceFile.isEncodedImage:
-        _copyFile(DestResource.pict_dict[f], tempPicDir)
+      _copyFile(DestResource.pict_dict[f], targGDLDir)
 
-        if targPicDir:
-          _copyFile(DestResource.pict_dict[f], targPicDir)
-      else:
-        _copyFile(DestResource.pict_dict[f], targGDLDir)
-
-        if self.TargetXMLDirName.get():
-          _copyFile(DestResource.pict_dict[f], self.TargetXMLDirName.get())
+      if self.TargetXMLDirName.get():
+        _copyFile(DestResource.pict_dict[f], self.TargetXMLDirName.get())
 
     if self.bWriteToSelf:
       tempGDLArchiveDir = tempfile.mkdtemp()
@@ -936,7 +932,7 @@ class GUIApp(XMLProcessorBase):
         os.rename(os.path.join(targGDLDir, k.sourceFile.relPath), k.sourceFile.fullPath)
 
     if self.bGDL.get():
-      self.run_converter("x2l", DestXML.sDestXMLDir, targGDLDir, tempPicDir)
+      self.run_converter("x2l", DestXML.sDestXMLDir, targGDLDir, tempPicDir, switches=("-excludesvg", ))
 
     # cleanup ops
     if not self.bCleanup.get():
@@ -949,7 +945,7 @@ class GUIApp(XMLProcessorBase):
 
     print("*****FINISHED SUCCESFULLY******")
 
-  def run_converter(self, command: str, source_dir: str, target_dir: str, img_dir: str = ''):
+  def run_converter(self, command: str, source_dir: str, target_dir: str, img_dir: str = '', switches: tuple = ()):
     assert command
     assert os.path.exists(target_dir)
     assert os.path.exists(source_dir)
@@ -957,15 +953,13 @@ class GUIApp(XMLProcessorBase):
     assert os.path.exists(img_dir) or not img_dir
 
     lImgCommand = ['-img', img_dir] if img_dir else []
-    # sImgCommand = f' -img "{img_dir}" ' if img_dir else ''
-
 
     print("Command:")
-    print(" ".join([_sConverterPath, command, *lImgCommand, source_dir, target_dir]))
+    print(" ".join([_sConverterPath, command, *switches, *lImgCommand, source_dir, target_dir]))
 
     import subprocess
     result = subprocess.run(
-      [_sConverterPath, command, *lImgCommand, source_dir, target_dir],
+      [_sConverterPath, command, *switches, *lImgCommand, source_dir, target_dir],
       capture_output=True, text=True, encoding="utf-8")
     output = result.stdout
     print(output)
@@ -1018,13 +1012,17 @@ class GoogleSSInfield(tk.Frame):
 from dataclasses import dataclass
 @dataclass
 class ProcessData:
-  dest_xml: DestXML
+  key:str
+  dest_dict: dict
+  pict_dict: dict
+  temp_pic_dir: str
   dest_dir: str
+  image_dir: str
   overwrite: bool
   string_to: str
 
 def processOneXML(data: ProcessData):
-  dest = data.dest_xml
+  dest = data.dest_dict[data.key]
 
   src = dest.sourceFile
   srcPath = src.fullPath
@@ -1060,8 +1058,8 @@ def processOneXML(data: ProcessData):
       cmRoot.append(macro)
   else:
     for m in mdp.findall("./CalledMacros/Macro"):
-      for dI in list(DestXML.dest_dict.keys()):
-        d = DestXML.dest_dict[dI]
+      for dI in list(data.dest_dict.keys()):
+        d = data.dest_dict[dI]
         if m.find("MName").text.strip("'" + '"') == d.sourceFile.name:
           m.find("MName").text = etree.CDATA('"' + d.name + '"')
           m.find(dest.sourceFile.ID).text = d.guid
@@ -1070,7 +1068,7 @@ def processOneXML(data: ProcessData):
                "./Script_FWM", "./Script_BWM", ]:
     section = mdp.find(sect)
     if section is not None:
-      section.text = etree.CDATA(replace_filenames(data.string_to, DestXML.dest_dict, DestResource.pict_dict, section.text))
+      section.text = etree.CDATA(replace_filenames(section.text, data.string_to, data.dest_dict, data.pict_dict))
 
   # ---------------------Prevpict-------------------------------------------------------
   if dest.bPlaceable:
@@ -1111,6 +1109,18 @@ def processOneXML(data: ProcessData):
   parPar.remove(parRoot)
   destPar = dest.parameters.toEtree()
   parPar.append(destPar)
+  # ---------------------GDLPict--------------------
+  for gp in dest.sourceFile.gdlPicts:
+    assert os.path.exists(_fSource := os.path.join(data.image_dir, *gp.split("/")))
+    assert os.path.exists(data.temp_pic_dir)
+    _fTarget = os.path.join(data.temp_pic_dir, *gp.split("/"))
+    os.makedirs(os.path.dirname(_fTarget), exist_ok=True)
+    shutil.copy(_fSource, _fTarget)
+  if prevPict := dest.sourceFile.prevPict:
+    assert os.path.exists(_fSource := os.path.join(data.image_dir, *prevPict.split("/")))
+    _fTarget = os.path.join(data.temp_pic_dir, *prevPict.split("/"))
+    os.makedirs(os.path.dirname(_fTarget), exist_ok=True)
+    shutil.copy(_fSource, _fTarget)
   # ---------------------Ancestries--------------------
   # FIXME not clear, check, writes an extra empty mainunid field
   # FIXME ancestries to be used in param checking
@@ -1135,14 +1145,16 @@ def processOneXML(data: ProcessData):
 
 
 # @Recorder()
-def replace_filenames(StringTo:str, dest_dict:dict, pict_dict:dict, text: str | etree.CDATA) -> str:
-  for dI in list(dest_dict.keys()):
-    text = re.sub(r'(?<=[,"\'`\s])' + dest_dict[dI].sourceFile.name + r'(?=[,"\'`\s])', dest_dict[dI].name, text,
-                  flags=re.IGNORECASE)
+def replace_filenames(text: str | etree.CDATA, StringTo: str, dest_dict: dict, pict_dict: dict) -> str:
+  for key in list(dest_dict.keys()):
+    if dest_dict[key].sourceFile.name.upper() in text.upper():
+      text = re.sub(r'(?<=[,"\'`\s])' + dest_dict[key].sourceFile.name + r'(?=[,"\'`\s])', dest_dict[key].name, text,
+                    flags=re.IGNORECASE)
   # Replacing images:
   for pr in sorted(list(pict_dict.keys()), key=lambda x: -len(x)):
-    text = re.sub(r'(?<=[,"\'`\s])' + pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo + ')',
-                  pict_dict[pr].fileNameWithOutExt, text, flags=re.IGNORECASE)
+    if pict_dict[pr].sourceFile.fileNameWithOutExt.upper() in text.upper():
+      text = re.sub(r'(?<=[,"\'`\s])' + pict_dict[pr].sourceFile.fileNameWithOutExt + '(?!' + StringTo + ')',
+                    pict_dict[pr].fileNameWithOutExt, text, flags=re.IGNORECASE)
   return text
 
 
