@@ -474,7 +474,7 @@ class GUIApp(XMLProcessorBase):
       else:
         # no destitem so write to itself
         destItem = DestXML(row[0], dest_file_name=row[0])
-        DestXML.dest_dict[destItem.name] = destItem
+        # DestXML.dest_dict[destItem.name] = destItem
         [destItem.sourceFile.name] = destItem
       if len(row) > 2 and next((c for c in row[2:] if c != ""), ""):
         for parName, col in zip(firstRow[2:], row[2:]):
@@ -634,7 +634,7 @@ class GUIApp(XMLProcessorBase):
 
 # ---- Adding/removing files------------------------------------------------------------------------------------------
 
-  def _addXML(self, source_file: str, target_file: str = "") -> DestXML | None:
+  def _addXML(self, source_file: str, name_from: str = "", name_to: str = "", add_str: bool = False, target_file: str = "") -> DestXML | None:
     """
     :param source_file:
     :param target_file:
@@ -643,11 +643,11 @@ class GUIApp(XMLProcessorBase):
     assert source_file
     assert source_file in SourceXML.replacement_dict
 
-    destItem = DestXML(SourceXML.replacement_dict[source_file], target_file,  self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
+    destItem = DestXML(SourceXML.replacement_dict[source_file], name_from, name_to, add_str, target_file)
     self.refreshDestItem()
     return destItem
 
-  def _addXMLRecursively(self, source_file: str, target_file: str = "") -> DestXML | None:
+  def _addXMLRecursively(self, source_file: str, name_from: str = "", name_to: str = "", add_str: bool = False, target_file: str = "") -> DestXML | None:
     """
     Not to be called from UI as doesn't check for validity of source file name
     :param source_file:
@@ -657,7 +657,7 @@ class GUIApp(XMLProcessorBase):
     assert source_file
     assert source_file in SourceXML.replacement_dict
 
-    destItem = self._addXML(source_file, target_file)
+    destItem = self._addXML(source_file, name_from, name_to, add_str, target_file)
 
     if source_file not in SourceXML.replacement_dict:
       # should be in library_additional
@@ -668,29 +668,25 @@ class GUIApp(XMLProcessorBase):
 
     for k, v in _dSR.calledMacros.items():
       if v not in DestXML.dest_sourcenames:
-        self._addXMLRecursively(v)
+        self._addXMLRecursively(v, name_from, name_to, add_str)
 
     for parentGUID in _dSR.parentSubTypes:
       if parentGUID not in DestXML.id_dict:
         if parentGUID in SourceXML.source_guids:
-          self._addXMLRecursively(SourceXML.source_guids[parentGUID])
+          self._addXMLRecursively(SourceXML.source_guids[parentGUID], name_from, name_to, add_str)
 
     for pict in list(SourceResource.source_pict_dict.values()):
       for script in list(_dSR.scripts.values()):
         if pict.fileNameWithOutExt.upper() in script.upper():
-          sTarget = DestXML.getValidName(pict.fileNameWithExt, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
-          self._addResourceFile(pict.fileNameWithExt, sTarget)
+          # sTarget = DestXML.getValidName(pict.fileNameWithExt, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
+          self._addResourceFile(pict.fileNameWithExt, name_from, name_to, add_str, target_file)
       if pict.relPath.upper() in _dSR.gdlPicts:
-        self._addResourceFile(pict.relPath)
-
-    # if _dSR.prevPict:
-    #   # _sBase = os.path.basename(_dSR.prevPict)
-    #   self._addResourceFile(_dSR.prevPict)
+        self._addResourceFile(pict.relPath, name_from, name_to, add_str, target_file)
 
     self.refreshDestItem()
     return destItem
 
-  def _addResourceFile(self, source_file: str, target_file: str = ""):
+  def _addResourceFile(self, source_file: str, name_from: str = "", name_to: str = "", add_str: bool = False, target_file: str = ""):
     """
     Not to be called from UI as doesn't check for validity of source file name
     :param source_file:
@@ -701,13 +697,12 @@ class GUIApp(XMLProcessorBase):
     assert source_file in SourceResource.source_pict_dict
 
     _sr = SourceResource.source_pict_dict[source_file]
-    DestResource(_sr, DestXML.sDestXMLDir, target_file)
+    DestResource(_sr, DestXML.sDestXMLDir, name_from, name_to, add_str, target_file)
     self.refreshDestItem()
 
   def addMoreFiles(self):
     for sourceFileIndex in self.lbSourceXML.curselection():
-      sTargetXML = DestXML.getValidName(sSourceXML := self.lbSourceXML.get(sourceFileIndex), self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
-      self._addXML(sSourceXML, sTargetXML)
+      self._addXML(self.lbSourceXML.get(sourceFileIndex), self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
 
     for sourceResourceIndex in self.lbSourceResource.curselection():
       sTargetRes = DestResource.getValidName(sSourceRes := self.lbSourceResource.get(sourceResourceIndex), self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
@@ -715,19 +710,16 @@ class GUIApp(XMLProcessorBase):
 
   def addAllFiles(self):
     for sSourceXML in self.lbSourceXML.get(0, tk.END):
-      sTargetXML = DestXML.getValidName(sSourceXML, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
-      self._addXML(sSourceXML, sTargetXML)
+      self._addXML(sSourceXML, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
 
     for sSourceRes in self.lbSourceResource.get(0, tk.END):
-      sTargetRes = DestResource.getValidName(sSourceRes, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
-      self._addResourceFile(sSourceRes, sTargetRes)
+      self._addResourceFile(sSourceRes, self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
 
     self.addAllButton.config({"state": tk.DISABLED})
 
   def addMoreXMLsRecursively(self):
     for sourceFileIndex in self.lbSourceXML.curselection():
-      sTargetXML = DestXML.getValidName(sSourceXML := self.lbSourceXML.get(sourceFileIndex), self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
-      self._addXMLRecursively(sSourceXML, sTargetXML)
+      self._addXMLRecursively(self.lbSourceXML.get(sourceFileIndex), self.StringFrom.get(), self.StringTo.get(), self.bAddStr.get())
 
   # ---- Adding/removing files------------------------------------------------------------------------------------------
 
@@ -919,8 +911,6 @@ class GUIApp(XMLProcessorBase):
       shutil.copyfile(os.path.join(dest.sourceFile.fullPath), os.path.join(dir_to, dest.relPath))
 
     for f in list(DestResource.pict_dict.keys()):
-      _copyFile(DestResource.pict_dict[f], targGDLDir)
-
       if self.TargetXMLDirName.get():
         _copyFile(DestResource.pict_dict[f], self.TargetXMLDirName.get())
 
@@ -935,9 +925,10 @@ class GUIApp(XMLProcessorBase):
       self.run_converter("x2l", DestXML.sDestXMLDir, targGDLDir, tempPicDir, switches=("-excludesvg", ))
 
     # cleanup ops
-    if not self.bCleanup.get():
+    if self.bCleanup.get():
       shutil.rmtree(tempPicDir)
-      if not self.bXML:
+
+      if not self.bXML.get():
         shutil.rmtree(DestXML.sDestXMLDir)
     else:
       print("targXMLDir: %s" % DestXML.sDestXMLDir)
@@ -1116,6 +1107,7 @@ def processOneXML(data: ProcessData):
     _fTarget = os.path.join(data.temp_pic_dir, *gp.split("/"))
     os.makedirs(os.path.dirname(_fTarget), exist_ok=True)
     shutil.copy(_fSource, _fTarget)
+  # ---------------------PrevPict--------------------
   if prevPict := dest.sourceFile.prevPict:
     assert os.path.exists(_fSource := os.path.join(data.image_dir, *prevPict.split("/")))
     _fTarget = os.path.join(data.temp_pic_dir, *prevPict.split("/"))
