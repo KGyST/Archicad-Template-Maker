@@ -1,0 +1,8 @@
+{
+  "parName": "sTest -a iFamily -y",
+  "originalXML": "original.xml",
+  "resultXML": "sArray_3x2.xml",
+  "value": null,
+  "result": 1.0,
+  "testCSV": "sArray_3x2.csv"
+}

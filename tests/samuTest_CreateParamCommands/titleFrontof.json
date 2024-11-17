@@ -1,0 +1,7 @@
+{
+  "parName": "TestTitle2 -f iThickness -t Title",
+  "originalXML": "original.xml",
+  "resultXML": "titleFrontof.xml",
+  "value": "1",
+  "result": 1.0
+}

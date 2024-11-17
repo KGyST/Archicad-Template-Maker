@@ -1,0 +1,7 @@
+{
+  "parName": "TestComment -a iDetLevel2D -t Comment",
+  "originalXML": "original.xml",
+  "resultXML": "commentAfter.xml",
+  "value": null,
+  "result": 1.0
+}

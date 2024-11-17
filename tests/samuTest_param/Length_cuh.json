@@ -1,0 +1,10 @@
+{
+    "type": 1,
+    "name": "ac_wall_radius",
+    "desc": 0.0,
+    "child": true,
+    "unique": true,
+    "hidden": true,
+    "bold": false,
+    "result": null
+}

@@ -1,0 +1,11 @@
+{
+    "type": 4,
+    "name": "iBeamFamilys",
+    "desc": null,
+    "child": true,
+    "unique": false,
+    "hidden": true,
+    "bold": false,
+    "aVals": "Integer_2_0.csv",
+    "result": null
+}

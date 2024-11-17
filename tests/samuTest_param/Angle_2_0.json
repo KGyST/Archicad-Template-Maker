@@ -1,0 +1,10 @@
+{
+  "type": 2,
+  "name": "beamAngles",
+  "desc": null,
+  "child": true,
+  "unique": false,
+  "hidden": true,
+  "bold": false,
+  "aVals": "Angle_2_0.csv"
+}

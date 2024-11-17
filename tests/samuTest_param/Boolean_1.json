@@ -1,0 +1,10 @@
+{
+    "type": 5,
+    "name": "bHalfStone",
+    "desc": true,
+    "child": true,
+    "unique": false,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

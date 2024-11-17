@@ -1,4 +1,4 @@
-import Tkinter as tk
+import tkinter as tk
 
 acIcons = '''
 #define AcIcons_width 64

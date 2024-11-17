@@ -1,0 +1,7 @@
+{
+  "parName": "TestTitle -a iDetLevel2D -t Title",
+  "originalXML": "original.xml",
+  "resultXML": "titleAfter.xml",
+  "value": null,
+  "result": 1.0
+}

@@ -1,0 +1,7 @@
+{
+  "parName": "iNtegerTest -c detlevel --desc Teszt description",
+  "originalXML": "original.xml",
+  "resultXML": "integerChild_desc.xml",
+  "value": "1",
+  "result": 1.0
+}

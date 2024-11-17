@@ -1,0 +1,11 @@
+{
+    "type": 1,
+    "name": "ac_top_poly",
+    "desc": null,
+    "child": true,
+    "unique": true,
+    "hidden": false,
+    "bold": false,
+    "aVals": "Length_cu_3_2.csv",
+    "result": null
+}

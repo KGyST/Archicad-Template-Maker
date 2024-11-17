@@ -1,0 +1,10 @@
+{
+    "type": 5,
+    "name": "bJointAngle1",
+    "desc": false,
+    "child": true,
+    "unique": false,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

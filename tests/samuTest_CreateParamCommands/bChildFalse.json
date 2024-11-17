@@ -1,0 +1,7 @@
+{
+  "parName": "bTestFalse -c detlevel",
+  "originalXML": "original.xml",
+  "resultXML": "bChildFalse.xml",
+  "value": "0",
+  "result": 1.0
+}

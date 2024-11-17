@@ -1,0 +1,7 @@
+{
+  "parName": "isTestTrue -c detlevel",
+  "originalXML": "original.xml",
+  "resultXML": "isChildTrue.xml",
+  "value": "1",
+  "result": 1.0
+}

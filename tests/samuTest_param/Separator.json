@@ -1,0 +1,10 @@
+{
+    "type": 11,
+    "name": "BO_Separator",
+    "desc": null,
+    "child": false,
+    "unique": false,
+    "hidden": false,
+    "bold": true,
+    "result": null
+}

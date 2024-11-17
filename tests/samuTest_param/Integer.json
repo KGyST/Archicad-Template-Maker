@@ -1,0 +1,10 @@
+{
+    "type": 4,
+    "name": "gs_ui_current_page",
+    "desc": 10,
+    "child": false,
+    "unique": false,
+    "hidden": true,
+    "bold": false,
+    "result": null
+}

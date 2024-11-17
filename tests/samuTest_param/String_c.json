@@ -1,0 +1,10 @@
+{
+    "type": 6,
+    "name": "BO_techcert",
+    "desc": "\"http://www2.incepa.com.br/produtos/rv_alpes_snow_33x60/informacoestecnicas\"",
+    "child": true,
+    "unique": false,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

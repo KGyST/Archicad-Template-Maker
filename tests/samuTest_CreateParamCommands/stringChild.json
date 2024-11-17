@@ -1,0 +1,7 @@
+{
+  "parName": "TestString -c detlevel -t String",
+  "originalXML": "original.xml",
+  "resultXML": "stringChild.xml",
+  "value": "\"Teszt\"",
+  "result": 1.0
+}

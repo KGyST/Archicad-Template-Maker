@@ -1,0 +1,10 @@
+{
+    "type": 3,
+    "name": "BO_weight",
+    "desc": 0.0,
+    "child": true,
+    "unique": false,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

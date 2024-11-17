@@ -1,0 +1,10 @@
+{
+    "type": 5,
+    "name": "gs_gdl_debug",
+    "desc": false,
+    "child": true,
+    "unique": true,
+    "hidden": false,
+    "bold": false,
+    "result": null
+}

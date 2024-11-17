@@ -1,0 +1,11 @@
+{
+    "type": 6,
+    "name": "sMaterialS",
+    "desc": null,
+    "child": false,
+    "unique": false,
+    "hidden": false,
+    "bold": false,
+    "aVals": "String_14_1.csv",
+    "result": null
+}

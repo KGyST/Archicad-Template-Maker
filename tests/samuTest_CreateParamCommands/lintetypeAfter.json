@@ -1,0 +1,7 @@
+{
+  "parName": "lIneTypeTest -a iFamily -i -t LineType",
+  "originalXML": "original.xml",
+  "resultXML": "lintetypeAfter.xml",
+  "value": "1",
+  "result": 1.0
+}

@@ -1,0 +1,10 @@
+{
+    "type": 6,
+    "name": "gs_detlevel_3D",
+    "desc": "\"Detailed\"",
+    "child": false,
+    "unique": false,
+    "hidden": true,
+    "bold": false,
+    "result": null
+}

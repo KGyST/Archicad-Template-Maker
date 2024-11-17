@@ -1,0 +1,7 @@
+{
+  "parName": "TestSeparator -a iDetLevel2D -t Separator",
+  "originalXML": "original.xml",
+  "resultXML": "separatorAfter.xml",
+  "value": "1",
+  "result": 1.0
+}

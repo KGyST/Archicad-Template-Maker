@@ -1,0 +1,10 @@
+{
+    "type": 1,
+    "name": "xPanelSize",
+    "desc": 0.1,
+    "child": true,
+    "unique": false,
+    "hidden": true,
+    "bold": false,
+    "result": null
+}

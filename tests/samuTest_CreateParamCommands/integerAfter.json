@@ -1,0 +1,7 @@
+{
+  "parName": "iNtegerTest -a iFamily -t Integer",
+  "originalXML": "original.xml",
+  "resultXML": "integerAfter.xml",
+  "value": "1",
+  "result": 1.0
+}
