@@ -112,6 +112,9 @@ class GUIApp(XMLProcessorBase):
     # self.SourceXMLDirName   = self.currentConfig.register(tk.StringVar(self.top), "SourceXMLDirName", encrypt=Fernet)
     # self.SourceXMLDirName   = self.currentConfig.register(tk.StringVar(self.top), "SourceXMLDirName")
 
+    self.destItem = None
+    self.selectedName = ""
+
     self.SourceGDLDirName   = self.currentConfig.register(tk.StringVar(self.top), "SourceGDLDirName")
     self.TargetXMLDirName   = self.currentConfig.register(tk.StringVar(self.top), "TargetXMLDirName")
     self.TargetGDLDirName   = self.currentConfig.register(tk.StringVar(self.top), "TargetGDLDirName")
@@ -145,9 +148,9 @@ class GUIApp(XMLProcessorBase):
     self.googleSpreadsheet  = None
     self.bWriteToSelf       = False             # Whether to write back to the file itself
 
-    __tooltipIDPT1 = "Something like E:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
+    __tooltipIDPT1 = "Something like\nE:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
     __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
-    __tooltipIDPT3 = "Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library"
+    __tooltipIDPT3 = "Something like\nE:/_GDL_SVN/_TARGET_PROJECT_NAME_/library"
     __tooltipIDPT4 = "Final GDL output dir"
     __tooltipIDPT5 = "If set, copy project specific pictures here, too, for endcoded images. Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library_images"
     __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
@@ -185,11 +188,21 @@ class GUIApp(XMLProcessorBase):
 
     iF += 1
 
-    self.inputXMLDir = InputDirPlusRadio(self.InputFrameS[iF], "XML Source folder", self.SourceXMLDirName, self.isSourceGDL, False, __tooltipIDPT1)
+    self.inputXMLDir = InputDirPlusRadio(self.InputFrameS[iF],
+                                         "XML Source folder",
+                                         self.SourceXMLDirName,
+                                         self.isSourceGDL,
+                                         False,
+                                         __tooltipIDPT1)
 
     iF += 1
 
-    InputDirPlusRadio(self.InputFrameS[iF], "GDL Source folder", self.SourceGDLDirName, self.isSourceGDL, True, __tooltipIDPT7)
+    InputDirPlusRadio(self.InputFrameS[iF],
+                      "GDL Source folder",
+                      self.SourceGDLDirName,
+                      self.isSourceGDL,
+                      True,
+                      __tooltipIDPT7)
 
     iF += 1
 
@@ -226,7 +239,10 @@ class GUIApp(XMLProcessorBase):
 
     iF += 1
 
-    self.sourceImageDir = InputDirPlusText(self.InputFrameS[iF], "Images' source folder", self.SourceImageDirName, __tooltipIDPT2)
+    self.sourceImageDir = InputDirPlusText(self.InputFrameS[iF],
+                                           "Images' source folder",
+                                           self.SourceImageDirName,
+                                           __tooltipIDPT2)
     if self.SourceImageDirName:
       self.lbSourceXML.refresh()
       self.lbSourceResource.refresh()
@@ -250,16 +266,34 @@ class GUIApp(XMLProcessorBase):
     self.entryTextNameTo = tk.Entry(self.outputFrameS[iF], {"width": 20, "textvariable": self.StringTo, })
     self.entryTextNameTo.grid({"row":0, "column": 0, "sticky": tk.SE + tk.NW, })
 
-    self.bAddStrCheckButton = tk.Checkbutton(self.outputFrameS[iF], {"text": "Always add strings", "variable": self.bAddStr})
+    self.bAddStrCheckButton = tk.Checkbutton(self.outputFrameS[iF],
+                                             {"text": "Always add strings", "variable": self.bAddStr})
+
+    CreateToolTip(self.bAddStrCheckButton, "Always add the string at the beginning, even if no match")
+
     self.bAddStrCheckButton.grid({"row": 0, "column": 1})
 
     iF += 1
 
-    self.XMLDir = InputDirPlusBool(self.outputFrameS[iF], "XML Destination folder",      self.TargetXMLDirName, self.bXML, __tooltipIDPT3)
+    def _isTargetFolderOK(path: str) -> str:
+      return "" if (os.path.isdir(path)
+                    and not os.listdir(path)
+                    or  self.bOverWrite.get()) else \
+        f"Folder:\n{path}\nis not empty"
+
+    self.XMLDir = InputDirPlusCheckbox(self.outputFrameS[iF],
+                                   "XML Destination folder",
+                                       self.TargetXMLDirName,
+                                       self.bXML, __tooltipIDPT3,
+                                       validator=_isTargetFolderOK)
 
     iF += 1
 
-    self.GDLDir = InputDirPlusBool(self.outputFrameS[iF], "GDL Destination folder",      self.TargetGDLDirName, self.bGDL, __tooltipIDPT4)
+    self.GDLDir = InputDirPlusCheckbox(self.outputFrameS[iF],
+                                   "GDL Destination folder",
+                                       self.TargetGDLDirName,
+                                       self.bGDL, __tooltipIDPT4,
+                                       validator=_isTargetFolderOK)
 
     iF += 1
 
@@ -288,7 +322,7 @@ class GUIApp(XMLProcessorBase):
 
     iF += 1
 
-    InputDirPlusText(self.outputFrameS[iF], "Images' destination folder",  self.TargetImageDirName, __tooltipIDPT5)
+    InputDirPlusText(self.outputFrameS[iF], "Images' destination folder",  self.TargetImageDirName, __tooltipIDPT5, validator=_isTargetFolderOK)
 
     # ------------------------------------
     # bottom row for project general settings
@@ -311,7 +345,11 @@ class GUIApp(XMLProcessorBase):
 
     iF += 1
 
-    InputDirPlusText(self.bottomFrame, "Additional images' folder",  self.AdditionalImageDir, column=iF, tooltip=__tooltipIDPT6)
+    InputDirPlusText(self.bottomFrame,
+                     "Additional images' folder",
+                     self.AdditionalImageDir,
+                     column=iF,
+                     tooltip=__tooltipIDPT6)
 
     iF += 1
 
@@ -906,13 +944,17 @@ class GUIApp(XMLProcessorBase):
 
     def _copyFile(dest: DestResource, dir_to: str):
       assert os.path.exists(dir_to)
+      assert os.path.exists(sSource := os.path.join(dest.sourceFile.fullPath))
+      assert not os.path.exists(sTarget := os.path.join(dir_to, dest.relPath))
+
       if not os.path.exists(os.path.join(dir_to, dest.dirName)):
         os.makedirs(os.path.join(dir_to, dest.dirName))
-      shutil.copyfile(os.path.join(dest.sourceFile.fullPath), os.path.join(dir_to, dest.relPath))
+      shutil.copyfile(sSource, sTarget)
 
     for f in list(DestResource.pict_dict.keys()):
       if self.TargetXMLDirName.get():
         _copyFile(DestResource.pict_dict[f], self.TargetXMLDirName.get())
+        _copyFile(DestResource.pict_dict[f], self.TargetImageDirName.get())
 
     if self.bWriteToSelf:
       tempGDLArchiveDir = tempfile.mkdtemp()
