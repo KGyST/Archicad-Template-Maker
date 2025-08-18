@@ -18,7 +18,7 @@ def XMLComparer(p_Dir):      #p_working_directory
 
         with open(originalXML, "r") as testFile:
             ps = ParamSection(inETree=etree.XML(testFile.read()))
-            ps.createParamfromCSV(p_TestData["parName"], p_TestData["value"], lArrayValS)
+            ps.createParamFromSheet(p_TestData["parName"], p_TestData["value"], lArrayValS)
 
             resultXMLasString = etree.tostring(ps.toEtree(), pretty_print=True, xml_declaration=True, encoding='UTF-8').decode("UTF-8")
             try:

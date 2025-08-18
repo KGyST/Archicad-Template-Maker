@@ -22,7 +22,7 @@ import tempfile
 import shutil
 
 import tkinter.filedialog
-from tkinter import scrolledtext
+# from tkinter import scrolledtext
 
 import csv
 
@@ -41,9 +41,14 @@ from samuTeszt import Recorder
 from GSMParamLib.GUIAppSingletonBase import XMLProcessorBase
 from GSMParamLib.Async import Loop
 from GSMParamLib.GoogleSpreadsheetConnector import GoogleSpreadsheetConnector
+from dataclasses import dataclass
 
 LISTBOX_SEPARATOR = '--------'
 LP_XML_CONVERTER = 'LP_XMLConverter.exe'
+
+SRC_NAME = 0
+TARG_NAME = 1
+VALUES = 2
 
 # ------------------- GUI ------------------------------
 # ------------------- GUI ------------------------------
@@ -148,13 +153,13 @@ class GUIApp(XMLProcessorBase):
     self.googleSpreadsheet  = None
     self.bWriteToSelf       = False             # Whether to write back to the file itself
 
-    __tooltipIDPT1 = "Something like\nE:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
-    __tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
-    __tooltipIDPT3 = "Something like\nE:/_GDL_SVN/_TARGET_PROJECT_NAME_/library"
-    __tooltipIDPT4 = "Final GDL output dir"
-    __tooltipIDPT5 = "If set, copy project specific pictures here, too, for endcoded images. Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library_images"
-    __tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
-    __tooltipIDPT7 = "Source GDL folder name"
+    _tooltipIDPT1 = "Something like\nE:/_GDL_SVN/_TEMPLATE_/AC18_Opening/library"
+    _tooltipIDPT2 = "Images' dir that are NOT to be renamed per project and compiled into final gdls (prev pics, for example), something like E:\_GDL_SVN\_TEMPLATE_\AC18_Opening\library_images"
+    _tooltipIDPT3 = "Something like\nE:/_GDL_SVN/_TARGET_PROJECT_NAME_/library"
+    _tooltipIDPT4 = "Final GDL output dir"
+    _tooltipIDPT5 = "If set, copy project specific pictures here, too, for endcoded images. Something like E:/_GDL_SVN/_TARGET_PROJECT_NAME_/library_images"
+    _tooltipIDPT6 = "Additional images' dir, for all other images, which can be used by any projects, something like E:/_GDL_SVN/_IMAGES_GENERIC_"
+    _tooltipIDPT7 = "Source GDL folder name"
 
     self.observerXML = self.bXML.trace_variable("w", self._targetXMLModified)
     self.observerGDL = self.bGDL.trace_variable("w", self._targetGDLModified)
@@ -193,7 +198,7 @@ class GUIApp(XMLProcessorBase):
                                          self.SourceXMLDirName,
                                          self.isSourceGDL,
                                          False,
-                                         __tooltipIDPT1)
+                                         _tooltipIDPT1)
 
     iF += 1
 
@@ -202,7 +207,7 @@ class GUIApp(XMLProcessorBase):
                       self.SourceGDLDirName,
                       self.isSourceGDL,
                       True,
-                      __tooltipIDPT7)
+                      _tooltipIDPT7)
 
     iF += 1
 
@@ -242,7 +247,7 @@ class GUIApp(XMLProcessorBase):
     self.sourceImageDir = InputDirPlusText(self.InputFrameS[iF],
                                            "Images' source folder",
                                            self.SourceImageDirName,
-                                           __tooltipIDPT2)
+                                           _tooltipIDPT2)
     if self.SourceImageDirName:
       self.lbSourceXML.refresh()
       self.lbSourceResource.refresh()
@@ -279,12 +284,12 @@ class GUIApp(XMLProcessorBase):
       return "" if (os.path.isdir(path)
                     and not os.listdir(path)
                     or  self.bOverWrite.get()) else \
-        f"Folder:\n{path}\nis not empty"
+        f"**[Warning]**\nFolder:\n`{path} <{path}>`_\nis not empty"
 
     self.XMLDir = InputDirPlusCheckbox(self.outputFrameS[iF],
                                    "XML Destination folder",
                                        self.TargetXMLDirName,
-                                       self.bXML, __tooltipIDPT3,
+                                       self.bXML, _tooltipIDPT3,
                                        validator=_isTargetFolderOK)
 
     iF += 1
@@ -292,7 +297,7 @@ class GUIApp(XMLProcessorBase):
     self.GDLDir = InputDirPlusCheckbox(self.outputFrameS[iF],
                                    "GDL Destination folder",
                                        self.TargetGDLDirName,
-                                       self.bGDL, __tooltipIDPT4,
+                                       self.bGDL, _tooltipIDPT4,
                                        validator=_isTargetFolderOK)
 
     iF += 1
@@ -322,7 +327,11 @@ class GUIApp(XMLProcessorBase):
 
     iF += 1
 
-    InputDirPlusText(self.outputFrameS[iF], "Images' destination folder",  self.TargetImageDirName, __tooltipIDPT5, validator=_isTargetFolderOK)
+    InputDirPlusText(self.outputFrameS[iF],
+                     "Images' destination folder",
+                     self.TargetImageDirName,
+                     _tooltipIDPT5,
+                     validator=_isTargetFolderOK)
 
     # ------------------------------------
     # bottom row for project general settings
@@ -334,7 +343,7 @@ class GUIApp(XMLProcessorBase):
     iF = 0
 
     self.progressInfo = tk.Label(self.bottomFrame, text=f"{self.iCurrent} / {self.iTotal}")
-    self.progressInfo.grid({"column": iF, "sticky": tk.W});
+    self.progressInfo.grid({"column": iF, "sticky": tk.W})
 
     iF += 1
 
@@ -349,7 +358,7 @@ class GUIApp(XMLProcessorBase):
                      "Additional images' folder",
                      self.AdditionalImageDir,
                      column=iF,
-                     tooltip=__tooltipIDPT6)
+                     tooltip=_tooltipIDPT6)
 
     iF += 1
 
@@ -484,7 +493,13 @@ class GUIApp(XMLProcessorBase):
     DestXML.sDestXMLDir = self.TargetXMLDirName.get()
 
   def _lbXMLRefresh(self, *_):
+    """
+    Basically starts XML dir scanning
+    """
     def _lbXMLRefreshCallback(task):
+      """
+      Called when XML dir scan is done
+      """
       self.startButton.config(state=tk.NORMAL, text="Start")
       self.inputXMLDir.config(state=tk.NORMAL)
       self.progressInfo.config(text=f"{self.iCurrent} / {self.iTotal} Scanning dirs took {self.tick:.2f} seconds")
@@ -516,7 +531,7 @@ class GUIApp(XMLProcessorBase):
         [destItem.sourceFile.name] = destItem
       if len(row) > 2 and next((c for c in row[2:] if c != ""), ""):
         for parName, col in zip(firstRow[2:], row[2:]):
-          destItem.parameters.createParamfromCSV(parName, col)
+          destItem.parameters.createParamFromSheet(parName, col)
 
   def getListFromGoogleSpreadsheet(self):
     self.GoogleSSBbutton.config(cnf={'state': tk.NORMAL})
@@ -542,85 +557,7 @@ class GUIApp(XMLProcessorBase):
     self.bWriteToSelf = True
     self.XMLDir.config(state=tk.DISABLED)
     self.GDLDir.config(state=tk.DISABLED)
-    self.showGoogleSpreadsheetEntry(inFunc=self.getListFromGoogleSpreadsheet)
-
-  def getFromCSV(self):
-    """
-    Source-dest file conversation based on csv
-    :return:
-    """
-    SRC_NAME    = 0
-    TARG_NAME   = 1
-    # PRODATURL   = 2
-    VALUES      = 2
-    csvFileName = tkinter.filedialog.askopenfilename(initialdir="/", title="Select folder", filetypes=(("CSV files", "*.csv"), ("all files","*.*")))
-    if csvFileName:
-      with open(csvFileName, "r") as csvFile:
-        firstRow = next(csv.reader(csvFile))
-        for row in csv.reader(csvFile):
-          destItem = self._addXMLRecursively(row[SRC_NAME], row[TARG_NAME])
-          # if row[PRODATURL]:
-          #     destItem.parameters.BO_update(row[PRODATURL])
-          if len(row) > 3 and next((c for c in row[VALUES-1:] if c != ""), ""):
-            for parName, col in zip(firstRow[VALUES:], row[VALUES:]):
-              if "-y" in parName or "-array" in parName:
-                arrayValues = []
-                with open(col, "r") as arrayCSV:
-                  for arrayRow in csv.reader(arrayCSV):
-                    if arrayRow[TARG_NAME].strip() == row[TARG_NAME].strip:
-                      arrayValues = [[arrayRow[2:]]]
-                    if arrayValues \
-                        and len(arrayRow) > 2 \
-                        and not arrayRow[TARG_NAME] \
-                        and arrayRow[2] != "":
-                      arrayValues += [arrayRow[2:]]
-                    else:
-                      break
-                destItem.parameters.createParamfromCSV(parName, col, arrayValues)
-              else:
-                destItem.parameters.createParamfromCSV(parName, col)
-
-  def convertFilesGoogleSpreadsheet(self):
-    """
-    Source-dest file conversation based on Google Spreadsheet
-    :return:
-    """
-    self.showGoogleSpreadsheetEntry()
-
-  def getFromGoogleSpreadsheet(self):
-    self.GoogleSSBbutton.config(cnf={'state': tk.NORMAL})
-    SSIDRegex = "/spreadsheets/d/([a-zA-Z0-9-_]+)"
-    findall = re.findall(SSIDRegex, self.GoogleSSInfield.GoogleSSURL.get())
-    if not findall:
-      self.GoogleSSInfield.top.destroy()
-      return
-    if findall:
-      SpreadsheetID = findall[0]
-    else:
-      SpreadsheetID = findall
-    print(SpreadsheetID)
-
-    self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
-    #FIXME above here paramWrite uses the same
-    #FIXME from here maybe to put into a method; same as in getFromCSV
-    firstRow = self.googleSpreadsheet.values[0]
-
-    for row in self.googleSpreadsheet.values[1:]:
-      destItem = self._addXMLRecursively(row[0], row[1])
-      if row[2]:
-        destItem.parameters.BO_update(row[2])
-      if len(row) > 3 and next((c for c in row[2:] if c != ""), ""):
-        for parName, col in zip(firstRow[3:], row[3:]):
-          destItem.parameters.createParamfromCSV(parName, col)
-
-    self.GoogleSSInfield.top.destroy()
-
-  def showGoogleSpreadsheetEntry(self, inFunc=None):
-    if not inFunc:
-      inFunc = self.getFromGoogleSpreadsheet
-    self.GoogleSSInfield = GoogleSSInfield(self)
-    self.GoogleSSInfield.top.protocol("WM_DELETE_WINDOW", inFunc)
-    self.GoogleSSBbutton.config(cnf={'state': tk.DISABLED})
+    self.showGoogleSpreadsheetEntry(func=self.getListFromGoogleSpreadsheet)
 
   def processGDLDir(self, *_):
     '''
@@ -685,10 +622,18 @@ class GUIApp(XMLProcessorBase):
     self.refreshDestItem()
     return destItem
 
-  def _addXMLRecursively(self, source_file: str, name_from: str = "", name_to: str = "", add_str: bool = False, target_file: str = "") -> DestXML | None:
+  def _addXMLRecursively(self,
+                         source_file: str,
+                         name_from: str = "",
+                         name_to: str = "",
+                         add_str: bool = False,
+                         target_file: str = "") -> DestXML | None:
     """
     Not to be called from UI as doesn't check for validity of source file name
     :param source_file:
+    :param name_from: str = "",
+    :param name_to: str = "",
+    :param add_str: bool = False,
     :param target_file:
     :return:
     """
@@ -915,8 +860,8 @@ class GUIApp(XMLProcessorBase):
 
     tempPicDir = tempfile.mkdtemp()  # For every image file, collected
 
-    print("targXMLDir: %s" % DestXML.sDestXMLDir)
-    print("tempPicDir: %s" % tempPicDir)
+    print(f"targXMLDir: {DestXML.sDestXMLDir}")
+    print(f"tempPicDir: {tempPicDir}")
 
     pool_map = [ProcessData (
       key=k,
@@ -980,10 +925,11 @@ class GUIApp(XMLProcessorBase):
 
   def run_converter(self, command: str, source_dir: str, target_dir: str, img_dir: str = '', switches: tuple = ()):
     assert command
-    assert os.path.exists(target_dir)
-    assert os.path.exists(source_dir)
-    assert os.path.exists(_sConverterPath := (os.path.join(self.ACLocation.get(), LP_XML_CONVERTER)))
-    assert os.path.exists(img_dir) or not img_dir
+    assert os.path.isdir(target_dir)
+    assert os.path.isdir(source_dir)
+    _sConverterPath = (os.path.join(self.ACLocation.get(), LP_XML_CONVERTER))
+    assert os.path.isfile(_sConverterPath)
+    assert os.path.isdir(img_dir) or not img_dir
 
     lImgCommand = ['-img', img_dir] if img_dir else []
 
@@ -995,14 +941,16 @@ class GUIApp(XMLProcessorBase):
       [_sConverterPath, command, *switches, *lImgCommand, source_dir, target_dir],
       capture_output=True, text=True, encoding="utf-8")
     output = result.stdout
+    # error = result.stderr
+
     print(output)
+    # assert not error, f"Error: {error}"
 
   def destroyApp(self, ):
     if self.bDebug.get():
-      self.currentConfig.writeConfigBack(default=True, exclude_list=['bDebug'])
+      self.currentConfig.writeConfigBack(exclude_list=['bDebug'])
     else:
-      self.currentConfig.update_current_vars()
-      self.currentConfig.writeConfigBack(default=False)
+      self.currentConfig.writeConfigBack()
     self.loop.stop()
     self.top.destroy()
 
@@ -1011,6 +959,95 @@ class GUIApp(XMLProcessorBase):
     """Meaningful when overwriting XMLs:
     """
     pass
+
+  # ---- Spreadsheet connectivity --------------------------------------------------------------------------------------
+
+  def getFromCSV(self):
+    """
+    Source-dest file conversation based on csv
+    :return:
+    """
+
+    csvFileName = tkinter.filedialog.askopenfilename(initialdir="/", title="Select folder", filetypes=(("CSV files", "*.csv"), ("all files","*.*")))
+
+    if csvFileName:
+      with open(csvFileName, "r") as csvFile:
+        firstRow = next(csv.reader(csvFile))
+        for row in csv.reader(csvFile):
+          destItem = self._addXMLRecursively(row[SRC_NAME], row[TARG_NAME])
+          if len(row) > 3 and next((c for c in row[VALUES-1:] if c != ""), ""):
+            for parName, col in zip(firstRow[VALUES:], row[VALUES:]):
+              if "-y" in parName or "-array" in parName:
+                arrayValues = []
+                with open(col, "r") as arrayCSV:
+                  for arrayRow in csv.reader(arrayCSV):
+                    if arrayRow[TARG_NAME].strip() == row[TARG_NAME].strip:
+                      arrayValues = [[arrayRow[2:]]]
+                    if arrayValues \
+                        and len(arrayRow) > 2 \
+                        and not arrayRow[TARG_NAME] \
+                        and arrayRow[2] != "":
+                      arrayValues += [arrayRow[2:]]
+                    else:
+                      break
+                destItem.parameters.createParamFromSheet(parName, col, arrayValues)
+              else:
+                destItem.parameters.createParamFromSheet(parName, col)
+
+  # ------------------- Google SpreadSheet connectivity ----------------------------------------------------------------
+
+  class GoogleSSInfield(tk.Frame):
+    def __init__(self, sender):
+      tk.Frame.__init__(self)
+      self.top = tk.Toplevel()
+
+      self.GoogleSSURL = tk.Entry(self.top, {"width": 40, })
+      self.GoogleSSURL.grid({"row": 0, "column": 0})
+
+      self.OKButton = tk.Button(self.top, {"text": "OK", "command": sender.getFromGoogleSpreadsheet, })
+      self.OKButton.grid({"row": 0, "column": 1})
+
+      self.top.bind('<Return>', sender.getFromGoogleSpreadsheet)
+
+  def getFromGoogleSpreadsheet(self):
+    self.GoogleSSBbutton.config(cnf={'state': tk.NORMAL})
+    SSIDRegex = "/spreadsheets/d/([a-zA-Z0-9-_]+)"
+    findall = re.findall(SSIDRegex, self.GoogleSSInfield.GoogleSSURL.get())
+    if not findall:
+      self.GoogleSSInfield.top.destroy()
+      return
+    if findall:
+      SpreadsheetID = findall[0]
+    else:
+      SpreadsheetID = findall
+    print(SpreadsheetID)
+
+    self.googleSpreadsheet = GoogleSpreadsheetConnector(self.currentConfig, SpreadsheetID)
+    # FIXME above here paramWrite uses the same
+    # FIXME from here maybe to put into a method; same as in getFromCSV
+    firstRow = self.googleSpreadsheet.values[0]
+
+    for row in self.googleSpreadsheet.values[1:]:
+      destItem = self._addXMLRecursively(row[SRC_NAME], target_file=row[TARG_NAME])
+      if len(row) > 2 and next((c for c in row[1:] if c != ""), ""):
+        for parName, col in zip(firstRow[VALUES:], row[VALUES]):
+          destItem.parameters.createParamFromSheet(parName, col)
+
+    self.GoogleSSInfield.top.destroy()
+
+  def showGoogleSpreadsheetEntry(self, func: 'Callable' = None):
+    if not func:
+      func = self.getFromGoogleSpreadsheet
+    self.GoogleSSInfield = self.GoogleSSInfield(self)
+    self.GoogleSSInfield.top.protocol("WM_DELETE_WINDOW", func)
+    self.GoogleSSBbutton.config(cnf={'state': tk.DISABLED})
+
+  def convertFilesGoogleSpreadsheet(self):
+    """
+    Source-dest file conversation based on Google Spreadsheet
+    :return:
+    """
+    self.showGoogleSpreadsheetEntry()
 
   @staticmethod
   def __unmarkFileName(inFileName):
@@ -1021,20 +1058,7 @@ class GUIApp(XMLProcessorBase):
       if inFileName[2:] in DestXML.dest_dict:
         return inFileName [2:]
 
-# ------------------- Google SpreadSheet infield window ------
 
-class GoogleSSInfield(tk.Frame):
-  def __init__(self, sender):
-    tk.Frame.__init__(self)
-    self.top = tk.Toplevel()
-
-    self.GoogleSSURL = tk.Entry(self.top, {"width": 40,})
-    self.GoogleSSURL.grid({"row": 0, "column": 0})
-
-    self.OKButton = tk.Button(self.top, {"text": "OK", "command": sender.getFromGoogleSpreadsheet, })
-    self.OKButton.grid({"row": 0, "column": 1})
-
-    self.top.bind('<Return>', sender.getFromGoogleSpreadsheet)
 
 # ------------------- Parameter editing window ------
 
@@ -1042,7 +1066,6 @@ class GoogleSSInfield(tk.Frame):
 # -------------------/GUI------------------------------
 # -------------------/GUI------------------------------
 
-from dataclasses import dataclass
 @dataclass
 class ProcessData:
   key:str

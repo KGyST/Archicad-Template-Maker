@@ -77,7 +77,7 @@ class TestCase_CreateParamCommands(unittest.TestCase):
     @staticmethod
     def GUIAppTestCaseFactory(inParams, inDirPrefix, inParamSection, inCustomName=None, embeddedXML=None, AVals=None):
         def func(inObj):
-            inParamSection.createParamfromCSV(inParams[0], inParams[1], AVals)
+            inParamSection.createParamFromSheet(inParams[0], inParams[1], AVals)
             outFileName = os.path.join(inDirPrefix + "_errors", inParams[2])
             testFileName = os.path.join(inDirPrefix + "_items", inParams[2])
             if os.path.isfile(outFileName):
@@ -156,7 +156,7 @@ class Test_File:
         embeddedXML     = inTestCase['embeddedXML']
         AVals           = inTestCase['AVals']
 
-        inParamSection.createParamfromCSV(inParams[0], inParams[1], AVals)
+        inParamSection.createParamFromSheet(inParams[0], inParams[1], AVals)
         outFileName = os.path.join(inDirPrefix + "_errors", inParams[2])
         testFileName = os.path.join(inDirPrefix + "_items", inParams[2])
         if os.path.isfile(outFileName):
